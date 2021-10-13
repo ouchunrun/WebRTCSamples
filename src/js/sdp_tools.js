@@ -1455,7 +1455,7 @@ let SDPTools = {
         }
     },
 
-    setXgoogle: function(media, h264Codec, bitrate){
+    setXgoogle: function(media, h264Codec, bitrate, minBitrate, startBitrate){
         if(media.type === 'audio'){
             return
         }
@@ -1465,15 +1465,15 @@ let SDPTools = {
                 if (h264Codec.includes(media.fmtp[i].payload)) {
                     let config = media.fmtp[i].config
                     if (config.indexOf('x-google-min-bitrate=') >= 0) {
-                        config = config.replace(/x-google-min-bitrate=([a-zA-Z0-9]{1,8})/, 'x-google-min-bitrate=' + bitrate)
+                        config = config.replace(/x-google-min-bitrate=([a-zA-Z0-9]{1,8})/, 'x-google-min-bitrate=' + minBitrate)
                     } else {
-                        config = config + ';x-google-min-bitrate=' + bitrate
+                        config = config + ';x-google-min-bitrate=' + minBitrate
                     }
 
                     if (config.indexOf('x-google-start-bitrate=') >= 0) {
-                        config = config.replace(/x-google-start-bitrate=([a-zA-Z0-9]{1,8})/, 'x-google-start-bitrate=' + bitrate)
+                        config = config.replace(/x-google-start-bitrate=([a-zA-Z0-9]{1,8})/, 'x-google-start-bitrate=' + startBitrate)
                     } else {
-                        config = config + ';x-google-start-bitrate=' + bitrate
+                        config = config + ';x-google-start-bitrate=' + startBitrate
                     }
 
                     if (config.indexOf('x-google-max-bitrate=') >= 0) {
@@ -1493,17 +1493,17 @@ let SDPTools = {
      * @param bitrate
      * @param index
      */
-    setXgoogleBitrate: function(session, bitrate, index){
+    setXgoogleBitrate: function(session, index, bitrate, minBitrate, startBitrate){
         if(index || index === 0){
             let h264Codec = this.getCodecByName(session, index, ['H264'])
             let media = session.media[index]
-            this.setXgoogle(media, h264Codec, bitrate)
+            this.setXgoogle(media, h264Codec, bitrate, minBitrate, startBitrate)
         }else {
             // When the index parameter does not exist, modify all media rows
             for(let i = 0; i<session.media.length; i++){
                 let h264Codec = this.getCodecByName(session, i, ['H264'])
                 let media = session.media[i]
-                this.setXgoogle(media, h264Codec, bitrate)
+                this.setXgoogle(media, h264Codec, bitrate, minBitrate, startBitrate)
             }
         }
     },

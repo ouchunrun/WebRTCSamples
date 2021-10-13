@@ -1,15 +1,11 @@
-'use strict';
 
-let getMediaButton = document.querySelector('button#getMedia');
 let connectButton = document.querySelector('button#connect');
 let hangupButton = document.querySelector('button#hangup');
 
-getMediaButton.onclick = getMedia;
-connectButton.onclick = createPeerConnection;
-hangupButton.onclick = hangup;
-
 let local_framesPerSecond = document.querySelector('div#local_framesPerSecond');
 let remote_framesPerSecond = document.querySelector('div#remote_framesPerSecond');
+let send_packetsLost = document.querySelector('div#send_packetsLost')
+let recv_packetsLost = document.querySelector('div#recv_packetsLost')
 let bitrateDiv = document.querySelector('div#bitrate');
 let peerDiv = document.querySelector('div#peer');
 let senderStatsDiv = document.querySelector('div#senderStats');
@@ -23,11 +19,113 @@ let remoteVideoStatsDiv = document.querySelector('div#remoteVideo div');
 let localPeerConnection;
 let remotePeerConnection;
 let localStream;
-let remoteStream;
 let bytesPrev;
 let timestampPrev;
+let videoType = ''
 
-function createPeerConnection() {
+let selectObj = document.getElementById('rembAndTransportCC')
+let rembAndTransportCCEnabled = true
+
+function setXGoogleSelect(){
+    let selectedIndex = selectObj.selectedIndex
+    let selectOption = selectObj.options[selectedIndex]
+    let xGoogleSelect = document.getElementsByClassName('x-google-set')[0]
+    if(selectOption.value === 'false'){
+        xGoogleSelect.style.display = 'none'
+        rembAndTransportCCEnabled = false
+    }else {
+        xGoogleSelect.style.display = 'block'
+        rembAndTransportCCEnabled = true
+    }
+}
+
+/************************************************* 取流部分 *************************************************************/
+
+function getVideoMedia() {
+    console.info('gum start!');
+    closeStream()
+    let constraints = {
+        audio: false,
+        video: {
+            width: {max: 1920},
+            height: {max: 1080},
+            frameRate: { max: 5 }
+        }
+    }
+    console.warn("getNewStream constraint: \n" + JSON.stringify(constraints, null, '    ') );
+    navigator.mediaDevices.getUserMedia(constraints).then(function (stream){
+        console.warn('get local media stream success: ' , stream.id);
+        connectButton.disabled = false;
+        localStream = stream;
+        localVideo.srcObject = stream;
+        videoType = 'video'
+    }).catch(function(e) {
+        console.error(e)
+        console.warn("getUserMedia failed!");
+        let message = 'getUserMedia error: ' + e.name + '\n' + 'PermissionDeniedError may mean invalid constraints.';
+        console.warn(message);
+    });
+}
+
+function getScreenCapture(){
+    let constraints = {
+        audio: true,
+        video: {
+            width: { max: 1920 },
+            height: { max: 1080 },
+            frameRate: { max: 5 }
+        }
+    }
+    navigator.mediaDevices.getDisplayMedia(constraints).then(function (stream){
+        console.warn('get local media stream success: ' , stream.id);
+        connectButton.disabled = false;
+        localStream = stream;
+        localVideo.srcObject = stream;
+        videoType = 'slides'
+    }).catch(function(e) {
+        console.error(e)
+        console.warn("getUserMedia failed!");
+        let message = 'getUserMedia error: ' + e.name + '\n' + 'PermissionDeniedError may mean invalid constraints.';
+        console.warn(message);
+    });
+}
+
+function closeStream() {
+    console.log("clear stream first")
+    // clear first
+    let stream = localVideo.srcObject
+    if (stream){
+        try {
+            stream.oninactive = null;
+            let tracks = stream.getTracks();
+            for (let track in tracks) {
+                tracks[track].onended = null;
+                console.info("close stream");
+                tracks[track].stop();
+            }
+        }
+        catch (error) {
+            console.info('closeStream: Failed to close stream');
+            console.error(error);
+        }
+        stream = null;
+        localVideo.srcObject = null
+    }
+
+    if (localStream) {
+        localStream.getTracks().forEach(function(track) {
+            track.stop();
+        });
+        let videoTracks = localStream.getVideoTracks();
+        for (let i = 0; i !== videoTracks.length; ++i) {
+            videoTracks[i].stop();
+        }
+    }
+}
+
+/************************************************* 创建p2p连接 *************************************************************/
+
+async function createPeerConnection() {
     console.info("begin create peerConnections");
     connectButton.disabled = true;
     hangupButton.disabled = false;
@@ -42,14 +140,6 @@ function createPeerConnection() {
             function(track) {
                 console.info("localPeerConnection addTack!");
                 localPeerConnection.addTrack(track, localStream);
-            }
-        );
-    }
-    if(remoteStream){
-        remoteStream.getTracks().forEach(
-            function(track) {
-                console.info("localPeerConnection addTack!");
-                remotePeerConnection.addTrack(track, remoteStream);
             }
         );
     }
@@ -70,13 +160,6 @@ function createPeerConnection() {
         localPeerConnection.addIceCandidate(e.candidate).then(onAddIceCandidateSuccess, onAddIceCandidateError);
     };
 
-    localPeerConnection.ontrack = function(e) {
-        if (localVideo.srcObject !== e.streams[0]) {
-            console.info('localPeerConnection got stream ' + e.streams[0].id);
-            localVideo.srcObject = e.streams[0];
-        }
-    };
-
     remotePeerConnection.ontrack = function(e) {
         if (remoteVideo.srcObject !== e.streams[0]) {
             console.info('remotePeerConnection got stream ' + e.streams[0].id);
@@ -84,45 +167,40 @@ function createPeerConnection() {
         }
     };
 
-    localPeerConnection.createOffer().then(
-        function(offer) {
-            console.info('localPeerConnection setLocalDescription:\n', offer.sdp);
-            localPeerConnection.setLocalDescription(offer).then(function () {
-                console.info('setLocalDescription success');
-            }).catch(function (error) {
-                console.error(error)
-            })
+    try {
+        let offer = await localPeerConnection.createOffer()
+        console.info('localPeerConnection createOffer success');
+        await localPeerConnection.setLocalDescription(offer)
+        console.info('localPeerConnection setLocalDescription success, sdp: \r\n', offer.sdp);
 
-            offer.sdp = decorateSdp(offer.sdp)
-            console.info(`remotePeerConnection setRemoteDescription : \n${offer.sdp}`);
-            remotePeerConnection.setRemoteDescription(offer).then(function () {
-                console.info('remotePeerConnection setRemoteDescription success')
-            }).catch(function (err) {
-                console.error(err)
-            })
+        let maxBitRate = parseInt(document.getElementById('maxBitrate').value)
+        if(maxBitRate){
+            setEncodingParameters(localPeerConnection, videoType, maxBitRate)
+        }
 
-            remotePeerConnection.createAnswer().then(
-                function(answer) {
-                    console.info('remotePeerConnection setLocalDescription: \n', answer.sdp);
-                    remotePeerConnection.setLocalDescription(answer).then(function () {
-                        console.info('setLocalDescription success')
-                    }).catch(function (err) {
-                        console.error(err)
-                    })
+        console.log('decorate local offer sdp')
+        offer.sdp = commonDecorateLo(offer.sdp)
 
-                    answer.sdp = decorateSdp(answer.sdp)
-                    console.warn(`localPeerConnection setRemoteDescription:\n${answer.sdp}`);
-                    localPeerConnection.setRemoteDescription(answer).then(function () {
-                        console.info('localPeerConnection setRemoteDescription success')
-                    }).catch(function (err) {
-                        console.error(err)
-                    })
-                },
-                function(err) {console.info(err);}
-            );
-        },
-        function(err) {console.info(err);}
-    );
+        console.warn(`remotePeerConnection setRemoteDescription : \n${offer.sdp}`);
+        await remotePeerConnection.setRemoteDescription(offer)
+        console.info('remotePeerConnection setRemoteDescription success')
+
+
+        // TODO: create offer process
+        let answer = await remotePeerConnection.createAnswer()
+        console.info('remotePeerConnection setLocalDescription: \n', answer.sdp);
+        await remotePeerConnection.setLocalDescription(answer)
+        console.info('remotePeerConnection setLocalDescription success')
+
+        console.log('decorate local answer sdp')
+        answer.sdp = decorateSdp(answer.sdp)
+        console.warn(`localPeerConnection setRemoteDescription:\n${answer.sdp}`);
+        await localPeerConnection.setRemoteDescription(answer)
+        console.info('localPeerConnection setRemoteDescription success')
+    }catch (e){
+        console.error(e.message)
+        console.error(e)
+    }
 }
 
 function onAddIceCandidateSuccess() {
@@ -137,7 +215,6 @@ function hangup() {
     console.info('Ending call');
     localPeerConnection.close();
     remotePeerConnection.close();
-    window.location.reload();
 
     // query stats one last time.
     Promise.all([
@@ -151,155 +228,146 @@ function hangup() {
     localStream.getTracks().forEach(function(track) {track.stop();});
     localStream = null;
     hangupButton.disabled = true;
-    getMediaButton.disabled = false;
+
+    clearInterval(statisticsInterval)
+
+    window.location.reload();
 }
 
-/************************************************* 取流部分 *************************************************************/
-var getUserMediaConstraintsDiv = document.querySelector('textarea#getUserMediaConstraints');
-var defaultCon = {
-    audio: false,
-    video: {
-        frameRate: 30,
-        aspectRatio: {
-            min: 1.777,
-            max: 1.778
-        },
-        width: 1280,
-        height: 720,
-    }
-};
+/**
+ * show peer status
+ * @param results
+ */
+function showRemoteStats(results) {
+    let statsString = dumpStats(results);
 
-getUserMediaConstraintsDiv.value = JSON.stringify(defaultCon, null, '    ' );
+    receiverStatsDiv.innerHTML = '<h2>Receiver stats</h2>' + statsString;
+    // calculate video bitrate
+    results.forEach(function(report) {
+        if(report.framesPerSecond){
+            remote_framesPerSecond.innerHTML = '<strong>framesPerSecond:</strong> ' + report.framesPerSecond;
+        }
+        if(report.framerateMean){
+            remote_framesPerSecond.innerHTML = '<strong>framerateMean:</strong> ' + report.framerateMean;
+        }
+        if(report.packetsLost){
+            recv_packetsLost.innerHTML = '<strong style="color: red;">Recv packetsLost:</strong> ' + report.packetsLost;
+        }
 
-function getUsingDeviceId () {
-    var deviceId = ''
-    var selectedIndex = document.getElementById('videoList').options.selectedIndex
-    if(selectedIndex < 0){
-        selectedIndex = 0
+        let now = report.timestamp;
+        let bitrate;
+        if (report.type === 'inbound-rtp' && report.mediaType === 'video') {
+            let bytes = report.bytesReceived;
+            if (timestampPrev) {
+                bitrate = 8 * (bytes - bytesPrev) / (now - timestampPrev);
+                bitrate = Math.floor(bitrate);
+            }
+            bytesPrev = bytes;
+            timestampPrev = now;
+        }
+        if (bitrate) {
+            bitrate += ' kbits/sec';
+            bitrateDiv.innerHTML = '<strong>Bitrate:</strong> ' + bitrate;
+        }
+    });
+
+    // figure out the peer's ip
+    let activeCandidatePair = null;
+    let remoteCandidate = null;
+
+    // Search for the candidate pair, spec-way first.
+    results.forEach(function(report) {
+        if (report.type === 'transport') {
+            activeCandidatePair = results.get(report.selectedCandidatePairId);
+        }
+    });
+    // Fallback for Firefox and Chrome legacy stats.
+    if (!activeCandidatePair) {
+        results.forEach(function(report) {
+            if (report.type === 'candidate-pair' && report.selected ||
+                report.type === 'googCandidatePair' &&
+                report.googActiveConnection === 'true') {
+                activeCandidatePair = report;
+            }
+        });
     }
-    var selectedOption = document.getElementById('videoList').options[selectedIndex]
-    if(selectedOption && selectedOption.value){
-        deviceId = selectedOption.value
+    if (activeCandidatePair && activeCandidatePair.remoteCandidateId) {
+        remoteCandidate = results.get(activeCandidatePair.remoteCandidateId);
     }
-    console.log('get deviceId: ' + deviceId)
-    return deviceId
+    if (remoteCandidate) {
+        if (remoteCandidate.ip && remoteCandidate.port) {
+            peerDiv.innerHTML = '<strong>Connected to:</strong> ' +
+                remoteCandidate.ip + ':' + remoteCandidate.port;
+        } else if (remoteCandidate.ipAddress && remoteCandidate.portNumber) {
+            // Fall back to old names.
+            peerDiv.innerHTML = '<strong>Connected to:</strong> ' +
+                remoteCandidate.ipAddress +
+                ':' + remoteCandidate.portNumber;
+        }
+    }
 }
 
-function selectDeviceAndGum(){
-    var deviceId = getUsingDeviceId()
-    console.warn("deviceId: ", deviceId)
-    if(deviceId === ""){
-        console.warn("请选择有效设备")
-        return
-    }
-    getMedia()
-}
+function showLocalStats(results) {
+    let statsString = dumpStats(results);
+    senderStatsDiv.innerHTML = '<h2>Sender stats</h2>' + statsString;
 
-function getMedia() {
-    console.warn('GetUserMedia start!');
-    console.log("clear stream first")
-    closeStream()
-    getMediaButton.disabled = true;
+    results.forEach(function(report) {
+        if(report.framesPerSecond){
+            local_framesPerSecond.innerHTML = '<strong>framesPerSecond:</strong> ' + report.framesPerSecond;
+        }
+        if(report.framerateMean){
+            local_framesPerSecond.innerHTML = '<strong>framerateMean:</strong> ' + report.framerateMean;
+        }
 
-    var constraints = JSON.parse(getUserMediaConstraintsDiv.value)
-    var deviceId = getUsingDeviceId()
-    if(deviceId){
-        constraints.video.deviceId = deviceId
-    }
-
-    console.warn("getNewStream constraint: \n" + JSON.stringify(constraints, null, '    ') );
-    navigator.mediaDevices.getUserMedia(constraints).then(function (stream){
-        console.warn('get local media stream succeeded:' , stream.id);
-        connectButton.disabled = false;
-        localStream = stream;
-        localVideo.srcObject = stream;
-
-        // // 获取远端流
-        // var selectedIndex = document.getElementById('videoList').options.selectedIndex
-        // var options = document.getElementById('videoList').options
-        // if(selectedIndex){
-        //     for(var i = 0; i<options.length; i++){
-        //         if(i !== selectedIndex){
-        //             deviceId = options[i].value
-        //         }
-        //     }
-        // }else {
-        //     deviceId = options[options.length-1].value
-        // }
-        // console.warn("deviceId: ", deviceId)
-        // if(deviceId){
-        //     constraints.video.deviceId = deviceId
-        // }
-        // navigator.mediaDevices.getUserMedia(constraints).then(function (_stream){
-        //     console.warn('get remote media stream succeeded:', _stream.id);
-        //     remoteStream = _stream
-        //     remoteVideo.srcObject = _stream;
-        // }).catch(function(e) {
-        //     console.error(e)
-        //     console.warn("get remote media stream failed!");
-        // });
-    }).catch(function(e) {
-        console.error(e)
-        console.warn("getUserMedia failed!");
-        let message = 'getUserMedia error: ' + e.name + '\n' + 'PermissionDeniedError may mean invalid constraints.';
-        console.warn(message);
-        getMediaButton.disabled = false;
+        if(report.packetsLost){
+            send_packetsLost.innerHTML = '<strong style="color: red;">Send packetsLost:</strong> ' + report.packetsLost;
+        }
     });
 }
 
-function closeStream() {
-    // clear first
-    var stream = localVideo.srcObject
-    if (stream){
-        try {
-            stream.oninactive = null;
-            var tracks = stream.getTracks();
-            for (var track in tracks) {
-                tracks[track].onended = null;
-                console.info("close stream");
-                tracks[track].stop();
-            }
-        }
-        catch (error) {
-            console.info('closeStream: Failed to close stream');
-            console.error(error);
-        }
-        stream = null;
-        localVideo.srcObject = null
+// Display statistics
+let statisticsInterval = setInterval(function() {
+    if (localPeerConnection && remotePeerConnection) {
+        remotePeerConnection.getStats(null)
+            .then(showRemoteStats, function(err) {
+                console.info(err);
+            });
+        localPeerConnection.getStats(null)
+            .then(showLocalStats, function(err) {
+                console.info(err);
+            });
+    } else {
     }
-
-    if (localStream) {
-        localStream.getTracks().forEach(function(track) {
-            track.stop();
-        });
-        var videoTracks = localStream.getVideoTracks();
-        for (var i = 0; i !== videoTracks.length; ++i) {
-            videoTracks[i].stop();
-        }
+    // Collect some stats from the video tags.
+    if (localVideo.videoWidth) {
+        localVideoStatsDiv.innerHTML = '<strong>Video dimensions:</strong> ' +
+            localVideo.videoWidth + 'x' + localVideo.videoHeight + 'px';
     }
-}
+    if (remoteVideo.videoWidth) {
+        remoteVideoStatsDiv.innerHTML = '<strong>Video dimensions:</strong> ' +
+            remoteVideo.videoWidth + 'x' + remoteVideo.videoHeight + 'px';
+    }
+}, 1000);
 
-var mediaDeviceInstance
-document.onreadystatechange = function () {
-    if (document.readyState === "complete") {
-        mediaDeviceInstance = new MediaDevice()
-        var videoInputList = []
-        // videoInputList.push('<option class="cameraOption" value="">' + "请选择" + '</option>')
-        mediaDeviceInstance.enumDevices(deviceInfo => {
-            console.log('enumDevices' + JSON.stringify(deviceInfo.cameras))
-            if (deviceInfo.cameras) {
-                for (var j = 0; j < deviceInfo.cameras.length; j++) {
-                    if (!deviceInfo.cameras[j].label) {
-                        deviceInfo.cameras[j].label = 'camera' + j
-                    }
-                    videoInputList.push('<option class="cameraOption" value="' + deviceInfo.cameras[j].deviceId + '">' + deviceInfo.cameras[j].label + '</option>')
-                    console.log('camera: ' + deviceInfo.cameras[j].label)
+// Dumping a stats letiable as a string.
+// might be named toString?
+function dumpStats(results) {
+    let statsString = '';
+    results.forEach(function(res) {
+        if(res.type === 'outbound-rtp' || res.type === 'remote-inbound-rtp' || res.type === 'inbound-rtp' || res.type === 'remote-outbound-rtp'){
+            statsString += '<h3>Report type=';
+            statsString += res.type;
+            statsString += '</h3>\n';
+            statsString += 'id ' + res.id + '<br>\n';
+            statsString += 'time ' + res.timestamp + '<br>\n';
+            Object.keys(res).forEach(function(k) {
+                if (k !== 'timestamp' && k !== 'type' && k !== 'id') {
+                    statsString += k + ': ' + res[k] + '<br>\n';
                 }
-            }
-            document.getElementById('videoList').innerHTML = videoInputList.join('')
-            getMedia();
-        }, function (error) {
-            console.error('enum device error: ' + error)
-        })
-    }
+            });
+        }else {
+
+        }
+    });
+    return statsString;
 }

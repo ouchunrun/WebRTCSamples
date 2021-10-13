@@ -13,63 +13,44 @@
 <body>
 
 <div id="container">
+    <h1>Bandwidth control demo</h1>
     <section id="constraints">
-        <!--取流预览框-->
-        <div class="dialogBox cameraPreview-box undis" id="cameraPreview-box" style="height: 300px;margin-top: 25px;">
-            <span class="bg-pic bg-cameraAlpha undis"></span>
-            <div class="camera-tip-error undis"></div>
-            <div class="alert-title-white">
-                <p class="color33">摄像头取流预览</p>
-            </div>
-            <div class="alertForm tcenter" style="width:420px;">
-                <div class="cam-state-img" style="display: none;">
-                    <span class="bg-pic bg-noPreview"></span>
-                </div>
-                <div class="camera-select">
-                    <select class="cameraSelect" id="videoList" onchange = selectDeviceAndGum()></select>
-                </div>
-            </div>
-
-            <br>
-            <div style="margin: 10px 0;">
-                <span style="width: 144px;display: inline-block;">设置要删除的编码：</span>
-                <input type="text" id="setDeleteCode" style="width: 200px;height: 30px;" value="VP8" placeholder="VP8 or H264">
-            </div>
-
-            <div style="margin: 10px 0;">
-                <span style="width: 144px;display: inline-block;">设置max-fs：</span>
-                <input type="text" id="setMaxFs" style="width: 200px;height: 30px;" value=8160>
-            </div>
-
-            <div>
-                <span style="width: 144px;display: inline-block;">设置max-mbps：</span>
-                <input type="text" id="setMaxMbps" style="width: 200px;height: 30px;" value=122400>
-            </div>
-
-            <div>
-                <span style="width: 144px;display: inline-block;">设置framerate：</span>
-                <input type="text" id="setFramer" style="width: 200px;height: 30px;" value=15>
-            </div>
-
-            <div>
-                <span style="width: 144px;display: inline-block;">设置max-fr：</span>
-                <input type="text" id="setMaxFr" style="width: 200px;height: 30px;" value=15>
-            </div>
+        <div class="tips">
+            <span>encoding maxBitrate：</span>
+            <input type="text" id="maxBitrate" value=1500>
         </div>
-
-        <!--分辨率设置-->
-        <div id="getUserMedia" style="margin-left: 30px;">
-            <span>设置要求的帧率、分辨率和比例：</span>
-            <textarea name="getUserMediaConstraints" id="getUserMediaConstraints" type="text"></textarea>
+        <div class="tips">
+            <span>b=TIAS|AS：</span>
+            <input type="text" id="ASBitrate" value=8000000>
+        </div>
+        <div class="tips">
+            <span>Enable remb && transport-cc：</span>
+            <select name="" id="rembAndTransportCC" onchange="setXGoogleSelect()">
+                <option value=true>true</option>
+                <option value=false>false</option>
+            </select>
+        </div>
+        <div class="x-google-set">
+            <div class="tips">
+                <span>x-google-min-bitrate：</span>
+                <input type="text" id="xGoogleMinBitrate" value=100>
+            </div>
+            <div class="tips">
+                <span>x-google-start-bitrate：</span>
+                <input type="text" id="xGoogleStartBitrate" value=2000>
+            </div>
+            <div class="tips">
+                <span>x-google-max-bitrate：</span>
+                <input type="text" id="xGoogleBitrate" value=8000>
+            </div>
         </div>
     </section>
 
-    <hr style="clear: none">
     <div>
-        <button id="getMedia" style="display: none">Get media</button>
-        <button id="getNewStream" onclick="selectDeviceAndGum()">点击重新取流</button>
-        <button id="connect" disabled>连接</button>
-        <button id="hangup" disabled>挂断</button>
+        <button id="gum" onclick="getVideoMedia()">getUserMedia</button>
+        <button id="getScreenCapture" onclick="getScreenCapture()">getDisplayMedia</button>
+        <button id="connect" onclick="createPeerConnection()">连接</button>
+        <button id="hangup" disabled onclick="hangup()">挂断</button>
     </div>
 
     <section id="video">
@@ -78,31 +59,26 @@
             <video playsinline autoplay muted></video>
             <div></div>
             <div id="local_framesPerSecond"></div>
+            <div id="send_packetsLost"></div>
         </div>
         <div id="remoteVideo">
             <h2>remoteVideo</h2>
             <video playsinline autoplay muted></video>
             <div></div>
-            <div id="bitrate"></div>
             <div id="remote_framesPerSecond"></div>
+            <div id="recv_packetsLost"></div>
+            <div id="bitrate"></div>
             <div id="peer"></div>
         </div>
     </section>
 
-    <div style="clear: both;">
-        <hr>
-        <p>(1)max-fs、max-mbps、framerate、要删除的编码等字段，有值时才会设置</p>
-        <p>(2)要删除的编码，只支持设置一个值，不能同时设置多个编码</p>
-        <p>(3)max-fs、max-mbps 需要手动填写，没有动态计算值</p>
-    </div>
-    <hr>
     <section id="statistics">
         <div id="senderStats"></div>
         <div id="receiverStats"></div>
     </section>
 </div>
 
+<script src="bitrateControl.js"></script>
 <script src="index.js"></script>
-<script src="sdp.js"></script>
 </body>
 </html>
