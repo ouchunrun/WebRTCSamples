@@ -58,7 +58,7 @@ function getVideoMedia() {
         connectButton.disabled = false;
         localStream = stream;
         localVideo.srcObject = stream;
-        videoType = 'video'
+        videoType = 'main'
     }).catch(function(e) {
         console.error(e)
         console.warn("getUserMedia failed!");

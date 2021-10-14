@@ -1,6 +1,7 @@
 
 function setEncodingParameters(pc, type, maxBitRate){
 	console.warn('set encoding parameters maxBitRate: ', maxBitRate)
+	console.log('type:', type)
 	let sender = pc.getSenders()[0]
 	let videoParameters = sender.getParameters();
 	if (JSON.stringify(videoParameters) === '{}') {
