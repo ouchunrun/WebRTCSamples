@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <title>DingTalk background</title>
+    <style>
+        body{
+            font-family: cursive;
+        }
+        table{
+            margin: 15px;
+        }
+        thead>tr{
+            font-size: 20px;
+        }
+        .labelTip{
+            width: 80px;
+            text-align: right;
+            line-height: 32px;
+            display: inline-block;
+            padding-right: 10px;
+            font-size: 14px;
+            vertical-align: top;
+            font-weight: bold;
+        }
+        #x-account{
+            width: 178px;
+            height: 25px;
+            font-family: cursive;
+        }
+        #x-serverAddress, #x-phoneNumber{
+            height: 20px;
+            width: 170px;
+            font-family: cursive;
+        }
+        button{
+            color: #fff;
+            background-color: #008cee;
+            width: 178px;
+            border: 1px solid #008cee;
+            height: 25px;
+        }
+        #x-makeCall{
+            width: 50px;
+        }
+    </style>
+</head>
+<body>
+
+<div>
+    <table>
+        <thead>
+            <tr><th colspan="2">Dial config</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="labelTip"><label>Address</label></td>
+                <td><input type="text" id="x-serverAddress" value="https://192.168.131.120"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td class="labelTip"><label>Username</label></td>
+                <td><input type="text" id="x-userName" value="admin"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td class="labelTip"><label>Password</label></td>
+                <td><input type="text" id="x-password" value="admin123"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td><button id="submitConfig">Submit</button></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td class="labelTip"><label>Accounts</label></td>
+                <td>
+                    <select name="" id="x-account">
+                        <option value="-1">First Available</option>
+                        <option value="0">Account 1</option>
+                        <option value="1">Account 2</option>
+                    </select>
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td class="labelTip"><label>Dial Number</label></td>
+                <td><input type="text" id="x-phoneNumber" value="3010"></td>
+                <td><button id="x-makeCall">Call</button></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script src="gs.sdk.min.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>

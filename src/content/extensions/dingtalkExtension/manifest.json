@@ -1,0 +1,30 @@
+{
+  "name": "DingTalkExtension",
+  "version": "1.0.0",
+  "description": "钉钉布局扩展到浏览器窗口大小并设置话机一键呼叫",
+  "browser_action":
+  {
+    "default_title": "DingTalk Extension",
+    "default_popup": "popup.html",
+    "default_icon": "oldIcon.ico"
+  },
+  "content_scripts":
+  [
+    {
+      "matches": ["https://im.dingtalk.com/*"],
+      "js": ["extension.js"],
+      "all_frames": true,
+      "match_about_blank": true,
+      "run_at": "document_start"
+    }
+  ],
+  "permissions": [
+    "webRequest",
+    "webRequestBlocking",
+    "storage",
+    "cookies",
+    "tabs",
+    "<all_urls>"
+  ],
+  "manifest_version": 2
+}
