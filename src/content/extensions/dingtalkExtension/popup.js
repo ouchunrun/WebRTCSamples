@@ -165,19 +165,28 @@ window.onload = function () {
 				if (item.name === 'Origin') {
 					item.value = serverInput.value
 					accessControl = true
-				}else if(item.name === 'Cookie' && item.value.indexOf('sid=') >= 0){
-					let lines = item.value.split(';')
-					for(let i = 0; i<lines.length; i++){
-						if(lines[i].indexOf('sid=') >= 0){
-							let keyValue = lines[i].split('=')
-							if(keyValue.length && keyValue[1] && (gsApi?.sid || localStorage.sid)){
-								// todo: add sid for request header
-								keyValue[1] = gsApi?.sid || localStorage.sid
+				}
+				else if(item.name === 'Cookie'){
+					let sidValue = gsApi?.sid || localStorage.sid
+					if(sidValue){
+						if(item.value.indexOf('sid=') >= 0){
+							let lines = item.value.split(';')
+							for(let i = 0; i<lines.length; i++){
+								if(lines[i].indexOf('sid=') >= 0){
+									let keyValue = lines[i].split('=')
+									if(!keyValue[1]){ // sid 为空
+										keyValue[1] = sidValue
+										lines[i] = keyValue.join('=')
+										break
+									}
+								}
 							}
-							lines[i] = keyValue.join('=')
+							item.value = lines.join(';')
+						}else {
+							// no sid in cookie
+							item.value = item.value + '; sid=' + sidValue
 						}
 					}
-					item.value = lines.join(';')
 				}
 				return item
 			})
