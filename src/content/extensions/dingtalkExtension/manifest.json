@@ -5,14 +5,29 @@
   "browser_action":
   {
     "default_title": "DingTalk Extension",
-    "default_popup": "popup.html",
-    "default_icon": "oldIcon.ico"
+    "default_icon": "popup/oldIcon.ico",
+    "default_popup": "popup/popup.html"
+  },
+  "background": {
+    "scripts": [
+      "background/background.js",
+      "background/gs.sdk.min.js"
+    ],
+    "persistent": true
   },
   "content_scripts":
   [
     {
-      "matches": ["https://im.dingtalk.com/*"],
-      "js": ["extension.js"],
+      "matches": [
+        "https://im.dingtalk.com/*"
+      ],
+      "js": [
+        "contentScripts/extension.js",
+        "contentScripts/socket.js"
+      ],
+      "css": [
+        "contentScripts/extension.css"
+      ],
       "all_frames": true,
       "match_about_blank": true,
       "run_at": "document_start"
@@ -24,7 +39,14 @@
     "storage",
     "cookies",
     "tabs",
-    "<all_urls>"
+    "<all_urls>",
+    "activeTab",
+    "*://*/*"
   ],
+  "externally_connectable": {
+    "matches": [
+      "*://im.dingtalk.com/*"
+    ]
+  },
   "manifest_version": 2
 }
