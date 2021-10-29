@@ -52,7 +52,6 @@ chrome.webRequest.onHeadersReceived.addListener(details => {
 - 2.popup页面不打开时，content-script页面与popup界面无法通信
     - Solution: 使用background.js 处理
 
-
 ### 呼叫分机号码401问题：请求的cookies头域中带了sid但是没有添加值，需要再请求头中手动修改
 
 

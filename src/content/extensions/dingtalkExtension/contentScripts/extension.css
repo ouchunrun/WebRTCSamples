@@ -1,10 +1,8 @@
 #grpCallConfig{
     box-sizing: border-box;
-    border-radius: 10px;
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    background-color: #fafafc;
     position: absolute;
     top: 50%;
     left: 50%;
@@ -13,6 +11,7 @@
     display: flex;
     z-index: -999;
     opacity: 0;
+    background-color: #fafafc;
 }
 
 #xConfigMaskLayer{
@@ -26,13 +25,24 @@
     opacity: 0;
 }
 
-#configCloseBtn{
-    text-align: right;
+#configHead{
+    text-align: center;
     width: 100%;
-    margin: 8px 30px 0 0;
+    line-height: 50px;
     font-size: 20px;
-    font-weight: bolder;
+    letter-spacing: 5px;
+    border-bottom: 1px solid #ececed;
+    background-color: #fff;
+}
+
+#closeFont{
     cursor: pointer;
+    position: absolute;
+    width: 21px;
+    height: 21px;
+    line-height: 21px;
+    top: 5px;
+    right: 5px;
 }
 
 #xConfigTable{
@@ -63,16 +73,23 @@
     width: 178px;
     height: 25px;
     color: #fff;
-    background-color: #008cee;
-    border: 1px solid #008cee;
     margin-top: 3px;
 }
 #x-makeCall{
     width: 50px;
     height: 25px;
     color: #fff;
-    background-color: #008cee;
-    border: 1px solid #008cee;
     margin-top: 3px;
 }
 
+.x-icon-logo{
+    vertical-align: -10%;
+    margin-right: 8px;
+    width: 24px;
+    height: 24px;
+    background-position: 0 0;
+    background-image: url(../popup/logo.png);
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    display: inline-block;
+}

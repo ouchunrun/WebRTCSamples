@@ -109,8 +109,9 @@ function makeGRPConfigBtn(){
 			let newItem = document.createElement('li')
 			newItem.className = 'menu-item menu-micro-app ng-scope'
 			newItem.innerHTML = '<div class="menu-item-content">' +
-								'<i class="iconfont menu-icon tipper-attached" htitle="GRP账号配置" htitle-direction="right"></i>' +
-								'</div>'
+				'<i class="iconfont icon-modify-alias" style="font-size: 26px;font-weight: bold;color: brown;" title="GRP账号配置"></i>' +
+				// '<i class="iconfont menu-icon tipper-attached" htitle="GRP账号配置" htitle-direction="right"></i>' +
+				'</div>'
 			newItem.onclick = displayConfigArea
 			parent.appendChild(newItem);
 
@@ -139,11 +140,8 @@ function insertConfigArea(){
 
 	let configDiv = document.createElement('div')
 	configDiv.id = 'grpCallConfig'
-	configDiv.innerHTML = `<div id="configCloseBtn" class="close" >X<i class="close iconfont"></i></div>
+	configDiv.innerHTML = `<div id="configHead">GRP呼叫配置 <span id="closeFont">X</span></div>
 	<table id="xConfigTable">
-        <thead>
-            <tr><th colspan="3" style="padding-bottom: 5px;">Server Setting</th></tr>
-        </thead>
         <tbody>
             <tr>
                 <td class="xLabelTip"><label>Address</label></td>
@@ -161,12 +159,6 @@ function insertConfigArea(){
                 <td></td>
             </tr>
             <tr>
-                <td></td>
-                <td><button id="submitConfig" style="height: 30px; width: 180px;font-family: cursive;font-size: 13px;">Submit</button></td>
-                <td></td>
-            </tr>
-             <tr><td colspan="3" style="text-align: center;padding: 15px 0 5px 0;">Call config</td></tr>
-            <tr>
                 <td class="xLabelTip"><label>Accounts</label></td>
                 <td>
                     <select name="" id="x-account" style="height: 30px; width: 180px;font-family: cursive;font-size: 13px;border: 1px solid #e1e1e1;">
@@ -178,13 +170,18 @@ function insertConfigArea(){
                 <td></td>
             </tr>
             <tr>
+                <td></td>
+                <td><button id="submitConfig" style="margin: 5px 0px;height: 34px;width: 180px;font-family: cursive;border-radius: 15px;font-size: 14px;border: 0;">保存修改</button></td>
+                <td></td>
+            </tr>
+            <tr>
                 <td class="xLabelTip"><label>Dial Number</label></td>
                 <td><input type="text" id="x-phoneNumber" value="359301" style="height: 30px; width: 180px;font-family: cursive;font-size: 13px;"></td>
                 <td></td>
             </tr>
              <tr>
                 <td></td>
-                <td><button id="x-makeCall" style="height: 30px; width: 180px;font-family: cursive;font-size: 13px;">Call</button></td>
+                <td><button id="x-makeCall" style="margin: 5px 0px;border-radius: 15px;font-size: 14px; width: 180px;height: 34px;border: 0;">发起音频呼叫</button></td>
                 <td></td>
             </tr>
         </tbody>
@@ -220,12 +217,12 @@ function bindingDomEvent(){
 	phoneNumberInput = document.getElementById('x-phoneNumber')
 	submitBtn = document.getElementById("submitConfig")
 	makeCallBtn = document.getElementById('x-makeCall')
-	closeButton = document.getElementById('configCloseBtn')
+	closeButton = document.getElementById('closeFont')
 
 	closeButton.onclick = hiddenConfigArea
-	submitBtn.onclick = updateCallConfig;
-	accountSelect.onchange = updateUseAccount
-	makeCallBtn.onclick = checkToMakeCall
+	submitBtn.onclick = updateCallConfig
+	// accountSelect.onchange = updateUseAccount
+	makeCallBtn.onclick = checkToMakeCall      // 呼叫
 }
 
 function displayConfigArea(){
@@ -330,23 +327,6 @@ function updateCallConfig(){
 	})
 }
 
-function updateUseAccount(){
-	let selectedIndex = accountSelect.selectedIndex
-	let account = accountSelect.options[selectedIndex].value
-
-	sendMessageToBackgroundJS({
-		requestType: 'GRPClick2talk',
-		cmd: 'updateCallConfig',
-		data: {
-			account: account
-		}
-	}, function (res){
-		console.warn("res: ", res)
-	})
-}
-
-/*****************************************************************************************************/
-
 window.onload = function (){
 	insertConfigArea()
 
@@ -357,6 +337,7 @@ window.onload = function (){
 
 	pageMutationObserver()
 }
+
 
 /************************** Content-script 和 backgroundJS 间的通信处理*******************************/
 

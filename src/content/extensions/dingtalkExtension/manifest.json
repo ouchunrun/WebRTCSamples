@@ -1,12 +1,11 @@
 {
   "name": "DingTalkExtension",
   "version": "1.0.0",
-  "description": "钉钉布局扩展到浏览器窗口大小并设置话机一键呼叫",
+  "description": "办公号码一键呼叫和钉钉窗口自动全屏",
   "browser_action":
   {
     "default_title": "DingTalk Extension",
-    "default_icon": "popup/oldIcon.ico",
-    "default_popup": "popup/popup.html"
+    "default_icon": "popup/logo.png"
   },
   "background": {
     "scripts": [
