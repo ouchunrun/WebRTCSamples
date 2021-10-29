@@ -62,12 +62,41 @@ function makeCall(data){
 		sid: grpClick2Talk.sid,
 		onreturn: function (evt){
 			if (evt.readyState === 4) {
-				// todo: 200 不代表呼叫成功
-				console.warn("makeCall return status code : " + evt.status)
+				// todo: 200 不代表呼叫成功，只标示cgi请求的成功与否
+				console.warn("make call return status code : " + evt.status)
+				grpClick2Talk.remotenumber = data.phonenumber
+				monitorLineStatus()
 			}
 		}
 	})
+}
 
+/**
+ * getLineStatus 返回数据
+ * {
+        response: "success",
+        body:  [{
+			acct: 1,              // 账号id
+			active: 0,            // 是否当前线路激活
+			conf: 0,              // 是否在会议中
+			line: 1,              // 线路id
+			remotename: "",       // 远端display name
+			remotenumber: "3593", // 远端号码
+			state: "connected",   // 线路状态
+		},
+	    {
+			acct: 1,
+			active: 0,
+			conf: 0,
+			line: 2,
+			remotename: "",
+			remotenumber: "",
+			state: "idle",
+		}
+	 ]
+ * @type {number}
+ */
+function monitorLineStatus(){
 	if(grpClick2Talk.getLineStatusInterval){
 		clearInterval(grpClick2Talk.getLineStatusInterval)
 		grpClick2Talk.getLineStatusInterval = null
@@ -79,7 +108,7 @@ function makeCall(data){
 				if(event.readyState === 4){
 					let response = JSON.parse(event.response)
 					if(event.status === 200 && response.response === 'success'){
-						if(response.body){
+						if(response.body && response.body.length){
 							console.warn('get line status: ', response.body)
 						}
 					}
@@ -88,6 +117,7 @@ function makeCall(data){
 		})
 	}, 5000)
 }
+
 
 /**
  * 设置登录信息

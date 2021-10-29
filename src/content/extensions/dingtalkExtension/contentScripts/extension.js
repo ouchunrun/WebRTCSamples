@@ -8,13 +8,6 @@ let phoneNumberInput
 let submitBtn
 let makeCallBtn
 
-let click2talk = {
-	sendRequest : false,
-	requestMid: '',
-	calleeuid : '',
-	socket: null,
-}
-
 /****************************************page resize****************************************************/
 
 /**
@@ -51,96 +44,21 @@ window.onresize = function () {
 }
 /*****************************************************************************************************/
 
-/****************************************WebSocket override****************************************************/
-let origWebSocket = window.WebSocket
-_WebSocket = function (url, protocols) {
-	let wsInstance = protocols ? new origWebSocket(url, protocols) : new origWebSocket(url)
-	wsInstance.addEventListener("open", function () {
-		console.info("Socket is open!");
-	});
-	wsInstance.addEventListener("close", function () {
-		console.info("Socket is closed");
-	});
-	wsInstance.addEventListener("message", function (event) {
-		if(click2talk.sendRequest){
-			let msgObj = JSON.parse(event.data);
-			console.info("get request data: ", msgObj)
-			if( msgObj.headers && msgObj.headers.mid === click2talk.requestMid){
-				click2talk.sendRequest = false
-
-				let body = msgObj.body
-				if(body.orgEmployees && body.orgEmployees.length){
-					let orgExtPropertyList = body.orgEmployees[0].orgExtPropertyList
-					if(orgExtPropertyList && orgExtPropertyList.length){
-						let target = orgExtPropertyList.find(item =>{return item.itemName === "分机号"});
-						let ext = target?.itemValue
-						console.warn("get ext by uid: ", ext)
-						if(ext){
-							console.warn("这里通知插件去拨打电话呼叫： ", ext)
-						}
-					}
-				}
-			}
-		}
-	});
-	click2talk.socket = wsInstance
-	return wsInstance;
-}
-_WebSocket.prototype = origWebSocket.prototype;
-_WebSocket.prototype.send = function (send) {
-	return function (data) {
-		if(click2talk.sendRequest){
-			// let msgObj = JSON.parse(data);
-			console.info('send date to request message: \r\n', data);
-		}
-		return send.apply(this, arguments)
-	};
-}(WebSocket.prototype.send)
-
-window.WebSocket = _WebSocket
-Object.freeze(window.WebSocket)
-Object.freeze(WebSocket)
-/*****************************************************************************************************/
-
 console.log('load ding talk extension!');
-/**
- * get user info by uid
- */
-function getUserProfileExtensionByUid(){
+function getUserUid(){
 	let avatar = document.getElementsByClassName('avatar user-avatar ng-scope ng-isolate-scope')
-	console.warn("avatar:", avatar)
-	if(avatar && avatar.length){
-		console.warn("click2talk.socket:", click2talk.socket)
-		if(click2talk.socket){
-			// todo: 通过uid获取用户分机号等信息，在websocket onmessage中处理请求结果
-			let calleeUID = avatar[0].getAttribute('uid')
-			let mid = generateMixedMid(8) + ' 0'
-			let getUserProfileExtensionByUidData = {
-				lwp: "/r/Adaptor/UserMixI/getUserProfileExtensionByUid",
-				body: [calleeUID, null],
-				headers: {mid: mid},
-			}
-			console.info("send request data: ", JSON.stringify(getUserProfileExtensionByUidData, null, '    '))
-			click2talk.socket.send(JSON.stringify(getUserProfileExtensionByUidData))
-			click2talk.sendRequest = true
-			click2talk.requestMid = mid
-			click2talk.calleeuid = calleeUID
+	if(avatar && avatar.length) {
+		let calleeUID = avatar[0].getAttribute('uid')
+		console.log("get calleeUID:", calleeUID)
+		let inputEle = document.getElementById('remoteTarget')
+		inputEle.value = calleeUID
+		inputEle.click()
+
+		let closeIconfont = document.getElementsByClassName('close iconfont')[0]
+		if(closeIconfont){
+			closeIconfont.click()
 		}
 	}
-}
-
-/**
- * @param n 要生成的随机数位数
- * @returns {string}
- */
-function generateMixedMid(n) {
-	let randomChoice = ['a', 'b', 'c', 'd', 'e', 'f',  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-	let res = "";
-	for(let i = 0; i < n ; i++) {
-		let id = Math.floor(Math.random()*randomChoice.length);
-		res += randomChoice[id];
-	}
-	return res;
 }
 
 /**
@@ -164,7 +82,7 @@ function pageMutationObserver(){
 								callBtn.type = 'button'
 								callBtn.className = 'btn green ng-binding'
 								callBtn.innerHTML = '呼叫话机账号'
-								callBtn.onclick = getUserProfileExtensionByUid
+								callBtn.onclick = getUserUid
 								selectorContainer.appendChild(callBtn);
 							}
 						}
@@ -184,7 +102,6 @@ function pageMutationObserver(){
  * 添加GPR配置页面的控制按钮
  */
 function makeGRPConfigBtn(){
-	// 添加GRP呼叫配置按钮
 	let domCheckInterval = setInterval(function (){
 		let parent = document.getElementsByClassName('main-menus')[0]
 		if(parent){
@@ -196,8 +113,16 @@ function makeGRPConfigBtn(){
 								'</div>'
 			newItem.onclick = displayConfigArea
 			parent.appendChild(newItem);
+
+			let newItem2 = document.createElement('li')
+			newItem2.innerHTML = '<input id="remoteTarget"  style="display: none">' +
+				'<input id="callRemoteNumber" style="display: none">'
+			parent.appendChild(newItem2);
+
+			let btn = document.getElementById('callRemoteNumber')
+			btn.onclick = makeCallWithRemoteNumber
 		}
-	}, 2*1000)
+	}, 1000)
 }
 
 function insertConfigArea(){
@@ -206,15 +131,15 @@ function insertConfigArea(){
 	 * @type {HTMLElement}
 	 */
 	let insertParent = document.querySelector('body')
-
 	// 添加遮罩层
 	let maskLayer = document.createElement('div')
 	maskLayer.id = 'xConfigMaskLayer'
 	insertParent.appendChild(maskLayer);
+	maskLayer.onclick = displayConfigArea
 
 	let configDiv = document.createElement('div')
 	configDiv.id = 'grpCallConfig'
-	configDiv.innerHTML = `<div id="configCloseBtn">X</div>
+	configDiv.innerHTML = `<div id="configCloseBtn" class="close" >X<i class="close iconfont"></i></div>
 	<table id="xConfigTable">
         <thead>
             <tr><th colspan="3" style="padding-bottom: 5px;">Server Setting</th></tr>
@@ -244,7 +169,7 @@ function insertConfigArea(){
             <tr>
                 <td class="xLabelTip"><label>Accounts</label></td>
                 <td>
-                    <select name="" id="x-account" style="height: 30px; width: 180px;font-family: cursive;font-size: 13px;">
+                    <select name="" id="x-account" style="height: 30px; width: 180px;font-family: cursive;font-size: 13px;border: 1px solid #e1e1e1;">
                         <option value="-1">First Available</option>
                         <option value="0">Account 1</option>
                         <option value="1">Account 2</option>
@@ -254,7 +179,7 @@ function insertConfigArea(){
             </tr>
             <tr>
                 <td class="xLabelTip"><label>Dial Number</label></td>
-                <td><input type="text" id="x-phoneNumber" value="3593" style="height: 30px; width: 180px;font-family: cursive;font-size: 13px;"></td>
+                <td><input type="text" id="x-phoneNumber" value="359301" style="height: 30px; width: 180px;font-family: cursive;font-size: 13px;"></td>
                 <td></td>
             </tr>
              <tr>
@@ -271,17 +196,19 @@ function insertConfigArea(){
 
 	if(serverInput && serverInput.value){
 		console.log('Notify background to register')
-		sendMessageToContentScript({
-			requestType: 'GRPClick2talk',
-			cmd: 'login',
-			data: {
-				url: serverInput.value,
-				username: usernameInput.value,
-				password: pwdInput.value
-			}
-		}, function (res){
-			console.warn("res: ", res)
-		})
+		if(window.sendMessageToBackgroundJS){
+			sendMessageToBackgroundJS({
+				requestType: 'GRPClick2talk',
+				cmd: 'login',
+				data: {
+					url: serverInput.value,
+					username: usernameInput.value,
+					password: pwdInput.value
+				}
+			}, function (res){
+				console.warn("res: ", res)
+			})
+		}
 	}
 }
 
@@ -321,6 +248,36 @@ function hiddenConfigArea(){
 	xConfigMaskLayer.style['z-index'] = '-999'
 }
 
+/**
+ * 点击遮罩层时关闭弹框
+ * @param event
+ */
+window.onclick = function (event){
+	if(event.srcElement && event.srcElement.id === 'xConfigMaskLayer'){
+		hiddenConfigArea()
+	}
+}
+
+function makeCallWithRemoteNumber(){
+	let phoneNumber = document.getElementById('callRemoteNumber')?.value
+	if(!phoneNumber){
+		console.warn("phoneNumber is empty!!")
+		return
+	}
+	sendMessageToBackgroundJS({
+		requestType: 'GRPClick2talk',
+		cmd: 'makeCall',
+		data: {
+			phonenumber: phoneNumber?.trim(),
+		}
+	}, function (res){
+		console.warn("res: ", res)
+	})
+
+	// 点击呼叫后关闭弹框
+	hiddenConfigArea()
+}
+
 function checkToMakeCall(){
 	let selectedIndex = accountSelect.selectedIndex
 	let account = accountSelect.options[selectedIndex].value
@@ -330,7 +287,7 @@ function checkToMakeCall(){
 		return
 	}
 
-	sendMessageToContentScript({
+	sendMessageToBackgroundJS({
 		requestType: 'GRPClick2talk',
 		cmd: 'makeCall',
 		data: {
@@ -340,6 +297,9 @@ function checkToMakeCall(){
 	}, function (res){
 		console.warn("res: ", res)
 	})
+
+	// 点击呼叫后关闭弹框
+	hiddenConfigArea()
 }
 
 /**
@@ -356,7 +316,7 @@ function updateCallConfig(){
 		return
 	}
 
-	sendMessageToContentScript({
+	sendMessageToBackgroundJS({
 		requestType: 'GRPClick2talk',
 		cmd: 'updateCallConfig',
 		data: {
@@ -374,7 +334,7 @@ function updateUseAccount(){
 	let selectedIndex = accountSelect.selectedIndex
 	let account = accountSelect.options[selectedIndex].value
 
-	sendMessageToContentScript({
+	sendMessageToBackgroundJS({
 		requestType: 'GRPClick2talk',
 		cmd: 'updateCallConfig',
 		data: {
@@ -405,22 +365,25 @@ window.onload = function (){
  * @param message 内容
  * @param callback 回调
  */
-function sendMessageToContentScript(message, callback){
-	chrome.runtime.sendMessage(message, function(response) {
-		console.log('收到来自后台的回复：', response);
-		if(callback){
-			callback(response)
-		}
-	});
+function sendMessageToBackgroundJS(message, callback){
+	if(chrome.runtime && chrome.runtime.sendMessage){
+		chrome.runtime.sendMessage(message, function(response) {
+			console.log('收到来自后台的回复：', response);
+			if(callback){
+				callback(response)
+			}
+		});
+	}
 }
 
 /**
  * 接收
  */
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-	console.log("sender：", sender)
-	console.warn("request:", request)
-	sendResponse('hi, backgroundJS.我收到了你的消息！');
-});
-
+if(chrome.runtime && chrome.runtime.onMessage){
+	chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+		console.log("sender：", sender)
+		console.warn("request:", request)
+		sendResponse('hi, backgroundJS.我收到了你的消息！');
+	});
+}
 /*****************************************************************************************************/
