@@ -110,7 +110,6 @@ function makeGRPConfigBtn(){
 			newItem.className = 'menu-item menu-micro-app ng-scope'
 			newItem.innerHTML = '<div class="menu-item-content">' +
 				'<i class="iconfont icon-modify-alias" style="font-size: 26px;font-weight: bold;color: brown;" title="GRP账号配置"></i>' +
-				// '<i class="iconfont menu-icon tipper-attached" htitle="GRP账号配置" htitle-direction="right"></i>' +
 				'</div>'
 			newItem.onclick = displayConfigArea
 			parent.appendChild(newItem);

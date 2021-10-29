@@ -38,14 +38,7 @@
     "storage",
     "cookies",
     "tabs",
-    "<all_urls>",
-    "activeTab",
-    "*://*/*"
+    "<all_urls>"
   ],
-  "externally_connectable": {
-    "matches": [
-      "*://im.dingtalk.com/*"
-    ]
-  },
   "manifest_version": 2
 }

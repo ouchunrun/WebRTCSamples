@@ -65,7 +65,7 @@ function makeCall(data){
 				// todo: 200 不代表呼叫成功，只标示cgi请求的成功与否
 				console.warn("make call return status code : " + evt.status)
 				grpClick2Talk.remotenumber = data.phonenumber
-				monitorLineStatus()
+				// monitorLineStatus()
 			}
 		}
 	})
