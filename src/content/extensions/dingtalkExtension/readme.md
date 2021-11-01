@@ -52,7 +52,21 @@ chrome.webRequest.onHeadersReceived.addListener(details => {
 - 2.popup页面不打开时，content-script页面与popup界面无法通信
     - Solution: 使用background.js 处理
 
-### 呼叫分机号码401问题：请求的cookies头域中带了sid但是没有添加值，需要再请求头中手动修改
+### 4. HTTP 请求头问题
+- 插件中发起HTTP 请求，如果不添加http/https等前缀，插件会默认添加 `chrome-extension://kdmebkembodejdncfdmhcbncdcngmgne/` 作为前缀来发起请求。
+
+
+### 5.呼叫分机号码401问题：请求的cookies头域中带了sid但是没有添加值，需要再请求头中手动修改
+
+### 6.账号信息等保存在localStorage中，使用base64加密
+
+```
+var str = "hello";
+var str64 = window.btoa("hello");
+console.log("字符串是:"+str);
+console.log("经base64编码后:"+str64);
+console.log("base64解码后:"+window.atob(str64));
+```
 
 
 ## 参考

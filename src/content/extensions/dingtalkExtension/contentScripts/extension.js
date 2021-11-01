@@ -144,28 +144,26 @@ function insertConfigArea(){
         <tbody>
             <tr>
                 <td class="xLabelTip"><label>Address</label></td>
-                <td><input type="text" id="x-serverAddress"  value="https://192.168.131.120" style="height: 30px; width: 180px;font-family: cursive;font-size: 13px;"></td>
+                <td><input type="text" id="x-serverAddress"  value="" style="height: 30px; width: 180px;font-family: cursive;font-size: 13px;"></td>
                 <td></td>
             </tr>
             <tr>
                 <td class="xLabelTip"><label>Username</label></td>
-                <td><input type="text" id="x-userName"  value="admin" style="height: 30px; width: 180px;font-family: cursive;font-size: 13px;"></td>
+                <td><input type="text" id="x-userName"  value="" style="height: 30px; width: 180px;font-family: cursive;font-size: 13px;"></td>
                 <td></td>
             </tr>
             <tr>
                 <td class="xLabelTip"><label>Password</label></td>
-                <td><input type="text" id="x-password" value="admin123" style="height: 30px; width: 180px;font-family: cursive;font-size: 13px;" ></td>
+                <td><input type="text" id="x-password" value="" style="height: 30px; width: 180px;font-family: cursive;font-size: 13px;" ></td>
                 <td></td>
             </tr>
             <tr>
                 <td class="xLabelTip"><label>Accounts</label></td>
                 <td>
-                    <select name="" id="x-account" style="height: 30px; width: 180px;font-family: cursive;font-size: 13px;border: 1px solid #e1e1e1;">
-                        <option value="-1">First Available</option>
-                        <option value="0">Account 1</option>
-                        <option value="1">Account 2</option>
-                    </select>
-                </td>
+			        <select name="" id="x-account" style="height: 30px; width: 180px;font-family: cursive;font-size: 13px;border: 1px solid #e1e1e1;">
+			            <option value="-1">First Available</option>
+			        </select>
+			    </td>
                 <td></td>
             </tr>
             <tr>
@@ -190,7 +188,23 @@ function insertConfigArea(){
 	// 绑定新增元素的点击事件
 	bindingDomEvent()
 
-	if(serverInput && serverInput.value){
+	// 获取storage里面的值
+	getValueFromStorage()
+}
+
+function getValueFromStorage(){
+	if(!serverInput || !usernameInput || !pwdInput){
+		console.info("no server/pwd/username element found.")
+		return
+	}
+
+	// get value from storage
+	serverInput.value = localStorage.getItem('xServer') || ''
+	usernameInput.value = localStorage.getItem('xUsername') || ''
+	pwdInput.value = window.atob(localStorage.getItem('xPassword') || '')
+	accountSelect.value = localStorage.getItem('xAccount') || ''
+
+	if(serverInput.value && usernameInput.value && pwdInput.value){
 		console.log('Notify background to register')
 		if(window.sendMessageToBackgroundJS){
 			sendMessageToBackgroundJS({
@@ -202,9 +216,11 @@ function insertConfigArea(){
 					password: pwdInput.value
 				}
 			}, function (res){
-				console.warn("res: ", res)
+				console.info("res: ", res)
 			})
 		}
+	}else {
+		console.info("server/pwd/username empty!!!")
 	}
 }
 
@@ -220,7 +236,6 @@ function bindingDomEvent(){
 
 	closeButton.onclick = hiddenConfigArea
 	submitBtn.onclick = updateCallConfig
-	// accountSelect.onchange = updateUseAccount
 	makeCallBtn.onclick = checkToMakeCall      // 呼叫
 }
 
@@ -257,7 +272,7 @@ window.onclick = function (event){
 function makeCallWithRemoteNumber(){
 	let phoneNumber = document.getElementById('callRemoteNumber')?.value
 	if(!phoneNumber){
-		console.warn("phoneNumber is empty!!")
+		console.info("phoneNumber is empty!!")
 		return
 	}
 	sendMessageToBackgroundJS({
@@ -267,7 +282,7 @@ function makeCallWithRemoteNumber(){
 			phonenumber: phoneNumber?.trim(),
 		}
 	}, function (res){
-		console.warn("res: ", res)
+		console.info("res: ", res)
 	})
 
 	// 点击呼叫后关闭弹框
@@ -279,7 +294,7 @@ function checkToMakeCall(){
 	let account = accountSelect.options[selectedIndex].value
 	let phoneNumber = phoneNumberInput.value
 	if(!account || !phoneNumber){
-		console.warn('account && phoneNumber is require')
+		console.info('account && phoneNumber is require')
 		return
 	}
 
@@ -291,7 +306,7 @@ function checkToMakeCall(){
 			phonenumber: phoneNumber?.trim(),
 		}
 	}, function (res){
-		console.warn("res: ", res)
+		console.info("res: ", res)
 	})
 
 	// 点击呼叫后关闭弹框
@@ -303,7 +318,7 @@ function checkToMakeCall(){
  */
 function updateCallConfig(){
 	let selectedIndex = accountSelect.selectedIndex
-	let account = accountSelect.options[selectedIndex].value
+	let account = accountSelect.options[selectedIndex]?.value || -1
 	let server = serverInput.value
 	let username = usernameInput.value
 	let pwd = pwdInput.value
@@ -311,19 +326,48 @@ function updateCallConfig(){
 		alert('invalid parameters')
 		return
 	}
+	server = server.trim()
+	username = username.trim()
+	pwd = pwd.trim()
+	account = account.trim()
+
+	// TODO: Request by https by default
+	if(server.substr(0,7).toLowerCase() === "http://" || server.substr(0,8).toLowerCase() === "https://"){
+		server = server.replace(/http:\/\//, 'https://');
+	}else{
+		server = "https://" + server;
+	}
+	localStorage.setItem('xServer', server)
+	localStorage.setItem('xUsername', username)
+	localStorage.setItem('xPassword',  window.btoa(pwd))
+	localStorage.setItem('xAccount', account)
 
 	sendMessageToBackgroundJS({
 		requestType: 'GRPClick2talk',
 		cmd: 'updateCallConfig',
 		data: {
-			url: server.trim(),
-			username: username.trim(),
-			password: pwd.trim(),
-			account: account.trim()
+			url: server,
+			username: username,
+			password: pwd,
+			account: account
 		}
 	}, function (res){
-		console.warn("res: ", res)
+		console.info("res: ", res)
 	})
+}
+
+/**
+ * 更新账号列表
+ * @param numbers
+ */
+function setAccountsList(numbers){
+	console.log('set account list ' + numbers)
+	let options = '<option value="-1">First Available</option>'
+	for(let i = 0; i<numbers; i++){
+		options = options + '<option value=' + i +'>Account ' + (i+1) + '</option>'
+	}
+	console.info("options:", options)
+	accountSelect.innerHTML = options
 }
 
 window.onload = function (){
@@ -356,14 +400,21 @@ function sendMessageToBackgroundJS(message, callback){
 	}
 }
 
+
 /**
  * 接收
  */
 if(chrome.runtime && chrome.runtime.onMessage){
 	chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 		console.log("sender：", sender)
-		console.warn("request:", request)
-		sendResponse('hi, backgroundJS.我收到了你的消息！');
+		console.info("request:", request)
+		if(request && request.requestType === 'GRPClick2talk'){
+			if(request.cmd === 'setAccounts' && request.num_accounts){
+				console.info("设置当前账号数: " + request.num_accounts)
+				setAccountsList(request.num_accounts)
+			}
+		}
+		sendResponse('request success');
 	});
 }
 /*****************************************************************************************************/

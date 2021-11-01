@@ -1,25 +1,85 @@
 /***************************************（一）gsApi创建、注册、呼叫****************************************************/
 let grpClick2Talk = {
+	isLogin: false,
 	gsApi: null,
 	loginData: {},
 	sid: '',
-	getLineStatusInterval: null
+	getLineStatusInterval: null,
+	sendResponse: null
 }
 
+/**
+ * 检查是否已授权访问grp host连接
+ */
+function permissionCheck(serverURL){
+	let httpRequest = new XMLHttpRequest();
+	let requestRUL= serverURL + '/cgi-bin/api-will_login'
+	httpRequest.open('POST', requestRUL, true);
+	httpRequest.setRequestHeader('Content-type', 'application/x-www-form-urlencoded')
+	httpRequest.timeout = 3000;
+	httpRequest.ontimeout = function (e) {
+		console.info('Timeout: no response to request version within 3 seconds!')
+	};
+	httpRequest.onreadystatechange = function () {
+		if (httpRequest.readyState === 4 && httpRequest.status === 200) {
+			console.info('api-will_login request success')
+			accountLogin()
+		}
+	}
+	httpRequest.onerror = function (event) {
+		console.info("An error occurred during the transaction\r\n", event);
+		if (confirm('请点 "确定"按钮 访问' + serverURL + '链接以授权') === true){
+			window.open(serverURL, '_blank');
+		}else{
+			alert("您已拒绝授权")
+		}
+	};
+	httpRequest.send()
+}
+
+function getModelDefinesInfo(){
+	let xmlHttp = new XMLHttpRequest()
+	xmlHttp.onreadystatechange = function () {
+		if (xmlHttp.readyState === 4 && xmlHttp.status === 200){
+			let modelDefines = JSON.parse(xmlHttp.responseText).defines
+			if(modelDefines && modelDefines.num_accounts){
+				console.info("当前支持的账号数量：", modelDefines.num_accounts)
+				sendMessageToContentScript({
+					requestType:'GRPClick2talk',
+					cmd:'setAccounts',
+					num_accounts: modelDefines.num_accounts
+				}, function(response) {
+					console.log('get response for content: ', response);
+				});
+			}else {
+				console.info("get modelDefines:", modelDefines)
+			}
+		}
+	}
+	let requestURL = grpClick2Talk.loginData?.url + '/json/configs/model.define.js'
+	xmlHttp.open("GET", requestURL, true)
+	xmlHttp.send(null)
+}
+
+/**
+ * 登录
+ */
 function accountLogin(){
 	let loginData = grpClick2Talk.loginData
 	if(!loginData){
-		console.warn("Invalid parameter for login")
+		console.info("Invalid parameter for login")
 		return
 	}
 
 	let config = {
 		url: loginData.url,
 		username: loginData.username,
-		password: loginData.password
+		password: loginData.password,
+		requestHeader: {
+			'X-Request-Server-type': 'XGRP',
+		}
 	}
-
-	console.warn('login data: \r\n' + JSON.stringify(config, null, '   '))
+	console.info('login data: \r\n' + JSON.stringify(config, null, '   '))
 	if (GsUtils.isNUllOrEmpty(grpClick2Talk.gsApi)) {
 		grpClick2Talk.gsApi = new GsApi(config)
 	}else {
@@ -27,19 +87,32 @@ function accountLogin(){
 		grpClick2Talk.gsApi.updateCfg(config)
 	}
 
+	grpClick2Talk.isLogin = false
 	grpClick2Talk.gsApi.login({
 		onreturn: function (event){
-			if (event.readyState === 4) {
-				let response = JSON.parse(event.response)
-				if(event.status === 200 && response.response === 'success'){
-					grpClick2Talk.sid = response.body.sid
-					grpClick2Talk.gsApi.config.account = loginData?.account
+			try{
+				if (event.readyState === 4) {
+					if(event.response){
+						let response = JSON.parse(event.response)
+						if(event.status === 200 && response.response === 'success'){
+							grpClick2Talk.sid = response.body.sid
+							console.log('login success, get sid value: ' + grpClick2Talk.sid)
+							grpClick2Talk.isLogin = true
 
-					console.log('login success, get sid value: ' + grpClick2Talk.sid)
-				}else {
-					console.error('login failed: \r\n', event.response)
-					console.error(response.body)
+							// todo: 获取当前话机配置的账号个数
+							getModelDefinesInfo()
+						}else {
+							console.error('login failed: \r\n', event.response)
+							console.error(response.body)
+							alert('login failed!!!')
+						}
+					}else {
+						console.info("login return response: ", event)
+					}
 				}
+			}catch (e){
+				console.error(e)
+				debugger
 			}
 		}
 	})
@@ -51,21 +124,24 @@ function accountLogin(){
  */
 function makeCall(data){
 	if(!data){
-		console.warn('Invalid phoneNumber parameter to set for make call')
+		console.info('Invalid phoneNumber parameter to set for make call')
 		return
 	}
-	console.warn("make call data: \r\n" + JSON.stringify(data, null, '    '))
+	if(!grpClick2Talk.isLogin){
+		alert('please login first!!!')
+		return
+	}
+	console.info("make call data: \r\n" + JSON.stringify(data, null, '    '))
 	grpClick2Talk.gsApi.makeCall({
 		account: data.account || grpClick2Talk.loginData.account,
 		phonenumber: data.phonenumber,
 		password: grpClick2Talk.loginData.password,
-		sid: grpClick2Talk.sid,
 		onreturn: function (evt){
 			if (evt.readyState === 4) {
 				// todo: 200 不代表呼叫成功，只标示cgi请求的成功与否
-				console.warn("make call return status code : " + evt.status)
+				console.info("make call return status code : " + evt.status)
 				grpClick2Talk.remotenumber = data.phonenumber
-				// monitorLineStatus()
+				monitorLineStatus()
 			}
 		}
 	})
@@ -97,27 +173,58 @@ function makeCall(data){
  * @type {number}
  */
 function monitorLineStatus(){
-	if(grpClick2Talk.getLineStatusInterval){
-		clearInterval(grpClick2Talk.getLineStatusInterval)
-		grpClick2Talk.getLineStatusInterval = null
-	}
+	// clear first
+	clearStatusInterval()
 
+	let count = 0
 	grpClick2Talk.getLineStatusInterval = setInterval(function (){
+		count++
 		grpClick2Talk.gsApi.getLineStatus({
 			onreturn: function (event){
 				if(event.readyState === 4){
-					let response = JSON.parse(event.response)
-					if(event.status === 200 && response.response === 'success'){
-						if(response.body && response.body.length){
-							console.warn('get line status: ', response.body)
+					if(event.response){
+						let response = JSON.parse(event.response)
+						if(event.status === 200 && response.response === 'success'){
+							if(response.body && response.body.length){
+								for(let i = 0; i<response.body.length; i++){
+									let lineStatus = response.body[i]
+									console.info("line " + lineStatus.line + " state is ", lineStatus.state)
+									if(lineStatus.remotenumber === grpClick2Talk.remotenumber){
+										switch (lineStatus.state){
+											case 'calling':
+												// 正在振铃
+												break
+											case 'connected':
+												// 通话已接通
+												break
+											default:
+												// idle/hold/unhold等
+												break
+										}
+									}
+								}
+							}
 						}
+					}else {
+						console.info('getLineStatus error: ', event)
 					}
 				}
 			}
 		})
-	}, 5000)
+
+		if(count > 10){
+			console.log('auto clear interval')
+			clearStatusInterval()
+		}
+	}, 1000)
 }
 
+function clearStatusInterval(){
+	if(grpClick2Talk.getLineStatusInterval){
+		clearInterval(grpClick2Talk.getLineStatusInterval)
+		grpClick2Talk.getLineStatusInterval = null
+	}
+}
 
 /**
  * 设置登录信息
@@ -126,7 +233,7 @@ function monitorLineStatus(){
 function setLoginData(data){
 	console.log('set login data: \r\n' + JSON.stringify(data, null, '    '))
 	if(!data){
-		console.warn('Invalid parameter to set for login')
+		console.info('Invalid parameter to set for login')
 		return
 	}
 
@@ -139,7 +246,7 @@ function setLoginData(data){
 		}
 	})
 
-	if(!grpClick2Talk.loginData.account){
+	if(grpClick2Talk.loginData.account === undefined){
 		grpClick2Talk.loginData.account = -1
 	}
 }
@@ -151,7 +258,7 @@ function setLoginData(data){
 function updateCallCfg(data){
 	console.log('update call data: \r\n' + JSON.stringify(data, null, '    '))
 	if(!data){
-		console.warn('Invalid parameter to set update')
+		console.info('Invalid parameter to set update')
 		return
 	}
 
@@ -160,7 +267,7 @@ function updateCallCfg(data){
 	Object.keys(data).forEach(function (key){
 		if(key === 'account' || key === 'url' || key === 'password' || key === 'username'){
 			if(data[key] !== grpClick2Talk.loginData[key] && (key !== 'account')){
-				console.warn("登录信息发生改变")
+				console.info("login data change")
 				isLoginDataChange = true
 				if(key === 'url'){
 					isServerChange = true
@@ -171,46 +278,15 @@ function updateCallCfg(data){
 	})
 
 	if(isLoginDataChange){
-		console.warn("登录信息改变，需要重新鉴权")
-		if(isServerChange){
-			// todo: url 改变时重新检查权限
-			console.warn("改变时重新检查权限")
+		if(isServerChange){ // todo: url 改变时重新检查权限
+			console.info("Recheck permissions: " + grpClick2Talk.loginData.url)
 			permissionCheck(grpClick2Talk.loginData.url)
 		}else {
+			console.log('re-login..')
 			accountLogin()
 		}
 	}
 }
-
-/**
- * 检查是否已授权访问grp host连接
- */
-function permissionCheck(serverURL){
-	let httpRequest = new XMLHttpRequest();
-	let requestRUL= serverURL + '/cgi-bin/api-will_login'
-	httpRequest.open('POST', requestRUL, true);
-	httpRequest.setRequestHeader('Content-type', 'application/x-www-form-urlencoded')
-	httpRequest.timeout = 3000;
-	httpRequest.ontimeout = function (e) {
-		console.warn('Timeout: no response to request version within 3 seconds!')
-	};
-	httpRequest.onreadystatechange = function () {
-		if (httpRequest.readyState === 4 && httpRequest.status === 200) {
-			console.info('api-will_login request success')
-			accountLogin()
-		}
-	}
-	httpRequest.onerror = function (event) {
-		console.warn("An error occurred during the transaction\r\n", event);
-		if (confirm('请点 "确定"按钮 访问' + serverURL + '链接以授权') === true){
-			window.open(serverURL, '_blank');
-		}else{
-			alert("您已拒绝授权")
-		}
-	};
-	httpRequest.send()
-}
-
 
 /*****************************************************************************************************/
 
@@ -231,6 +307,14 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 			case "login":
 				console.log('receive login data: \r\n' + JSON.stringify(request.data, null, '   '))
 				if(request.data && request.data.url){
+					/* http:// to https:// */
+					let url = request.data.url
+					if(url.substr(0,7).toLowerCase() === "http://" || url.substr(0,8).toLowerCase() === "https://"){
+						request.data.url = url.replace(/http:\/\//, 'https://');
+					}else{
+						request.data.url = "https://" + url;
+					}
+
 					setLoginData(request.data)
 					permissionCheck(request.data.url)
 				}else {
@@ -241,7 +325,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 				updateCallCfg(request.data)
 				break
 			case "makeCall":
-				console.warn("request.data:", request.data)
+				console.info("request.data:", request.data)
 				makeCall(request.data)
 				break
 			default:
@@ -269,21 +353,15 @@ function sendMessageToContentScript(message, callback) {
 		});
 	});
 }
-sendMessageToContentScript({cmd:'GRPClick2talk', value:'你好，我是 backgroundJS~~'}, function(response) {
-	console.log('来自content的回复：', response);
-});
-
-
-/*****************************************************************************************************/
-
 /***************************************（三）修改GRP请求头和响应*******************************************/
+
 /**
  * 判断时是否是GRP发起的请求
  * @param obj
  * @returns {boolean|boolean}
  */
 function isGRPSendRequestHeaders(obj) {
-	return (obj.name === 'Request-Server-type' && obj.value === 'X-GRP');
+	return (obj.name === 'X-Request-Server-type' && obj.value === 'XGRP');
 }
 
 /**
@@ -304,6 +382,8 @@ window.onload = function (){
 	 */
 	chrome.webRequest.onBeforeSendHeaders.addListener(function (details) {
 			let requestHeaders = details.requestHeaders
+
+			// TODO: Modify only the request with the specified header field
 			let isGRPRequestHeader = details.requestHeaders.find(isGRPSendRequestHeaders)
 			if(isGRPRequestHeader){
 				let accessControl = false
@@ -337,6 +417,7 @@ window.onload = function (){
 				})
 				if(!accessControl){
 					requestHeaders.push({name: 'Origin', value: grpClick2Talk.loginData?.url})
+					console.info("add origin header :", grpClick2Talk.loginData?.url)
 				}
 			}
 
@@ -353,6 +434,8 @@ window.onload = function (){
 	 */
 	chrome.webRequest.onHeadersReceived.addListener(details => {
 			let responseHeaders = details.responseHeaders
+
+			// TODO: Modify only the response with the specified header field
 			let isGRPResponseHeader = details.responseHeaders.find(isGRPSendResponseHeaders)
 			if(isGRPResponseHeader){
 				let accessControl = false
