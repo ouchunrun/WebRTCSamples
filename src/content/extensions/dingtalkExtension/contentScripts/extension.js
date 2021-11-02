@@ -168,7 +168,7 @@ function insertConfigArea(){
             </tr>
             <tr>
                 <td></td>
-                <td><button id="submitConfig" style="margin: 5px 0px;height: 34px;width: 180px;font-family: cursive;border-radius: 15px;font-size: 14px;border: 0;">保存修改</button></td>
+                <td><button id="submitConfig" style="margin: 5px 0px;height: 34px;width: 180px;font-family: cursive;border-radius: 15px;font-size: 14px;border: 0;">登录/保存修改</button></td>
                 <td></td>
             </tr>
             <tr>
@@ -374,7 +374,6 @@ function setAccountsList(numbers){
 	for(let i = 0; i<numbers; i++){
 		options = options + '<option value=' + i +'>Account ' + (i+1) + '</option>'
 	}
-	console.info("options:", options)
 	accountSelect.innerHTML = options
 }
 
@@ -408,18 +407,35 @@ function sendMessageToBackgroundJS(message, callback){
 	}
 }
 
-
 /**
  * 接收
  */
 if(chrome.runtime && chrome.runtime.onMessage){
 	chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-		console.log("sender：", sender)
-		console.info("request:", request)
+		console.info("onMessage request:", request)
 		if(request && request.requestType === 'GRPClick2talk'){
-			if(request.cmd === 'setAccounts' && request.num_accounts){
-				console.info("设置当前账号数: " + request.num_accounts)
-				setAccountsList(request.num_accounts)
+			switch (request.cmd){
+				case "pageReload":
+					console.log('Reload the page after authorization')
+					if(confirm('完成授权后重新加载页面') === true){
+						window.location.reload(true)
+					}
+					break
+				case "loginStatus":
+					console.info('login return data: ', request.response)
+					break
+				case "setAccounts":
+					if(request.num_accounts && request.num_accounts > 0){
+						console.info("set up account list " + request.num_accounts)
+						setAccountsList(request.num_accounts)
+					}
+					break
+				case "showConfig":
+					console.log('login first')
+					displayConfigArea()
+					break
+				default:
+					break
 			}
 		}
 		sendResponse('request success');

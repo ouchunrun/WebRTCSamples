@@ -28,6 +28,10 @@ function permissionCheck(serverURL){
 	httpRequest.onerror = function (event) {
 		console.info("An error occurred during the transaction\r\n", event);
 		if (confirm('请点 "确定"按钮 访问' + serverURL + '链接以授权') === true){
+			sendMessageToContentScript({
+				requestType:'GRPClick2talk',
+				cmd:'pageReload'
+			});
 			window.open(serverURL, '_blank');
 		}else{
 			alert("您已拒绝授权")
@@ -47,8 +51,6 @@ function getModelDefinesInfo(){
 					requestType:'GRPClick2talk',
 					cmd:'setAccounts',
 					num_accounts: modelDefines.num_accounts
-				}, function(response) {
-					console.log('get response for content: ', response);
 				});
 			}else {
 				console.info("get modelDefines:", modelDefines)
@@ -90,25 +92,25 @@ function accountLogin(){
 				if (event.readyState === 4) {
 					if(event.response){
 						let response = JSON.parse(event.response)
+						console.info('login response: \r\n' + JSON.stringify(response, null, '    '))
 						if(event.status === 200 && response.response === 'success'){
 							grpClick2Talk.sid = response.body.sid
-							console.log('login success, get sid value: ' + grpClick2Talk.sid)
 							grpClick2Talk.isLogin = true
 
-							// todo: 获取当前话机配置的账号个数
-							getModelDefinesInfo()
-						}else {
-							console.error('login failed: \r\n', event.response)
-							console.error(response.body)
-							alert('login failed!!!')
+							getModelDefinesInfo()  // TODO: 获取当前话机配置的账号个数
 						}
+
+						sendMessageToContentScript({
+							requestType: 'GRPClick2talk',
+							cmd: 'loginStatus',
+							response: response
+						});
 					}else {
 						console.info("login return response: ", event)
 					}
 				}
 			}catch (e){
-				console.error(e)
-				debugger
+				console.info(e)
 			}
 		}
 	})
@@ -125,6 +127,10 @@ function makeCall(data){
 	}
 	if(!grpClick2Talk.isLogin){
 		alert('please login first!!!')
+		sendMessageToContentScript({
+			requestType:'GRPClick2talk',
+			cmd:'showConfig',
+		});
 		return
 	}
 	console.info("make call data: \r\n" + JSON.stringify(data, null, '    '))
@@ -175,6 +181,12 @@ function monitorLineStatus(){
 	let count = 0
 	grpClick2Talk.getLineStatusInterval = setInterval(function (){
 		count++
+		if(count > 5){
+			console.log('auto clear interval')
+			clearStatusInterval()
+			return
+		}
+
 		grpClick2Talk.gsApi.getLineStatus({
 			onreturn: function (event){
 				if(event.readyState === 4){
@@ -184,20 +196,7 @@ function monitorLineStatus(){
 							if(response.body && response.body.length){
 								for(let i = 0; i<response.body.length; i++){
 									let lineStatus = response.body[i]
-									console.info("line " + lineStatus.line + " state is ", lineStatus.state)
-									if(lineStatus.remotenumber === grpClick2Talk.remotenumber){
-										switch (lineStatus.state){
-											case 'calling':
-												// 正在振铃
-												break
-											case 'connected':
-												// 通话已接通
-												break
-											default:
-												// idle/hold/unhold等
-												break
-										}
-									}
+									console.info("line " + lineStatus.line + " acct " + lineStatus.acct + " to " + lineStatus.remotenumber + " ", lineStatus.state)
 								}
 							}
 						}
@@ -207,14 +206,12 @@ function monitorLineStatus(){
 				}
 			}
 		})
-
-		if(count > 10){
-			console.log('auto clear interval')
-			clearStatusInterval()
-		}
 	}, 1000)
 }
 
+/**
+ * 清除获取线路状态的定时器
+ */
 function clearStatusInterval(){
 	if(grpClick2Talk.getLineStatusInterval){
 		clearInterval(grpClick2Talk.getLineStatusInterval)
@@ -274,7 +271,8 @@ function updateCallCfg(data){
 	})
 
 	if(isLoginDataChange){
-		if(isServerChange){ // todo: url 改变时重新检查权限
+		if(isServerChange){
+			// TODO: url 改变时重新检查权限
 			console.info("Recheck permissions: " + grpClick2Talk.loginData.url)
 			permissionCheck(grpClick2Talk.loginData.url)
 		}else {
@@ -283,8 +281,6 @@ function updateCallCfg(data){
 		}
 	}
 }
-
-/*****************************************************************************************************/
 
 /**************************（二）Content-script 和 backgroundJS 间的通信处理*******************************/
 /**
@@ -342,11 +338,13 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
  */
 function sendMessageToContentScript(message, callback) {
 	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-		chrome.tabs.sendMessage(tabs[0].id, message, function(response) {
-			if(callback){
-				callback(response)
-			}
-		});
+		if(tabs && tabs.length){
+			chrome.tabs.sendMessage(tabs[0].id, message, function(response) {
+				if(callback){
+					callback(response)
+				}
+			});
+		}
 	});
 }
 /***************************************（三）修改GRP请求头和响应*******************************************/
@@ -413,7 +411,6 @@ window.onload = function (){
 				})
 				if(!accessControl){
 					requestHeaders.push({name: 'Origin', value: grpClick2Talk.loginData?.url})
-					console.info("add origin header :", grpClick2Talk.loginData?.url)
 				}
 			}
 
@@ -430,7 +427,6 @@ window.onload = function (){
 	 */
 	chrome.webRequest.onHeadersReceived.addListener(details => {
 			let responseHeaders = details.responseHeaders
-
 			let requestURL = grpClick2Talk.loginData?.url
 			if(details && details.url && requestURL && details.url.match(requestURL)){
 				let accessControl = false
