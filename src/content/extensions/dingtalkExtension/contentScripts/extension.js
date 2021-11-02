@@ -326,10 +326,18 @@ function updateCallConfig(){
 		alert('invalid parameters')
 		return
 	}
-	server = server.trim()
-	username = username.trim()
-	pwd = pwd.trim()
-	account = account.trim()
+	if(server.trim){
+		server = server.trim()
+	}
+	if(username.trim){
+		username = username.trim()
+	}
+	if(pwd.trim){
+		pwd = pwd.trim()
+	}
+	if(account.trim){
+		account = account.trim()
+	}
 
 	// TODO: Request by https by default
 	if(server.substr(0,7).toLowerCase() === "http://" || server.substr(0,8).toLowerCase() === "https://"){

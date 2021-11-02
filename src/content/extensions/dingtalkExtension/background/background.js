@@ -5,7 +5,6 @@ let grpClick2Talk = {
 	loginData: {},
 	sid: '',
 	getLineStatusInterval: null,
-	sendResponse: null
 }
 
 /**
@@ -74,10 +73,7 @@ function accountLogin(){
 	let config = {
 		url: loginData.url,
 		username: loginData.username,
-		password: loginData.password,
-		requestHeader: {
-			'X-Request-Server-type': 'XGRP',
-		}
+		password: loginData.password
 	}
 	console.info('login data: \r\n' + JSON.stringify(config, null, '   '))
 	if (GsUtils.isNUllOrEmpty(grpClick2Talk.gsApi)) {
@@ -361,7 +357,7 @@ function sendMessageToContentScript(message, callback) {
  * @returns {boolean|boolean}
  */
 function isGRPSendRequestHeaders(obj) {
-	return (obj.name === 'X-Request-Server-type' && obj.value === 'XGRP');
+	return (obj.name === 'X-Request-Server-Type' && obj.value === 'X-GRP');
 }
 
 /**
@@ -384,8 +380,8 @@ window.onload = function (){
 			let requestHeaders = details.requestHeaders
 
 			// TODO: Modify only the request with the specified header field
-			let isGRPRequestHeader = details.requestHeaders.find(isGRPSendRequestHeaders)
-			if(isGRPRequestHeader){
+			let requestURL = grpClick2Talk.loginData?.url
+			if(details && details.url && requestURL && details.url.match(requestURL)){
 				let accessControl = false
 				requestHeaders = details.requestHeaders.map(item => {
 					if (item.name === 'Origin') {
@@ -435,9 +431,8 @@ window.onload = function (){
 	chrome.webRequest.onHeadersReceived.addListener(details => {
 			let responseHeaders = details.responseHeaders
 
-			// TODO: Modify only the response with the specified header field
-			let isGRPResponseHeader = details.responseHeaders.find(isGRPSendResponseHeaders)
-			if(isGRPResponseHeader){
+			let requestURL = grpClick2Talk.loginData?.url
+			if(details && details.url && requestURL && details.url.match(requestURL)){
 				let accessControl = false
 				responseHeaders = details.responseHeaders.map(item => {
 					if (item.name.toLowerCase() === 'access-control-allow-origin') {
