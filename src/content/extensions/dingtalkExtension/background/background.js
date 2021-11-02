@@ -410,7 +410,36 @@ window.onload = function (){
 					return item
 				})
 				if(!accessControl){
-					requestHeaders.push({name: 'Origin', value: grpClick2Talk.loginData?.url})
+					requestHeaders.push({name: 'Origin', value: requestURL})
+				}
+
+				// TODO: NO origin/cookies header find in requestHeaders list
+				if(details.url.match('api-make_call')){
+					if(!requestHeaders.find(function (header){return (header.name === 'Origin')})){
+						requestHeaders.push({name: 'Origin', value: requestURL})
+						console.info(' add Origin: ', requestURL)
+
+						if(!requestHeaders.find(function (header){return (header.name === 'Accept')})){
+							requestHeaders.push({name: 'Accept', value: "*/*"})
+						}
+						if(!requestHeaders.find(function (header){return (header.name === 'Sec-Fetch-Site')})){
+							requestHeaders.push({name: 'Sec-Fetch-Site', value: "none"})
+						}
+						if(!requestHeaders.find(function (header){return (header.name === 'Sec-Fetch-Mode')})){
+							requestHeaders.push({name: 'Sec-Fetch-Mode', value: "cors"})
+						}
+						if(!requestHeaders.find(function (header){return (header.name === 'Sec-Fetch-Dest')})){
+							requestHeaders.push({name: 'Sec-Fetch-Dest', value: "empty"})
+						}
+						if(!requestHeaders.find(function (header){return (header.name === 'Accept-Encoding')})){
+							requestHeaders.push({name: 'Accept-Encoding', value: "gzip, deflate, br"})
+						}
+					}
+					if(!requestHeaders.find(function (header){return (header.name === 'Cookie')})){
+						let cookie = 'session-role=' + grpClick2Talk.loginData.username + '; session-identity=' + grpClick2Talk.sid + '; sid=' + grpClick2Talk.sid + ';'
+						requestHeaders.push({name: 'Cookie', value: cookie})
+						console.log('add cookies header: ', cookie)
+					}
 				}
 			}
 
