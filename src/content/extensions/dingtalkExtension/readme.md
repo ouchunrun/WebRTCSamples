@@ -68,6 +68,17 @@ console.log("经base64编码后:"+str64);
 console.log("base64解码后:"+window.atob(str64));
 ```
 
+### 7.chrome 插件如何获取当前页面的URL title 等信息？
+
+```
+chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+	if(tabs && tabs.length){
+		console.warn("tabs[0].id:", tabs[0].id)
+		console.warn('current url:', tabs[0].url)
+	}
+});
+
+```
 
 ## 参考
 

@@ -148,6 +148,7 @@ function insertConfigArea(){
 	let configDiv = document.createElement('div')
 	configDiv.id = 'grpCallConfig'
 	configDiv.innerHTML = `<div id="configHead">` + configTips.title + `<span id="closeFont">X</span></div>
+	<div id="xMessageTip"></div>
 	<table id="xConfigTable">
         <tbody>
             <tr>
@@ -402,6 +403,30 @@ window.onload = function (){
 	pageMutationObserver()
 }
 
+/**
+ * 页面显示提示
+ */
+function showTipInPage(data){
+	if(!data){
+		return
+	}
+
+	let xMessageTip = document.getElementById('xMessageTip')
+	xMessageTip.style.background = '#dfedfa'
+
+	if(data.response && data.response === "error"){
+		xMessageTip.innerText = data.response + ':' + data.body
+	}else {
+		xMessageTip.innerText = data.response
+	}
+
+	// clear tip
+	setTimeout(function (){
+		console.log('clear tip')
+		xMessageTip.innerText = ''
+		xMessageTip.style.background = ''
+	}, 2000)
+}
 
 /************************** Content-script 和 backgroundJS 间的通信处理*******************************/
 
@@ -436,7 +461,9 @@ if(chrome.runtime && chrome.runtime.onMessage){
 					}
 					break
 				case "loginStatus":
+					let data = request.response
 					console.info('login return data: ', request.response)
+					showTipInPage(data)
 					break
 				case "setAccounts":
 					if(request.num_accounts && request.num_accounts > 0){
@@ -447,6 +474,10 @@ if(chrome.runtime && chrome.runtime.onMessage){
 				case "showConfig":
 					console.log('login first')
 					displayConfigArea()
+					break
+				case 'showTip':
+					// 显示tip提示
+					showTipInPage(request)
 					break
 				default:
 					break

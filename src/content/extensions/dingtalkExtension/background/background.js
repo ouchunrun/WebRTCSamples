@@ -142,8 +142,13 @@ function makeCall(data){
 			if (evt.readyState === 4) {
 				// todo: 200 不代表呼叫成功，只标示cgi请求的成功与否
 				console.info("make call return status code : " + evt.status)
-				grpClick2Talk.remotenumber = data.phonenumber
-				monitorLineStatus()
+				if(event.status === 200){
+					grpClick2Talk.remotenumber = data.phonenumber
+					monitorLineStatus()
+				}else {
+					let error = 'call error ' + evt.status
+					alert(error)
+				}
 			}
 		}
 	})
@@ -255,13 +260,11 @@ function updateCallCfg(data){
 		return
 	}
 
-	let isLoginDataChange = false
 	let isServerChange = false
 	Object.keys(data).forEach(function (key){
 		if(key === 'account' || key === 'url' || key === 'password' || key === 'username'){
 			if(data[key] !== grpClick2Talk.loginData[key] && (key !== 'account')){
 				console.info("login data change")
-				isLoginDataChange = true
 				if(key === 'url'){
 					isServerChange = true
 				}
@@ -270,15 +273,13 @@ function updateCallCfg(data){
 		}
 	})
 
-	if(isLoginDataChange){
-		if(isServerChange){
-			// TODO: url 改变时重新检查权限
-			console.info("Recheck permissions: " + grpClick2Talk.loginData.url)
-			permissionCheck(grpClick2Talk.loginData.url)
-		}else {
-			console.log('re-login..')
-			accountLogin()
-		}
+	if(isServerChange){
+		// TODO: url 改变时重新检查权限
+		console.info("Recheck permissions: " + grpClick2Talk.loginData.url)
+		permissionCheck(grpClick2Talk.loginData.url)
+	}else {
+		console.log('re-login..')
+		accountLogin()
 	}
 }
 
