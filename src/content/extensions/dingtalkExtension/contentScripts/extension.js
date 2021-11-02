@@ -77,11 +77,12 @@ function pageMutationObserver(){
 							let selectorContainer = document.getElementsByClassName('selector-container')[0]
 							if(selectorContainer){
 								console.log("add call button")
+								let langInfo = localStorage.getItem('latest_lang_info')
 								let callBtn = document.createElement('button')
 								callBtn.id = 'xCallButton'
 								callBtn.type = 'button'
 								callBtn.className = 'btn green ng-binding'
-								callBtn.innerHTML = '呼叫话机账号'
+								callBtn.innerHTML = langInfo === 'en_US' ? 'GRP Call' : '呼叫办公账号'
 								callBtn.onclick = getUserUid
 								selectorContainer.appendChild(callBtn);
 							}
@@ -106,17 +107,16 @@ function makeGRPConfigBtn(){
 		let parent = document.getElementsByClassName('main-menus')[0]
 		if(parent){
 			clearInterval(domCheckInterval)
+			let langInfo = localStorage.getItem('latest_lang_info')
+			let tip = langInfo === 'en_US' ? 'GRPConfig' : 'GRP配置'
 			let newItem = document.createElement('li')
 			newItem.className = 'menu-item menu-micro-app ng-scope'
-			newItem.innerHTML = '<div class="menu-item-content">' +
-				'<i class="iconfont icon-modify-alias" style="font-size: 26px;font-weight: bold;color: brown;" title="GRP账号配置"></i>' +
-				'</div>'
+			newItem.innerHTML = '<div class="menu-item-content">' + '<i class="iconfont icon-modify-alias" style="font-size: 26px;font-weight: bold;color: brown;" title='+ tip +'></i></div>'
 			newItem.onclick = displayConfigArea
 			parent.appendChild(newItem);
 
 			let newItem2 = document.createElement('li')
-			newItem2.innerHTML = '<input id="remoteTarget"  style="display: none">' +
-				'<input id="callRemoteNumber" style="display: none">'
+			newItem2.innerHTML = '<input id="remoteTarget"  style="display: none"><input id="callRemoteNumber" style="display: none">'
 			parent.appendChild(newItem2);
 
 			let btn = document.getElementById('callRemoteNumber')
@@ -137,9 +137,17 @@ function insertConfigArea(){
 	insertParent.appendChild(maskLayer);
 	maskLayer.onclick = displayConfigArea
 
+	let langInfo = localStorage.getItem('latest_lang_info')
+	console.log('langInfo:', langInfo)
+	let configTips = {
+		title: langInfo === 'en_US' ? 'GRP call configuration' : 'GRP呼叫配置',
+		loginInnerText: langInfo === 'en_US' ? 'Login/Save changes' : '登录/保存修改',
+		callInnerText: langInfo === 'en_US' ? 'GRP audio call' : 'GRP音频呼叫'
+	}
+
 	let configDiv = document.createElement('div')
 	configDiv.id = 'grpCallConfig'
-	configDiv.innerHTML = `<div id="configHead">GRP呼叫配置 <span id="closeFont">X</span></div>
+	configDiv.innerHTML = `<div id="configHead">` + configTips.title + `<span id="closeFont">X</span></div>
 	<table id="xConfigTable">
         <tbody>
             <tr>
@@ -168,7 +176,10 @@ function insertConfigArea(){
             </tr>
             <tr>
                 <td></td>
-                <td><button id="submitConfig" style="margin: 5px 0px;height: 34px;width: 180px;font-family: cursive;border-radius: 15px;font-size: 14px;border: 0;">登录/保存修改</button></td>
+                <td>
+                    <button id="submitConfig" style="margin: 5px 0px;height: 34px;width: 180px;font-family: cursive;border-radius: 15px;font-size: 14px;border: 0;">
+                    ` + configTips.loginInnerText + `
+                    </button></td>
                 <td></td>
             </tr>
             <tr>
@@ -178,7 +189,10 @@ function insertConfigArea(){
             </tr>
              <tr>
                 <td></td>
-                <td><button id="x-makeCall" style="margin: 5px 0px;border-radius: 15px;font-size: 14px; width: 180px;height: 34px;border: 0;">发起音频呼叫</button></td>
+                <td>
+                    <button id="x-makeCall" style="margin: 5px 0px;border-radius: 15px;font-size: 14px; width: 180px;height: 34px;border: 0;">
+                     ` + configTips.callInnerText + `
+                    </button></td>
                 <td></td>
             </tr>
         </tbody>

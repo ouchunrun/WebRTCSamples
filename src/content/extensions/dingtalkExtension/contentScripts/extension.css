@@ -30,7 +30,7 @@
     width: 100%;
     line-height: 50px;
     font-size: 20px;
-    letter-spacing: 5px;
+    /*letter-spacing: 5px;*/
     border-bottom: 1px solid #ececed;
     background-color: #fff;
 }

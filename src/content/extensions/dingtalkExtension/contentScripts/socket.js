@@ -28,7 +28,7 @@ let inject = '(' + function () {
 					if(body.orgEmployees && body.orgEmployees.length){
 						let orgExtPropertyList = body.orgEmployees[0].orgExtPropertyList
 						if(orgExtPropertyList && orgExtPropertyList.length){
-							let target = orgExtPropertyList.find(item =>{return item.itemName === "分机号"});
+							let target = orgExtPropertyList.find(item =>{return (item.itemName === "分机号" || item.itemName === "Extension")});
 							let ext = target?.itemValue
 							if(ext){
 								console.warn("get ext by uid: ", ext)
