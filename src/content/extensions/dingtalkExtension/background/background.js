@@ -142,7 +142,7 @@ function makeCall(data){
 			if (evt.readyState === 4) {
 				// todo: 200 不代表呼叫成功，只标示cgi请求的成功与否
 				console.info("make call return status code : " + evt.status)
-				if(event.status === 200){
+				if(evt.status === 200){
 					grpClick2Talk.remotenumber = data.phonenumber
 					monitorLineStatus()
 				}else {
@@ -387,18 +387,16 @@ window.onload = function (){
 						item.value = grpClick2Talk.loginData?.url
 						accessControl = true
 					}else if(item.name === 'Cookie'){  // cookies add sid
-						let sidValue = localStorage.sid
+						let sidValue = grpClick2Talk.sid
 						if(sidValue){
 							if(item.value.indexOf('sid=') >= 0){
 								let lines = item.value.split(';')
 								for(let i = 0; i<lines.length; i++){
 									if(lines[i].indexOf('sid=') >= 0){
 										let keyValue = lines[i].split('=')
-										if(!keyValue[1]){ // sid 为空
-											keyValue[1] = sidValue
-											lines[i] = keyValue.join('=')
-											break
-										}
+										keyValue[1] = sidValue
+										lines[i] = keyValue.join('=')
+										break
 									}
 								}
 								item.value = lines.join(';')
