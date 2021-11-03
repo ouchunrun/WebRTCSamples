@@ -401,6 +401,14 @@ window.onload = function (){
 	}, 2*1000)
 
 	pageMutationObserver()
+
+	// 钉钉页面
+	window.onunload = function (){
+		sendMessageToBackgroundJS({
+			requestType: 'GRPClick2talk',
+			cmd: 'pageClose'
+		})
+	}
 }
 
 /**

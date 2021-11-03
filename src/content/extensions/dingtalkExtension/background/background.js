@@ -321,6 +321,13 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 				console.info("request.data:", request.data)
 				makeCall(request.data)
 				break
+			case 'pageClose':
+				// 页面刷新或关闭的时候，如果处于登录状态，清除login定时器
+				if(grpClick2Talk && grpClick2Talk.isLogin && grpClick2Talk.gsApi && grpClick2Talk.gsApi.stopKeepAlive){
+					console.log('clear keep alive interval')
+					grpClick2Talk.gsApi.stopKeepAlive()
+				}
+				break
 			default:
 				break
 		}
