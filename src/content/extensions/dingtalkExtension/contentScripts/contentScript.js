@@ -1,3 +1,4 @@
+let XConfigObj = {}
 
 let closeButton
 let serverInput
@@ -112,7 +113,7 @@ function makeGRPConfigBtn(){
 			let newItem = document.createElement('li')
 			newItem.className = 'menu-item menu-micro-app ng-scope'
 			newItem.innerHTML = '<div class="menu-item-content">' + '<i class="iconfont icon-modify-alias" style="font-size: 26px;font-weight: bold;color: brown;" title='+ tip +'></i></div>'
-			newItem.onclick = displayConfigArea
+			newItem.onclick = showConfigArea
 			parent.appendChild(newItem);
 
 			let newItem2 = document.createElement('li')
@@ -135,7 +136,7 @@ function insertConfigArea(){
 	let maskLayer = document.createElement('div')
 	maskLayer.id = 'xConfigMaskLayer'
 	insertParent.appendChild(maskLayer);
-	maskLayer.onclick = displayConfigArea
+	maskLayer.onclick = showConfigArea
 
 	let langInfo = localStorage.getItem('latest_lang_info')
 	console.log('langInfo:', langInfo)
@@ -202,41 +203,6 @@ function insertConfigArea(){
 
 	// 绑定新增元素的点击事件
 	bindingDomEvent()
-
-	// 获取storage里面的值
-	getValueFromStorage()
-}
-
-function getValueFromStorage(){
-	if(!serverInput || !usernameInput || !pwdInput){
-		console.info("no server/pwd/username element found.")
-		return
-	}
-
-	// get value from storage
-	serverInput.value = localStorage.getItem('xServer') || ''
-	usernameInput.value = localStorage.getItem('xUsername') || ''
-	pwdInput.value = window.atob(localStorage.getItem('xPassword') || '')
-	accountSelect.value = localStorage.getItem('xAccount') || ''
-
-	if(serverInput.value && usernameInput.value && pwdInput.value){
-		console.log('Notify background to register')
-		if(window.sendMessageToBackgroundJS){
-			sendMessageToBackgroundJS({
-				requestType: 'GRPClick2talk',
-				cmd: 'login',
-				data: {
-					url: serverInput.value,
-					username: usernameInput.value,
-					password: pwdInput.value
-				}
-			}, function (res){
-				console.info("res: ", res)
-			})
-		}
-	}else {
-		console.info("server/pwd/username empty!!!")
-	}
 }
 
 function bindingDomEvent(){
@@ -254,7 +220,76 @@ function bindingDomEvent(){
 	makeCallBtn.onclick = checkToMakeCall      // 呼叫
 }
 
-function displayConfigArea(){
+/**
+ * 更新账号选择下拉框选项
+ */
+function reloadAccountSelectOptions(){
+	if(!accountSelect){
+		return
+	}
+
+	console.info("XConfigObj:", JSON.stringify(XConfigObj, null, '    '))
+	let options
+	let selectAccount = parseInt(XConfigObj.selectedAccount)
+	let accountLen = parseInt(XConfigObj.availableAccounts)
+	if(selectAccount >= 0 && selectAccount <= accountLen){
+		options = '<option value=' + selectAccount +' selected>Account ' + (selectAccount+1) + '</option><option value="-1">First Available</option>'
+	}else {
+		options = '<option value="-1">First Available</option>'
+	}
+
+	if(accountLen){
+		for(let i = 0; i<accountLen; i++){
+			options = options + '<option value=' + i +'>Account ' + (i+1) + '</option>'
+		}
+	}
+	accountSelect.innerHTML = options
+}
+
+/**
+ * 单独更新可用账号数量
+ * @param length
+ */
+function setAvailableAccounts(length){
+	if(!XConfigObj){
+		XConfigObj = {}
+	}
+
+	XConfigObj.availableAccounts = parseInt(length)
+
+	reloadAccountSelectOptions()
+}
+
+function updateInputValue(data){
+	if(data){
+		/*更新 XConfigObj配置*/
+		if(!XConfigObj){
+			XConfigObj = {}
+		}
+		Object.keys(data).forEach(function (key){
+			XConfigObj[key] = data[key]
+		})
+	}
+
+	console.log("update input value XConfigObj:", XConfigObj)
+	if(XConfigObj){
+		if(XConfigObj.url && serverInput){
+			serverInput.value = XConfigObj.url
+		}
+		if(XConfigObj.username && usernameInput){
+			usernameInput.value = XConfigObj.username
+		}
+		if(XConfigObj.password && pwdInput){
+			pwdInput.value = XConfigObj.password
+		}
+
+		reloadAccountSelectOptions()
+	}
+}
+
+function showConfigArea(){
+	updateInputValue()
+
 	let grpCallConfig = document.getElementById('grpCallConfig')
 	grpCallConfig.style.opacity = '1'
 	grpCallConfig.style['z-index'] = '2050'
@@ -291,8 +326,7 @@ function makeCallWithRemoteNumber(){
 		return
 	}
 	sendMessageToBackgroundJS({
-		requestType: 'GRPClick2talk',
-		cmd: 'makeCall',
+		cmd: 'contentScriptMakeCall',
 		data: {
 			phonenumber: phoneNumber?.trim(),
 		}
@@ -314,10 +348,9 @@ function checkToMakeCall(){
 	}
 
 	sendMessageToBackgroundJS({
-		requestType: 'GRPClick2talk',
-		cmd: 'makeCall',
+		cmd: 'contentScriptMakeCall',
 		data: {
-			account: account?.trim(),
+			selectedAccount: account?.trim(),
 			phonenumber: phoneNumber?.trim(),
 		}
 	}, function (res){
@@ -354,42 +387,17 @@ function updateCallConfig(){
 		account = account.trim()
 	}
 
-	// TODO: Request by https by default
-	if(server.substr(0,7).toLowerCase() === "http://" || server.substr(0,8).toLowerCase() === "https://"){
-		server = server.replace(/http:\/\//, 'https://');
-	}else{
-		server = "https://" + server;
-	}
-	localStorage.setItem('xServer', server)
-	localStorage.setItem('xUsername', username)
-	localStorage.setItem('xPassword',  window.btoa(pwd))
-	localStorage.setItem('xAccount', account)
-
 	sendMessageToBackgroundJS({
-		requestType: 'GRPClick2talk',
-		cmd: 'updateCallConfig',
+		cmd: 'contentScriptUpdateLoginInfo',
 		data: {
 			url: server,
 			username: username,
 			password: pwd,
-			account: account
+			selectedAccount: account
 		}
 	}, function (res){
 		console.info("res: ", res)
 	})
-}
-
-/**
- * 更新账号列表
- * @param numbers
- */
-function setAccountsList(numbers){
-	console.log('set account list ' + numbers)
-	let options = '<option value="-1">First Available</option>'
-	for(let i = 0; i<numbers; i++){
-		options = options + '<option value=' + i +'>Account ' + (i+1) + '</option>'
-	}
-	accountSelect.innerHTML = options
 }
 
 window.onload = function (){
@@ -405,8 +413,7 @@ window.onload = function (){
 	// 钉钉页面
 	window.onunload = function (){
 		sendMessageToBackgroundJS({
-			requestType: 'GRPClick2talk',
-			cmd: 'pageClose'
+			cmd: 'contentScriptPageClose'
 		})
 	}
 }
@@ -415,13 +422,12 @@ window.onload = function (){
  * 页面显示提示
  */
 function showTipInPage(data){
-	if(!data){
+	let xMessageTip = document.getElementById('xMessageTip')
+	if(!data || !xMessageTip){
 		return
 	}
 
-	let xMessageTip = document.getElementById('xMessageTip')
 	xMessageTip.style.background = '#dfedfa'
-
 	if(data.response && data.response === "error"){
 		xMessageTip.innerText = data.response + ':' + data.body
 	}else {
@@ -445,6 +451,10 @@ function showTipInPage(data){
  */
 function sendMessageToBackgroundJS(message, callback){
 	if(chrome.runtime && chrome.runtime.sendMessage){
+		// todo: add lang info
+		message.latestLangInfo = localStorage.getItem('latest_lang_info')
+		message.requestType = 'contentMessage2Background'
+
 		chrome.runtime.sendMessage(message, function(response) {
 			console.log('收到来自后台的回复：', response);
 			if(callback){
@@ -460,32 +470,44 @@ function sendMessageToBackgroundJS(message, callback){
 if(chrome.runtime && chrome.runtime.onMessage){
 	chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 		console.info("onMessage request:", request)
-		if(request && request.requestType === 'GRPClick2talk'){
+		if(request && request.requestType === 'backgroundMessage2ContentScript'){
 			switch (request.cmd){
+				case "autoLogin":  // 钉钉首次加载页面，获取信息后自动登录
+					if(request.data){
+						updateInputValue(request.data)
+					}
+					break
+				case "loginStatus":
+					console.info('login return data: ', request.response)
+					showTipInPage(request.response)
+					break
+				case 'showTip':  // 显示tip提示
+					showTipInPage(request)
+					break
+				case "updateConfig":  // 通过background js更新和显示配置信息
+					if(request.data){
+						updateInputValue(request.data)
+					}
+					break
+				case "setAvailableAccountList":
+					if(request.availableAccounts && request.availableAccounts > 0){
+						console.info("set up account list " + request.availableAccounts)
+						setAvailableAccounts(request.availableAccounts)
+					}
+					break
+				case "showConfig":
+					console.log('login first, show config area')
+					showConfigArea()
+					break
+				case 'popupOpen':
+					console.log('popup is open.')
+					hiddenConfigArea()
+					break
 				case "pageReload":
 					console.log('Reload the page after authorization')
 					if(confirm('完成授权后重新加载页面') === true){
 						window.location.reload(true)
 					}
-					break
-				case "loginStatus":
-					let data = request.response
-					console.info('login return data: ', request.response)
-					showTipInPage(data)
-					break
-				case "setAccounts":
-					if(request.num_accounts && request.num_accounts > 0){
-						console.info("set up account list " + request.num_accounts)
-						setAccountsList(request.num_accounts)
-					}
-					break
-				case "showConfig":
-					console.log('login first')
-					displayConfigArea()
-					break
-				case 'showTip':
-					// 显示tip提示
-					showTipInPage(request)
 					break
 				default:
 					break
@@ -493,5 +515,10 @@ if(chrome.runtime && chrome.runtime.onMessage){
 		}
 		sendResponse('request success');
 	});
+
+	sendMessageToBackgroundJS({
+		cmd: 'contentScriptAutoLogin',
+		DTLatestLangInfo: localStorage.getItem('latest_lang_info')
+	})
 }
 /*****************************************************************************************************/

@@ -5,7 +5,8 @@
   "browser_action":
   {
     "default_title": "DingTalk Extension",
-    "default_icon": "popup/logo.png"
+    "default_icon": "popup/logo.png",
+    "default_popup": "popup/popup.html"
   },
   "background": {
     "scripts": [
@@ -21,11 +22,11 @@
         "https://im.dingtalk.com/*"
       ],
       "js": [
-        "contentScripts/socket.js",
-        "contentScripts/extension.js"
+        "contentScripts/injectScript.js",
+        "contentScripts/contentScript.js"
       ],
       "css": [
-        "contentScripts/extension.css"
+        "contentScripts/contentScript.css"
       ],
       "all_frames": true,
       "match_about_blank": true,

@@ -2,9 +2,16 @@
 let grpClick2Talk = {
 	isLogin: false,
 	gsApi: null,
-	loginData: {},
+	loginData: {
+		selectedAccount: -1,
+		availableAccounts: 0,
+		password: "",
+		url: "",
+		username: ""
+	},
 	sid: '',
 	getLineStatusInterval: null,
+	latestLangInfo: ''
 }
 
 /**
@@ -29,7 +36,6 @@ function permissionCheck(serverURL){
 		console.info("An error occurred during the transaction\r\n", event);
 		if (confirm('请点 "确定"按钮 访问' + serverURL + '链接以授权') === true){
 			sendMessageToContentScript({
-				requestType:'GRPClick2talk',
 				cmd:'pageReload'
 			});
 			window.open(serverURL, '_blank');
@@ -47,10 +53,12 @@ function getModelDefinesInfo(){
 			let modelDefines = JSON.parse(xmlHttp.responseText).defines
 			if(modelDefines && modelDefines.num_accounts){
 				console.info("当前支持的账号数量：", modelDefines.num_accounts)
+				grpClick2Talk.loginData.availableAccounts = modelDefines.num_accounts
+				localStorage.setItem('XNewestData', JSON.stringify(grpClick2Talk.loginData, null, '   '))
+
 				sendMessageToContentScript({
-					requestType:'GRPClick2talk',
-					cmd:'setAccounts',
-					num_accounts: modelDefines.num_accounts
+					cmd:'setAvailableAccountList',
+					availableAccounts: modelDefines.num_accounts
 				});
 			}else {
 				console.info("get modelDefines:", modelDefines)
@@ -75,7 +83,10 @@ function accountLogin(){
 	let config = {
 		url: loginData.url,
 		username: loginData.username,
-		password: loginData.password
+		password: loginData.password,
+		// requestHeader: {
+		// 	'X-Request-Server-Type': 'X-GRP',
+		// }
 	}
 	console.info('login data: \r\n' + JSON.stringify(config, null, '   '))
 	if (GsUtils.isNUllOrEmpty(grpClick2Talk.gsApi)) {
@@ -100,11 +111,8 @@ function accountLogin(){
 							getModelDefinesInfo()  // TODO: 获取当前话机配置的账号个数
 						}
 
-						sendMessageToContentScript({
-							requestType: 'GRPClick2talk',
-							cmd: 'loginStatus',
-							response: response
-						});
+						// 【消息提示】 通知页面当前登录状态。或是可以考虑仅background保存，点开popup页面后显示？？？
+						sendMessageToContentScript({cmd: 'loginStatus', response: response});
 					}else {
 						console.info("login return response: ", event)
 					}
@@ -128,14 +136,13 @@ function makeCall(data){
 	if(!grpClick2Talk.isLogin){
 		alert('please login first!!!')
 		sendMessageToContentScript({
-			requestType:'GRPClick2talk',
 			cmd:'showConfig',
 		});
 		return
 	}
 	console.info("make call data: \r\n" + JSON.stringify(data, null, '    '))
 	grpClick2Talk.gsApi.makeCall({
-		account: data.account || grpClick2Talk.loginData.account,
+		account: data.selectedAccount || grpClick2Talk.loginData.selectedAccount,
 		phonenumber: data.phonenumber,
 		password: grpClick2Talk.loginData.password,
 		onreturn: function (evt){
@@ -228,25 +235,25 @@ function clearStatusInterval(){
  * 设置登录信息
  * @param data
  */
-function setLoginData(data){
+function updateLoginData(data){
 	console.log('set login data: \r\n' + JSON.stringify(data, null, '    '))
 	if(!data){
 		console.info('Invalid parameter to set for login')
 		return
 	}
 
-	if(!grpClick2Talk.loginData){
-		grpClick2Talk.loginData = {}
-	}
 	Object.keys(data).forEach(function (key){
-		if(key === 'account' || key === 'url' || key === 'password' || key === 'username'){
+		if(key === 'url'){
+			grpClick2Talk.loginData[key] = checkUrlFormat(data[key])
+		}else {
 			grpClick2Talk.loginData[key] = data[key]
 		}
 	})
 
-	if(grpClick2Talk.loginData.account === undefined){
-		grpClick2Talk.loginData.account = -1
-	}
+
+	// TODO: 保存配置信息到localStorage
+	let copyLoginData = objectDeepClone(grpClick2Talk.loginData)
+	localStorage.setItem('XNewestData', JSON.stringify(copyLoginData, null, '   '))
 }
 
 /**
@@ -259,26 +266,23 @@ function updateCallCfg(data){
 		console.info('Invalid parameter to set update')
 		return
 	}
-
 	let isServerChange = false
-	Object.keys(data).forEach(function (key){
-		if(key === 'account' || key === 'url' || key === 'password' || key === 'username'){
-			if(data[key] !== grpClick2Talk.loginData[key] && (key !== 'account')){
-				console.info("login data change")
-				if(key === 'url'){
-					isServerChange = true
-				}
-			}
-			grpClick2Talk.loginData[key] = data[key]
-		}
-	})
+	let isLoginDataChange = false
+	let currentLoginData = grpClick2Talk.loginData
+	if(data.url !== currentLoginData.url){
+		isServerChange = true
+	}else if(data.username !== currentLoginData.username || data.password !== currentLoginData.password){
+		isLoginDataChange = true
+	}
+
+	// updateConfig first
+	updateLoginData(data)   // 注意仅账号更改时，这里就很重要
 
 	if(isServerChange){
-		// TODO: url 改变时重新检查权限
-		console.info("Recheck permissions: " + grpClick2Talk.loginData.url)
-		permissionCheck(grpClick2Talk.loginData.url)
-	}else {
-		console.log('re-login..')
+		console.info("Recheck permission of : " + data.url)
+		permissionCheck(data.url)
+	}else if(isLoginDataChange){
+		console.log('username or password had change..')
 		accountLogin()
 	}
 }
@@ -291,55 +295,7 @@ function updateCallCfg(data){
  */
 
 /**
- * 接收
- * 短连接: 接收content-script的消息
- */
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-	if(request && request.requestType === 'GRPClick2talk'){
-		switch (request.cmd){
-			case "login":
-				console.log('receive login data: \r\n' + JSON.stringify(request.data, null, '   '))
-				if(request.data && request.data.url){
-					/* http:// to https:// */
-					let url = request.data.url
-					if(url.substr(0,7).toLowerCase() === "http://" || url.substr(0,8).toLowerCase() === "https://"){
-						request.data.url = url.replace(/http:\/\//, 'https://');
-					}else{
-						request.data.url = "https://" + url;
-					}
-
-					setLoginData(request.data)
-					permissionCheck(request.data.url)
-				}else {
-					alert('server url is request for login!!!')
-				}
-				break
-			case "updateCallConfig":
-				updateCallCfg(request.data)
-				break
-			case "makeCall":
-				console.info("request.data:", request.data)
-				makeCall(request.data)
-				break
-			case 'pageClose':
-				// 页面刷新或关闭的时候，如果处于登录状态，清除login定时器
-				if(grpClick2Talk && grpClick2Talk.isLogin && grpClick2Talk.gsApi && grpClick2Talk.gsApi.stopKeepAlive){
-					console.log('clear keep alive interval')
-					grpClick2Talk.gsApi.stopKeepAlive()
-				}
-				break
-			default:
-				break
-		}
-
-		// send response
-		sendResponse({cmd: "GRPClick2talk", status: "OK"});
-	}
-});
-
-
-/**
- * 发送 【目前测试没有生效】
+ * 发送
  * background.js 向 content 主动发送消息
  * @param message
  * @param callback
@@ -347,14 +303,221 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 function sendMessageToContentScript(message, callback) {
 	chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
 		if(tabs && tabs.length){
+			message.requestType = 'backgroundMessage2ContentScript'
 			chrome.tabs.sendMessage(tabs[0].id, message, function(response) {
-				if(callback){
-					callback(response)
+				if (!window.chrome.runtime.lastError) {
+					// message processing code goes here
+					if(callback){
+						callback(response)
+					}
+				} else {
+					// error handling code goes here
 				}
 			});
 		}
 	});
 }
+
+/**
+ * 接收
+ * 短连接: 接收content-script的消息
+ */
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+	if(request && request.requestType === 'contentMessage2Background'){
+		chromeRuntimeOnMessage(request)
+		// send response
+		sendResponse({cmd: "backgroundMessage2ContentScript", status: "OK"});
+	}
+});
+
+/**
+ * Http 转换为Https
+ * @param url
+ * @returns {string}
+ */
+function checkUrlFormat(url){
+	if(url.substr(0,7).toLowerCase() === "http://" || url.substr(0,8).toLowerCase() === "https://"){
+		url = url.replace(/http:\/\//, 'https://');
+	}else{
+		url = "https://" + url;
+	}
+	return url
+}
+
+/**
+ * 处理来自content-script的消息
+ * @param request
+ */
+function chromeRuntimeOnMessage(request){
+	switch (request.cmd){
+		case "contentScriptAutoLogin":
+			// 需要区分不同的产品，否则会相互影响
+			if(request.DTLatestLangInfo){
+				grpClick2Talk.DTLatestLangInfo = request.DTLatestLangInfo
+				localStorage.setItem('DTLatestLangInfo', grpClick2Talk.DTLatestLangInfo)
+				console.info('set dingTalk latest langInfo', grpClick2Talk.DTLatestLangInfo)
+			}
+			sendMessageToContentScript({cmd:'updateConfig', data: grpClick2Talk.loginData});
+
+
+			let loginDatas = grpClick2Talk.loginData
+			if(loginDatas && loginDatas.url && loginDatas.username && loginDatas.password){
+				console.info('check permission before auto login')
+				permissionCheck(loginDatas.url)
+			}
+			break
+		case "contentScriptUpdateLoginInfo":
+			updateCallCfg(request.data)
+			break
+		case "contentScriptMakeCall":
+			console.info("request.data:", request.data)
+			makeCall(request.data)
+			break
+		case 'contentScriptPageClose':
+			// 页面刷新或关闭的时候，如果处于登录状态，清除login定时器
+			if(grpClick2Talk && grpClick2Talk.isLogin && grpClick2Talk.gsApi && grpClick2Talk.gsApi.stopKeepAlive){
+				console.log('clear keep alive interval')
+				grpClick2Talk.gsApi.stopKeepAlive()
+			}
+			break
+		default:
+			break
+	}
+}
+
+/**************************（三）backgroundJS 监听 popup 传递来的消息*******************************/
+/**
+ *  使用长连接 - 监听 popup 传递来的消息
+ */
+chrome.extension.onConnect.addListener(port => {
+	console.log('连接中------------')
+	port.onMessage.addListener(request => {
+		if(request && request.requestType === 'popupMessage2Background'){
+			chromeExtensionOnMessage(request)
+		}
+
+		port.postMessage('popup，我收到了你的信息~')
+	})
+})
+
+/**
+ * 获取所有 tab
+ */
+function chromeExtensionOnMessage(request) {
+	if(!request){
+		return
+	}
+
+	switch (request.cmd){
+		case "popupOnOpen":
+			// popup 页面打开
+			/* 获取popup页面元素的方式 */
+			const views = chrome.extension.getViews({type: 'popup'})
+			for (let view of views) {
+				console.log('insert element to popup')
+				let popupContent = view.document.getElementById('popupContent')
+				if(popupContent){
+					showConfig(view)
+					sendMessageToContentScript({cmd:'popupOpen'});
+				}
+			}
+			break
+		case 'popupUpdateLoginInfo':
+			// 登录或更新登录信息
+			updateCallCfg(request.data)
+
+			// 更新content-script中的设置
+			sendMessageToContentScript({cmd:'updateConfig', data: request.data});
+			break
+		case "popupMakeCall":
+			console.info("request.data:", request.data)
+			makeCall(request.data)
+			break
+		default:
+			break
+	}
+}
+
+/**
+ * 在popup 弹框中显示配置
+ * @param view
+ */
+function showConfig(view){
+	if(!view){
+		return
+	}
+
+	let insertParent = view.document.getElementById('popupContent')
+	// 根据当前语言设置界面显示【这里还未处理完全】
+	let langInfo = grpClick2Talk.latestLangInfo
+	let configTips = {
+		title: langInfo === 'en_US' ? 'Click to Dial' : '点击拨打',
+		loginInnerText: langInfo === 'en_US' ? 'Login/Save' : '登录/保存',
+		callInnerText: langInfo === 'en_US' ? 'Call' : '呼叫'
+	}
+
+	// 处理账号下拉框列表
+	let selectAccount = parseInt(grpClick2Talk.loginData?.selectedAccount)
+	let selectOptions
+	if(selectAccount >= 0){
+		selectOptions = '<option value=' + selectAccount +' selected>Account ' + (selectAccount+1) + '</option><option value="-1">First Available</option>'
+	}else {
+		selectOptions = '<option value="-1">First Available</option>'
+	}
+	for(let i = 0; i<grpClick2Talk.loginData.availableAccounts; i++){
+		selectOptions = selectOptions + '<option value=' + i +'>Account ' + (i+1) + '</option>'
+	}
+
+	let configDiv = document.createElement('div')
+	configDiv.id = 'grpCallConfig'
+	configDiv.innerHTML = `<div id="configHead">🎃` + configTips.title + `</div>
+	<div id="xMessageTip"></div>
+	<table id="xConfigTable">
+        <tbody>
+            <tr>
+                <td class="xLabelTip"><label>Address</label></td>
+                <td><input type="text" id="x-serverAddress"  value=` + grpClick2Talk.loginData?.url + `></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td class="xLabelTip"><label>Username</label></td>
+                <td><input type="text" id="x-userName"  value=` + grpClick2Talk.loginData?.username + ` ></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td class="xLabelTip"><label>Password</label></td>
+                <td><input type="text" id="x-password" value=` + grpClick2Talk.loginData?.password + ` ></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td class="xLabelTip"><label>Accounts</label></td>
+                <td>
+			        <select name="" id="x-account">` + selectOptions + `</select>
+			    </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td>
+                    <button id="submitConfig">
+                    ` + configTips.loginInnerText + `
+                    </button></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td class="xLabelTip"><label>Dial Number</label></td>
+                <td><input type="text" id="x-phoneNumber" value="359301" placeholder="359301"></td>
+                <td>
+                    <button id="x-makeCall">
+                     ` + configTips.callInnerText + `
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>`
+	insertParent.appendChild(configDiv);
+}
+
 /***************************************（三）修改GRP请求头和响应*******************************************/
 
 /**
@@ -379,6 +542,12 @@ function isGRPSendResponseHeaders(obj) {
  * 修改请求头
  */
 window.onload = function (){
+	let XNewestData = localStorage.getItem('XNewestData')
+	if(XNewestData){
+		console.info('load storage save data')
+		grpClick2Talk.loginData = JSON.parse(XNewestData)
+	}
+
 	/**
 	 * change request header
 	 */
@@ -387,7 +556,9 @@ window.onload = function (){
 
 			// TODO: Modify only the request with the specified header field
 			let requestURL = grpClick2Talk.loginData?.url
-			if(details && details.url && requestURL && details.url.match(requestURL)){
+			// let isGRPRequestHeader = details.requestHeaders.find(isGRPSendRequestHeaders)
+			// if(isGRPRequestHeader){}
+			if(details && details.url && requestURL && details.url.match(requestURL) && details.initiator.indexOf('chrome-extension') >= 0){
 				let accessControl = false
 				requestHeaders = details.requestHeaders.map(item => {
 					if (item.name === 'Origin') {
@@ -463,7 +634,9 @@ window.onload = function (){
 	chrome.webRequest.onHeadersReceived.addListener(details => {
 			let responseHeaders = details.responseHeaders
 			let requestURL = grpClick2Talk.loginData?.url
-			if(details && details.url && requestURL && details.url.match(requestURL)){
+			// let isGRPResponseHeader = details.responseHeaders.find(isGRPSendResponseHeaders)
+			// if(isGRPResponseHeader){}
+			if(details && details.url && requestURL && details.url.match(requestURL) && details.initiator.indexOf('chrome-extension') >= 0){
 				let accessControl = false
 				responseHeaders = details.responseHeaders.map(item => {
 					if (item.name.toLowerCase() === 'access-control-allow-origin') {
@@ -487,4 +660,33 @@ window.onload = function (){
 }
 
 /*****************************************************************************************************/
+/***
+ * Function that deep clone an object.
+ * @param obj
+ * @returns {*}
+ */
+function objectDeepClone(obj) {
+	if (obj === null || typeof obj !== 'object') {
+		return obj
+	}
 
+	let copy = function (data) {
+		let copy = data.constructor()
+		for (let attr in data) {
+			if (data.hasOwnProperty(attr)) {
+				copy[attr] = data[attr]
+			}
+		}
+		return copy
+	}
+
+	if (typeof obj === 'object' && !Array.isArray(obj)) {
+		try {
+			return JSON.parse(JSON.stringify(obj))
+		} catch (err) {
+			return copy(obj)
+		}
+	}
+
+	return copy(obj)
+}
