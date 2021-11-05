@@ -100,31 +100,7 @@ function pageMutationObserver(){
 }
 
 /****************************************Add button****************************************************/
-/**
- * 添加GPR配置页面的控制按钮
- */
-function makeGRPConfigBtn(){
-	let domCheckInterval = setInterval(function (){
-		let parent = document.getElementsByClassName('main-menus')[0]
-		if(parent){
-			clearInterval(domCheckInterval)
-			let langInfo = localStorage.getItem('latest_lang_info')
-			let tip = langInfo === 'en_US' ? 'GRPConfig' : 'GRP配置'
-			let newItem = document.createElement('li')
-			newItem.className = 'menu-item menu-micro-app ng-scope'
-			newItem.innerHTML = '<div class="menu-item-content">' + '<i class="iconfont icon-modify-alias" style="font-size: 26px;font-weight: bold;color: brown;" title='+ tip +'></i></div>'
-			newItem.onclick = showConfigArea
-			parent.appendChild(newItem);
 
-			let newItem2 = document.createElement('li')
-			newItem2.innerHTML = '<input id="remoteTarget"  style="display: none"><input id="callRemoteNumber" style="display: none">'
-			parent.appendChild(newItem2);
-
-			let btn = document.getElementById('callRemoteNumber')
-			btn.onclick = makeCallWithRemoteNumber
-		}
-	}, 1000)
-}
 
 function insertConfigArea(){
 	/**
@@ -218,6 +194,141 @@ function bindingDomEvent(){
 	closeButton.onclick = hiddenConfigArea
 	submitBtn.onclick = updateCallConfig
 	makeCallBtn.onclick = checkToMakeCall      // 呼叫
+	accountSelect.onchange = onSelectAccountChange
+}
+
+/**
+ * 下拉账号发生改变
+ */
+function onSelectAccountChange(){
+	let index = accountSelect.selectedIndex; // 选中索引
+	let selectValue = accountSelect.options[index].value;
+
+	XConfigObj.selectedAccount = selectValue
+	sendMessageToBackgroundJS({
+		cmd: 'contentScriptAccountChange',
+		data: {
+			selectedAccount: selectValue
+		}
+	})
+}
+
+function checkToMakeCall(){
+	let phoneNumber = phoneNumberInput.value
+	if(!phoneNumber){
+		console.info('account && phoneNumber is require')
+		return
+	}
+
+	sendMessageToBackgroundJS({
+		cmd: 'contentScriptMakeCall',
+		data: {
+			phonenumber: phoneNumber?.trim(),
+		}
+	})
+
+	// 点击呼叫后关闭弹框
+	hiddenConfigArea()
+}
+
+/**
+ * 设置使用的分机信息
+ */
+function updateCallConfig(){
+	let server = serverInput.value
+	let username = usernameInput.value
+	let pwd = pwdInput.value
+	if(!server || !username || !pwd){
+		alert('invalid parameters')
+		return
+	}
+	if(server.trim){
+		server = server.trim()
+	}
+	if(username.trim){
+		username = username.trim()
+	}
+	if(pwd.trim){
+		pwd = pwd.trim()
+	}
+
+	sendMessageToBackgroundJS({
+		cmd: 'contentScriptUpdateLoginInfo',
+		data: {
+			url: server,
+			username: username,
+			password: pwd
+		}
+	}, function (res){
+		console.info("res: ", res)
+	})
+}
+
+function makeCallWithRemoteNumber(){
+	let phoneNumber = document.getElementById('callRemoteNumber')?.value
+	if(!phoneNumber){
+		console.info("phoneNumber is empty!!")
+		return
+	}
+	sendMessageToBackgroundJS({
+		cmd: 'contentScriptMakeCall',
+		data: {
+			phonenumber: phoneNumber?.trim(),
+		}
+	}, function (res){
+		console.info("res: ", res)
+	})
+
+	// 点击呼叫后关闭弹框
+	hiddenConfigArea()
+}
+
+/**
+ * 添加GPR配置页面的控制按钮
+ */
+function makeGRPConfigBtn(){
+	let domCheckInterval = setInterval(function (){
+		let parent = document.getElementsByClassName('main-menus')[0]
+		if(parent){
+			clearInterval(domCheckInterval)
+			let langInfo = localStorage.getItem('latest_lang_info')
+			let tip = langInfo === 'en_US' ? 'GRPConfig' : 'GRP配置'
+			let newItem = document.createElement('li')
+			newItem.className = 'menu-item menu-micro-app ng-scope'
+			newItem.innerHTML = '<div class="menu-item-content">' + '<i class="iconfont icon-modify-alias" style="font-size: 26px;font-weight: bold;color: brown;" title='+ tip +'></i></div>'
+			newItem.onclick = showConfigArea
+			parent.appendChild(newItem);
+
+			let newItem2 = document.createElement('li')
+			newItem2.innerHTML = '<input id="remoteTarget"  style="display: none"><input id="callRemoteNumber" style="display: none">'
+			parent.appendChild(newItem2);
+
+			let btn = document.getElementById('callRemoteNumber')
+			btn.onclick = makeCallWithRemoteNumber
+		}
+	}, 1000)
+}
+
+function showConfigArea(){
+	updateInputValue()
+
+	let grpCallConfig = document.getElementById('grpCallConfig')
+	grpCallConfig.style.opacity = '1'
+	grpCallConfig.style['z-index'] = '2050'
+
+	let xConfigMaskLayer = document.getElementById('xConfigMaskLayer')
+	xConfigMaskLayer.style.opacity = '0.55'
+	xConfigMaskLayer.style['z-index'] = '2040'
+}
+
+function hiddenConfigArea(){
+	let grpCallConfig = document.getElementById('grpCallConfig')
+	grpCallConfig.style.opacity = '0'
+	grpCallConfig.style['z-index'] = '-999'
+
+	let xConfigMaskLayer = document.getElementById('xConfigMaskLayer')
+	xConfigMaskLayer.style.opacity = '0'
+	xConfigMaskLayer.style['z-index'] = '-999'
 }
 
 /**
@@ -244,20 +355,6 @@ function reloadAccountSelectOptions(){
 		}
 	}
 	accountSelect.innerHTML = options
-}
-
-/**
- * 单独更新可用账号数量
- * @param length
- */
-function setAvailableAccounts(length){
-	if(!XConfigObj){
-		XConfigObj = {}
-	}
-
-	XConfigObj.availableAccounts = parseInt(length)
-
-	reloadAccountSelectOptions()
 }
 
 function updateInputValue(data){
@@ -287,137 +384,6 @@ function updateInputValue(data){
 	}
 }
 
-function showConfigArea(){
-	updateInputValue()
-
-	let grpCallConfig = document.getElementById('grpCallConfig')
-	grpCallConfig.style.opacity = '1'
-	grpCallConfig.style['z-index'] = '2050'
-
-	let xConfigMaskLayer = document.getElementById('xConfigMaskLayer')
-	xConfigMaskLayer.style.opacity = '0.55'
-	xConfigMaskLayer.style['z-index'] = '2040'
-}
-
-function hiddenConfigArea(){
-	let grpCallConfig = document.getElementById('grpCallConfig')
-	grpCallConfig.style.opacity = '0'
-	grpCallConfig.style['z-index'] = '-999'
-
-	let xConfigMaskLayer = document.getElementById('xConfigMaskLayer')
-	xConfigMaskLayer.style.opacity = '0'
-	xConfigMaskLayer.style['z-index'] = '-999'
-}
-
-/**
- * 点击遮罩层时关闭弹框
- * @param event
- */
-window.onclick = function (event){
-	if(event.srcElement && event.srcElement.id === 'xConfigMaskLayer'){
-		hiddenConfigArea()
-	}
-}
-
-function makeCallWithRemoteNumber(){
-	let phoneNumber = document.getElementById('callRemoteNumber')?.value
-	if(!phoneNumber){
-		console.info("phoneNumber is empty!!")
-		return
-	}
-	sendMessageToBackgroundJS({
-		cmd: 'contentScriptMakeCall',
-		data: {
-			phonenumber: phoneNumber?.trim(),
-		}
-	}, function (res){
-		console.info("res: ", res)
-	})
-
-	// 点击呼叫后关闭弹框
-	hiddenConfigArea()
-}
-
-function checkToMakeCall(){
-	let selectedIndex = accountSelect.selectedIndex
-	let account = accountSelect.options[selectedIndex].value
-	let phoneNumber = phoneNumberInput.value
-	if(!account || !phoneNumber){
-		console.info('account && phoneNumber is require')
-		return
-	}
-
-	sendMessageToBackgroundJS({
-		cmd: 'contentScriptMakeCall',
-		data: {
-			selectedAccount: account?.trim(),
-			phonenumber: phoneNumber?.trim(),
-		}
-	}, function (res){
-		console.info("res: ", res)
-	})
-
-	// 点击呼叫后关闭弹框
-	hiddenConfigArea()
-}
-
-/**
- * 设置使用的分机信息
- */
-function updateCallConfig(){
-	let selectedIndex = accountSelect.selectedIndex
-	let account = accountSelect.options[selectedIndex]?.value || -1
-	let server = serverInput.value
-	let username = usernameInput.value
-	let pwd = pwdInput.value
-	if(!server || !username || !pwd){
-		alert('invalid parameters')
-		return
-	}
-	if(server.trim){
-		server = server.trim()
-	}
-	if(username.trim){
-		username = username.trim()
-	}
-	if(pwd.trim){
-		pwd = pwd.trim()
-	}
-	if(account.trim){
-		account = account.trim()
-	}
-
-	sendMessageToBackgroundJS({
-		cmd: 'contentScriptUpdateLoginInfo',
-		data: {
-			url: server,
-			username: username,
-			password: pwd,
-			selectedAccount: account
-		}
-	}, function (res){
-		console.info("res: ", res)
-	})
-}
-
-window.onload = function (){
-	insertConfigArea()
-
-	setTimeout(function (){
-		pageResize();
-		makeGRPConfigBtn()
-	}, 2*1000)
-
-	pageMutationObserver()
-
-	// 钉钉页面
-	window.onunload = function (){
-		sendMessageToBackgroundJS({
-			cmd: 'contentScriptPageClose'
-		})
-	}
-}
-
 /**
  * 页面显示提示
  */
@@ -440,6 +406,34 @@ function showTipInPage(data){
 		xMessageTip.innerText = ''
 		xMessageTip.style.background = ''
 	}, 2000)
+}
+
+window.onload = function (){
+	insertConfigArea()
+
+	setTimeout(function (){
+		pageResize();
+		makeGRPConfigBtn()
+	}, 2*1000)
+
+	pageMutationObserver()
+
+	// 钉钉页面
+	window.onunload = function (){
+		sendMessageToBackgroundJS({
+			cmd: 'contentScriptPageClose'
+		})
+	}
+}
+
+/**
+ * 点击遮罩层时关闭弹框
+ * @param event
+ */
+window.onclick = function (event){
+	if(event.srcElement && event.srcElement.id === 'xConfigMaskLayer'){
+		hiddenConfigArea()
+	}
 }
 
 /************************** Content-script 和 backgroundJS 间的通信处理*******************************/
@@ -492,7 +486,8 @@ if(chrome.runtime && chrome.runtime.onMessage){
 				case "setAvailableAccountList":
 					if(request.availableAccounts && request.availableAccounts > 0){
 						console.info("set up account list " + request.availableAccounts)
-						setAvailableAccounts(request.availableAccounts)
+						XConfigObj.availableAccounts = parseInt(request.availableAccounts)
+						reloadAccountSelectOptions()
 					}
 					break
 				case "showConfig":

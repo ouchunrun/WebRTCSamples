@@ -62,8 +62,6 @@ function showTipInPage(data){
  * 登录或更新登录配置信息
  */
 function updateLoginInformation(){
-	let selectedIndex = accountSelect.selectedIndex
-	let account = accountSelect.options[selectedIndex]?.value || -1
 	let server = serverInput.value
 	let username = usernameInput.value
 	let pwd = pwdInput.value
@@ -80,17 +78,13 @@ function updateLoginInformation(){
 	if(pwd.trim){
 		pwd = pwd.trim()
 	}
-	if(account.trim){
-		account = account.trim()
-	}
 
 	popupSendMessage2Background({
 		cmd: 'popupUpdateLoginInfo',
 		data: {
 			url: server,
 			username: username,
-			password: pwd,
-			selectedAccount: account
+			password: pwd
 		}
 	})
 }
@@ -99,10 +93,8 @@ function updateLoginInformation(){
  * 呼叫
  */
 function call(){
-	let selectedIndex = accountSelect.selectedIndex
-	let account = accountSelect.options[selectedIndex].value
 	let phoneNumber = phoneNumberInput.value
-	if(!account || !phoneNumber){
+	if(!phoneNumber){
 		showTipInPage({message: 'account/phoneNumber can not be empty'})
 		return
 	}
@@ -110,8 +102,19 @@ function call(){
 	popupSendMessage2Background({
 		cmd: 'popupMakeCall',
 		data: {
-			selectedAccount: account?.trim(),
 			phonenumber: phoneNumber?.trim(),
+		}
+	})
+}
+
+function onSelectAccountChange(){
+	let index = accountSelect.selectedIndex; // 选中索引
+	let selectValue = accountSelect.options[index].value;
+
+	popupSendMessage2Background({
+		cmd: 'popupAccountChange',
+		data: {
+			selectedAccount: selectValue
 		}
 	})
 }
@@ -135,6 +138,7 @@ function getDom(){
 	}else {
 		submitBtn.onclick = updateLoginInformation
 		makeCallBtn.onclick = call
+		accountSelect.onchange = onSelectAccountChange
 	}
 }
 

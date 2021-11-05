@@ -18,6 +18,11 @@ let grpClick2Talk = {
  * 检查是否已授权访问grp host连接
  */
 function permissionCheck(serverURL){
+	if(!serverURL){
+		return
+	}
+	serverURL = checkUrlFormat(serverURL)
+
 	let httpRequest = new XMLHttpRequest();
 	let requestRUL= serverURL + '/cgi-bin/api-will_login'
 	httpRequest.open('POST', requestRUL, true);
@@ -128,37 +133,39 @@ function accountLogin(){
  * 呼叫指定号码
  * @param data
  */
-function makeCall(data){
+function extMakeCall(data){
 	if(!data){
 		console.info('Invalid phoneNumber parameter to set for make call')
 		return
 	}
 	if(!grpClick2Talk.isLogin){
 		alert('please login first!!!')
-		sendMessageToContentScript({
-			cmd:'showConfig',
-		});
+		sendMessageToContentScript({cmd:'showConfig'});
 		return
 	}
-	console.info("make call data: \r\n" + JSON.stringify(data, null, '    '))
-	grpClick2Talk.gsApi.makeCall({
-		account: data.selectedAccount || grpClick2Talk.loginData.selectedAccount,
-		phonenumber: data.phonenumber,
-		password: grpClick2Talk.loginData.password,
-		onreturn: function (evt){
-			if (evt.readyState === 4) {
-				// todo: 200 不代表呼叫成功，只标示cgi请求的成功与否
-				console.info("make call return status code : " + evt.status)
-				if(evt.status === 200){
-					grpClick2Talk.remotenumber = data.phonenumber
-					monitorLineStatus()
-				}else {
-					let error = 'call error ' + evt.status
-					alert(error)
-				}
+
+	let callCallBack = function (event){
+		if (event.readyState === 4) {
+			// 200 不代表呼叫成功，只标示cgi请求的成功与否。实际状态需要实时获取线路状态才能知道
+			console.info("make call return status code : " + event.status)
+			if(event.status === 200){
+				grpClick2Talk.remotenumber = data.phonenumber
+				monitorLineStatus()
+			}else {
+				let error = 'call error ' + event.status
+				alert(error)
 			}
 		}
-	})
+	}
+
+	let callData = {
+		account: grpClick2Talk.loginData.selectedAccount,
+		phonenumber: data.phonenumber,
+		password: grpClick2Talk.loginData.password,
+		onreturn: callCallBack
+	}
+	console.info("gsApi make call data: \r\n" + JSON.stringify(callData, null, '    '))
+	grpClick2Talk.gsApi.makeCall(callData)
 }
 
 /**
@@ -269,9 +276,11 @@ function updateCallCfg(data){
 	let isServerChange = false
 	let isLoginDataChange = false
 	let currentLoginData = grpClick2Talk.loginData
-	if(data.url !== currentLoginData.url){
+	if(data.url && data.url !== currentLoginData.url){
 		isServerChange = true
-	}else if(data.username !== currentLoginData.username || data.password !== currentLoginData.password){
+	}else if(data.username && data.username !== currentLoginData.username){
+		isLoginDataChange = true
+	}else if(data.password && data.password !== currentLoginData.password){
 		isLoginDataChange = true
 	}
 
@@ -366,12 +375,13 @@ function chromeRuntimeOnMessage(request){
 				permissionCheck(loginDatas.url)
 			}
 			break
+		case "contentScriptAccountChange":
 		case "contentScriptUpdateLoginInfo":
 			updateCallCfg(request.data)
 			break
 		case "contentScriptMakeCall":
 			console.info("request.data:", request.data)
-			makeCall(request.data)
+			extMakeCall(request.data)
 			break
 		case 'contentScriptPageClose':
 			// 页面刷新或关闭的时候，如果处于登录状态，清除login定时器
@@ -422,16 +432,16 @@ function chromeExtensionOnMessage(request) {
 				}
 			}
 			break
+		case "popupAccountChange":
 		case 'popupUpdateLoginInfo':
 			// 登录或更新登录信息
 			updateCallCfg(request.data)
-
-			// 更新content-script中的设置
+			// 同步更新content-script中的设置
 			sendMessageToContentScript({cmd:'updateConfig', data: request.data});
 			break
 		case "popupMakeCall":
 			console.info("request.data:", request.data)
-			makeCall(request.data)
+			extMakeCall(request.data)
 			break
 		default:
 			break
