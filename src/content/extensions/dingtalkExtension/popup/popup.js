@@ -114,7 +114,7 @@ function onSelectAccountChange(){
 	popupSendMessage2Background({
 		cmd: 'popupAccountChange',
 		data: {
-			selectedAccount: selectValue
+			selectedAccountId: selectValue
 		}
 	})
 }

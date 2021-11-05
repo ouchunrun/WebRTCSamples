@@ -3,8 +3,8 @@ let grpClick2Talk = {
 	isLogin: false,
 	gsApi: null,
 	loginData: {
-		selectedAccount: -1,
-		availableAccounts: 0,
+		selectedAccountId: 0,  // default
+		accountLists: [],
 		password: "",
 		url: "",
 		username: ""
@@ -51,30 +51,6 @@ function permissionCheck(serverURL){
 	httpRequest.send()
 }
 
-function getModelDefinesInfo(){
-	let xmlHttp = new XMLHttpRequest()
-	xmlHttp.onreadystatechange = function () {
-		if (xmlHttp.readyState === 4 && xmlHttp.status === 200){
-			let modelDefines = JSON.parse(xmlHttp.responseText).defines
-			if(modelDefines && modelDefines.num_accounts){
-				console.info("当前支持的账号数量：", modelDefines.num_accounts)
-				grpClick2Talk.loginData.availableAccounts = modelDefines.num_accounts
-				localStorage.setItem('XNewestData', JSON.stringify(grpClick2Talk.loginData, null, '   '))
-
-				sendMessageToContentScript({
-					cmd:'setAvailableAccountList',
-					availableAccounts: modelDefines.num_accounts
-				});
-			}else {
-				console.info("get modelDefines:", modelDefines)
-			}
-		}
-	}
-	let requestURL = grpClick2Talk.loginData?.url + '/json/configs/model.define.js'
-	xmlHttp.open("GET", requestURL, true)
-	xmlHttp.send(null)
-}
-
 /**
  * 登录
  */
@@ -93,7 +69,6 @@ function accountLogin(){
 		// 	'X-Request-Server-Type': 'X-GRP',
 		// }
 	}
-	console.info('login data: \r\n' + JSON.stringify(config, null, '   '))
 	if (GsUtils.isNUllOrEmpty(grpClick2Talk.gsApi)) {
 		grpClick2Talk.gsApi = new GsApi(config)
 	}else {
@@ -108,12 +83,12 @@ function accountLogin(){
 				if (event.readyState === 4) {
 					if(event.response){
 						let response = JSON.parse(event.response)
-						console.info('login response: \r\n' + JSON.stringify(response, null, '    '))
+						console.info('login response:' + response.response)
 						if(event.status === 200 && response.response === 'success'){
 							grpClick2Talk.sid = response.body.sid
 							grpClick2Talk.isLogin = true
 
-							getModelDefinesInfo()  // TODO: 获取当前话机配置的账号个数
+							getAccounts()
 						}
 
 						// 【消息提示】 通知页面当前登录状态。或是可以考虑仅background保存，点开popup页面后显示？？？
@@ -127,6 +102,46 @@ function accountLogin(){
 			}
 		}
 	})
+}
+
+/**
+ * 获取激活的账号列表
+ */
+function getAccounts(){
+	let xmlHttp = new XMLHttpRequest()
+	xmlHttp.onreadystatechange = function () {
+		if (xmlHttp.readyState === 4 && xmlHttp.status === 200){
+			let text = JSON.parse(xmlHttp.responseText)
+			if(text.response === "success"){
+				if(text.body.length){
+					grpClick2Talk.loginData.accountLists = text.body
+					sendMessageToContentScript({cmd:'setAccountLists', accountLists: text.body});
+				}else {
+					console.info('account []')
+				}
+			}
+		}
+	}
+	let requestURL = grpClick2Talk.loginData?.url + '/cgi-bin/api-get_accounts'
+	xmlHttp.open("GET", requestURL, true)
+	xmlHttp.send()
+}
+
+function getModelDefinesInfo(){
+	let xmlHttp = new XMLHttpRequest()
+	xmlHttp.onreadystatechange = function () {
+		if (xmlHttp.readyState === 4 && xmlHttp.status === 200){
+			let modelDefines = JSON.parse(xmlHttp.responseText).defines
+			if(modelDefines && modelDefines.num_accounts){
+
+			}else {
+				console.info("get modelDefines:", modelDefines)
+			}
+		}
+	}
+	let requestURL = grpClick2Talk.loginData?.url + '/json/configs/model.define.js'
+	xmlHttp.open("GET", requestURL, true)
+	xmlHttp.send(null)
 }
 
 /**
@@ -158,13 +173,14 @@ function extMakeCall(data){
 		}
 	}
 
+	let accountId = parseInt(grpClick2Talk.loginData.selectedAccountId)
 	let callData = {
-		account: grpClick2Talk.loginData.selectedAccount,
+		account: accountId -1,
 		phonenumber: data.phonenumber,
 		password: grpClick2Talk.loginData.password,
 		onreturn: callCallBack
 	}
-	console.info("gsApi make call data: \r\n" + JSON.stringify(callData, null, '    '))
+	console.info("gsApi make call data", JSON.stringify(callData, null, '    '))
 	grpClick2Talk.gsApi.makeCall(callData)
 }
 
@@ -243,7 +259,6 @@ function clearStatusInterval(){
  * @param data
  */
 function updateLoginData(data){
-	console.log('set login data: \r\n' + JSON.stringify(data, null, '    '))
 	if(!data){
 		console.info('Invalid parameter to set for login')
 		return
@@ -467,15 +482,26 @@ function showConfig(view){
 	}
 
 	// 处理账号下拉框列表
-	let selectAccount = parseInt(grpClick2Talk.loginData?.selectedAccount)
-	let selectOptions
-	if(selectAccount >= 0){
-		selectOptions = '<option value=' + selectAccount +' selected>Account ' + (selectAccount+1) + '</option><option value="-1">First Available</option>'
-	}else {
-		selectOptions = '<option value="-1">First Available</option>'
+	let options = '<option value="0">First Available</option>'
+	let checkOption = ''
+	let selectAccount = parseInt(grpClick2Talk.loginData?.selectedAccountId)
+	let loginDatas = grpClick2Talk?.loginData
+	if(loginDatas && loginDatas.accountLists && loginDatas.accountLists.length){
+		for(let i = 0; i<loginDatas.accountLists.length; i++){
+			let acct = loginDatas.accountLists[i]
+			if(parseInt(acct.reg) === 1){
+				let acctId = parseInt(acct.id)
+				if(selectAccount && selectAccount === acctId){
+					checkOption = '<option value=' + acctId +' selected>Account ' + acctId + '_' + acct.sip_id + '</option>'
+				}
+				options = options + '<option value=' + acctId +'>Account ' + acctId + '_' + acct.sip_id + '</option>'
+			}else {
+				// 0 未注册
+			}
+		}
 	}
-	for(let i = 0; i<grpClick2Talk.loginData.availableAccounts; i++){
-		selectOptions = selectOptions + '<option value=' + i +'>Account ' + (i+1) + '</option>'
+	if(checkOption){
+		options = checkOption + options
 	}
 
 	let configDiv = document.createElement('div')
@@ -486,12 +512,12 @@ function showConfig(view){
         <tbody>
             <tr>
                 <td class="xLabelTip"><label>Address</label></td>
-                <td><input type="text" id="x-serverAddress"  value=` + grpClick2Talk.loginData?.url + `></td>
+                <td><input type="text" id="x-serverAddress" value=` + grpClick2Talk.loginData?.url + `></td>
                 <td></td>
             </tr>
             <tr>
                 <td class="xLabelTip"><label>Username</label></td>
-                <td><input type="text" id="x-userName"  value=` + grpClick2Talk.loginData?.username + ` ></td>
+                <td><input type="text" id="x-userName" value=` + grpClick2Talk.loginData?.username + ` ></td>
                 <td></td>
             </tr>
             <tr>
@@ -500,18 +526,18 @@ function showConfig(view){
                 <td></td>
             </tr>
             <tr>
-                <td class="xLabelTip"><label>Accounts</label></td>
-                <td>
-			        <select name="" id="x-account">` + selectOptions + `</select>
-			    </td>
-                <td></td>
-            </tr>
-            <tr>
                 <td></td>
                 <td>
                     <button id="submitConfig">
                     ` + configTips.loginInnerText + `
                     </button></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td class="xLabelTip"><label>Accounts</label></td>
+                <td>
+			        <select name="" id="x-account">` + options + `</select>
+			    </td>
                 <td></td>
             </tr>
             <tr>

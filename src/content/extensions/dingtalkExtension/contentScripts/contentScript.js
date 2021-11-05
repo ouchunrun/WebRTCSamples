@@ -144,20 +144,20 @@ function insertConfigArea(){
                 <td></td>
             </tr>
             <tr>
-                <td class="xLabelTip"><label>Accounts</label></td>
-                <td>
-			        <select name="" id="x-account" style="height: 30px; width: 180px;font-family: cursive;font-size: 13px;border: 1px solid #e1e1e1;">
-			            <option value="-1">First Available</option>
-			        </select>
-			    </td>
-                <td></td>
-            </tr>
-            <tr>
                 <td></td>
                 <td>
                     <button id="submitConfig" style="margin: 5px 0px;height: 34px;width: 180px;font-family: cursive;border-radius: 15px;font-size: 14px;border: 0;">
                     ` + configTips.loginInnerText + `
                     </button></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td class="xLabelTip"><label>Accounts</label></td>
+                <td>
+			        <select name="" id="x-account" style="height: 30px; width: 180px;font-family: cursive;font-size: 13px;border: 1px solid #e1e1e1;">
+			            <option value="0">First Available</option>
+			        </select>
+			    </td>
                 <td></td>
             </tr>
             <tr>
@@ -204,11 +204,11 @@ function onSelectAccountChange(){
 	let index = accountSelect.selectedIndex; // 选中索引
 	let selectValue = accountSelect.options[index].value;
 
-	XConfigObj.selectedAccount = selectValue
+	XConfigObj.selectedAccountId = selectValue
 	sendMessageToBackgroundJS({
 		cmd: 'contentScriptAccountChange',
 		data: {
-			selectedAccount: selectValue
+			selectedAccountId: selectValue
 		}
 	})
 }
@@ -333,26 +333,35 @@ function hiddenConfigArea(){
 
 /**
  * 更新账号选择下拉框选项
+ * [
+ *  {id: 1, sip_server: '192.168.125.254', sip_id: '366102', name: '366102', reg: 1}
+ *  {id: 2, sip_server: '192.168.120.254', sip_id: '3661', name: '3661', reg: 1}
+ * ]
  */
 function reloadAccountSelectOptions(){
 	if(!accountSelect){
 		return
 	}
 
-	console.info("XConfigObj:", JSON.stringify(XConfigObj, null, '    '))
-	let options
-	let selectAccount = parseInt(XConfigObj.selectedAccount)
-	let accountLen = parseInt(XConfigObj.availableAccounts)
-	if(selectAccount >= 0 && selectAccount <= accountLen){
-		options = '<option value=' + selectAccount +' selected>Account ' + (selectAccount+1) + '</option><option value="-1">First Available</option>'
-	}else {
-		options = '<option value="-1">First Available</option>'
-	}
-
-	if(accountLen){
-		for(let i = 0; i<accountLen; i++){
-			options = options + '<option value=' + i +'>Account ' + (i+1) + '</option>'
+	let options = '<option value="0">First Available</option>'
+	let checkOption = ''
+	let selectAccount = parseInt(XConfigObj.selectedAccountId)
+	if(XConfigObj.accountLists && XConfigObj.accountLists.length){
+		for(let i = 0; i<XConfigObj.accountLists.length; i++){
+			let acct = XConfigObj.accountLists[i]
+			if(parseInt(acct.reg) === 1){
+				let acctId = parseInt(acct.id)
+				if(selectAccount && selectAccount === acctId){
+					checkOption = '<option value=' + acctId +' selected>Account ' + acctId + '_' + acct.sip_id + '</option>'
+				}
+				options = options + '<option value=' + acctId +'>Account ' + acctId + '_' + acct.sip_id + '</option>'
+			}else {
+				// 0 未注册
+			}
 		}
+	}
+	if(checkOption){
+		options = checkOption + options
 	}
 	accountSelect.innerHTML = options
 }
@@ -368,7 +377,6 @@ function updateInputValue(data){
 		})
 	}
 
-	console.log("update input value XConfigObj:", XConfigObj)
 	if(XConfigObj){
 		if(XConfigObj.url && serverInput){
 			serverInput.value = XConfigObj.url
@@ -450,7 +458,6 @@ function sendMessageToBackgroundJS(message, callback){
 		message.requestType = 'contentMessage2Background'
 
 		chrome.runtime.sendMessage(message, function(response) {
-			console.log('收到来自后台的回复：', response);
 			if(callback){
 				callback(response)
 			}
@@ -463,8 +470,8 @@ function sendMessageToBackgroundJS(message, callback){
  */
 if(chrome.runtime && chrome.runtime.onMessage){
 	chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-		console.info("onMessage request:", request)
 		if(request && request.requestType === 'backgroundMessage2ContentScript'){
+			console.info("onMessage request:", request.cmd)
 			switch (request.cmd){
 				case "autoLogin":  // 钉钉首次加载页面，获取信息后自动登录
 					if(request.data){
@@ -483,12 +490,9 @@ if(chrome.runtime && chrome.runtime.onMessage){
 						updateInputValue(request.data)
 					}
 					break
-				case "setAvailableAccountList":
-					if(request.availableAccounts && request.availableAccounts > 0){
-						console.info("set up account list " + request.availableAccounts)
-						XConfigObj.availableAccounts = parseInt(request.availableAccounts)
-						reloadAccountSelectOptions()
-					}
+				case "setAccountLists":
+					XConfigObj.accountLists = request.accountLists
+					reloadAccountSelectOptions()
 					break
 				case "showConfig":
 					console.log('login first, show config area')
