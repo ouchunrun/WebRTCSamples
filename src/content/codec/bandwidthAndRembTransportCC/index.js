@@ -47,8 +47,8 @@ function getVideoMedia() {
     let constraints = {
         audio: false,
         video: {
-            width: {max: 1920},
-            height: {max: 1080},
+            width: {ideal: 1920},
+            height: {ideal: 1080},
             frameRate: { max: 5 }
         }
     }
@@ -69,7 +69,7 @@ function getVideoMedia() {
 
 function getScreenCapture(){
     let constraints = {
-        audio: true,
+        audio: false,
         video: {
             width: { max: 1920 },
             height: { max: 1080 },
@@ -77,7 +77,7 @@ function getScreenCapture(){
         }
     }
     navigator.mediaDevices.getDisplayMedia(constraints).then(function (stream){
-        console.warn('get local media stream success: ' , stream.id);
+        console.warn('get local media stream success: ' , JSON.stringify(constraints, null, '    '));
         connectButton.disabled = false;
         localStream = stream;
         localVideo.srcObject = stream;
