@@ -7,7 +7,53 @@
     <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-    <div id="popupContent"></div>
+    <div id="popupContent">
+        <!--   tips     -->
+        <span id="loginIdentity" title=""></span>
+        <div id="configHead"></div>
+        <div id="xMessageTip"></div>
+
+        <table id="xConfigTable">
+            <tbody>
+            <tr>
+                <td class="xLabelTip"><label>Address</label></td>
+                <td><input type="text" id="x-serverAddress" value=""></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td class="xLabelTip"><label>Username</label></td>
+                <td><input type="text" id="x-userName" value="" ></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td class="xLabelTip"><label>Password</label></td>
+                <td><input type="text" id="x-password" value=""></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td><button id="submitConfig"></button></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td class="xLabelTip"><label>Accounts</label></td>
+                <td><select name="" id="x-account"></select></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td class="xLabelTip"><label>Dial Number</label></td>
+                <td><input type="text" id="x-phoneNumber" value="359301" placeholder="359301"></td>
+                <td><button id="x-makeCall"></button></td>
+            </tr>
+            </tbody>
+        </table>
+
+        <!--线路状态显示-->
+        <hr>
+        <table>
+            <tbody id="linesTable"></tbody>
+        </table>
+    </div>
 
     <script src="popup.js"></script>
 </body>

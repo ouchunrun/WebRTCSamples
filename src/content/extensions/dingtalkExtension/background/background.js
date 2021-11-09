@@ -1,4 +1,5 @@
 /***************************************（一）gsApi创建、注册、呼叫****************************************************/
+let XPopupPort
 let grpClick2Talk = {
 	isLogin: false,
 	gsApi: null,
@@ -10,8 +11,10 @@ let grpClick2Talk = {
 		username: ""
 	},
 	sid: '',
+	latestLangInfo: '',
+	call401Authentication: false,
 	getLineStatusInterval: null,
-	latestLangInfo: ''
+	getPhoneStatusInterval: null,
 }
 
 /**
@@ -76,32 +79,132 @@ function accountLogin(){
 		grpClick2Talk.gsApi.updateCfg(config)
 	}
 
-	grpClick2Talk.isLogin = false
-	grpClick2Talk.gsApi.login({
-		onreturn: function (event){
-			try{
-				if (event.readyState === 4) {
-					if(event.response){
-						let response = JSON.parse(event.response)
-						console.info('login response:' + response.response)
-						if(event.status === 200 && response.response === 'success'){
-							grpClick2Talk.sid = response.body.sid
-							grpClick2Talk.isLogin = true
+	let loginCallback = function (event){
+		if (event.readyState === 4) {
+			if(event.response){
+				let response = JSON.parse(event.response)
+				console.info('login response:' + response.response)
+				if(event.status === 200 && response.response === 'success'){
+					grpClick2Talk.sid = response.body.sid
+					grpClick2Talk.isLogin = true
 
-							getAccounts()
-						}
+					// 获取当前话机配置的账号列表及账号是否注册等状态
+					getAccounts()
 
-						// 【消息提示】 通知页面当前登录状态。或是可以考虑仅background保存，点开popup页面后显示？？？
-						sendMessageToContentScript({cmd: 'loginStatus', response: response});
-					}else {
-						console.info("login return response: ", event)
+					if(grpClick2Talk.call401Authentication){
+						console.log('Call 401, re-authentication')
+						extMakeCall({
+							phonenumber: grpClick2Talk.remotenumber
+						})
 					}
+
+					sendMessage2Popup({cmd: 'updateLoginStatus', data: {className: 'grey', add: false}})
+
+					// 清除保活定时器
+					grpClick2Talk.gsApi.stopKeepAlive()
+				}else {
+					sendMessage2Popup({cmd: 'updateLoginStatus', data: {className: 'grey', add: true}})
 				}
-			}catch (e){
-				console.info(e)
+
+				// 【消息提示】 通知页面当前登录状态。
+				sendMessageToContentScript({cmd: 'loginStatus', response: response});
+			}else {
+				console.info("login return response: ", event)
+				if(grpClick2Talk.call401Authentication){
+					console.info('call failed')
+					grpClick2Talk.call401Authentication = false
+				}
 			}
 		}
-	})
+	}
+
+	grpClick2Talk.isLogin = false
+	grpClick2Talk.gsApi.login({onreturn: loginCallback})
+}
+
+/**
+ * 登录成功后 定时获取设备当前登录状态
+ * {
+        "response": "success",
+        "body": "available",
+        // available 登录成功且有账号注册
+        // unavailable 登录成功 但账号未注册
+        // ringing 话机振铃中
+        // busy 话机通话忙碌中
+        // unauthorized 登录鉴权失败
+        "misc": "1",
+        // 1 允许idle call
+        // 0 不允许idle call
+        "session_expiring": true // 登录有效期超时
+    }
+ */
+function startGetPhoneStatus(){
+	let getPhoneStatusCallback = function (event){
+		if (event.readyState === 4 && event.response){
+			let data = JSON.parse(event.response)
+			if(data && data.body === 'unauthorized'){  // 登录鉴权失败
+				console.log('login authentication failed')
+				grpClick2Talk.isLogin = false
+				clearPhoneStatusInterval()
+
+				sendMessage2Popup({
+					cmd: 'updateLoginStatus',
+					data: {className: 'grey', add: true}
+				})
+			}
+		}
+	}
+	clearPhoneStatusInterval()
+
+	// grpClick2Talk.getPhoneStatusInterval = setInterval(function (){
+	// 	grpClick2Talk.gsApi.getPhoneStatus({onreturn: getPhoneStatusCallback})
+	// }, 5*1000)
+
+	// 仅获取一次
+	setTimeout(function (){
+		grpClick2Talk.gsApi.getPhoneStatus({onreturn: getPhoneStatusCallback})
+	}, 5000)
+}
+
+/**
+ * 呼叫指定号码
+ * @param data
+ */
+function extMakeCall(data){
+	if(!data){
+		console.info('Invalid phoneNumber parameter to set for make call')
+		return
+	}
+
+	let callCallBack = function (event){
+		if (event.readyState === 4) {
+			// 200 不代表呼叫成功，只标示cgi请求的成功与否。实际状态需要实时获取线路状态才能知道
+			console.info("make call return status code : " + event.status)
+			if(event.status === 200){
+				grpClick2Talk.call401Authentication = false
+				showLineStatus()
+			}else if(event.status === 401 && !grpClick2Talk.call401Authentication){
+				// 其他地方登录导致sid变化，需要重新登录
+				console.info('Authentication information is invalid, log in again')
+				grpClick2Talk.call401Authentication = true
+				accountLogin()
+			} else {
+				grpClick2Talk.call401Authentication = false
+				showLineStatus()
+			}
+		}
+	}
+
+	let accountId = parseInt(grpClick2Talk.loginData.selectedAccountId)
+	let callData = {
+		account: accountId -1,
+		phonenumber: data.phonenumber,
+		password: grpClick2Talk.loginData.password,
+		onreturn: callCallBack
+	}
+	console.info("gsApi call phone number " + callData.phonenumber)
+	grpClick2Talk.remotenumber = callData.phonenumber
+	grpClick2Talk.gsApi.makeCall(callData)
 }
 
 /**
@@ -127,63 +230,6 @@ function getAccounts(){
 	xmlHttp.send()
 }
 
-function getModelDefinesInfo(){
-	let xmlHttp = new XMLHttpRequest()
-	xmlHttp.onreadystatechange = function () {
-		if (xmlHttp.readyState === 4 && xmlHttp.status === 200){
-			let modelDefines = JSON.parse(xmlHttp.responseText).defines
-			if(modelDefines && modelDefines.num_accounts){
-
-			}else {
-				console.info("get modelDefines:", modelDefines)
-			}
-		}
-	}
-	let requestURL = grpClick2Talk.loginData?.url + '/json/configs/model.define.js'
-	xmlHttp.open("GET", requestURL, true)
-	xmlHttp.send(null)
-}
-
-/**
- * 呼叫指定号码
- * @param data
- */
-function extMakeCall(data){
-	if(!data){
-		console.info('Invalid phoneNumber parameter to set for make call')
-		return
-	}
-	if(!grpClick2Talk.isLogin){
-		alert('please login first!!!')
-		sendMessageToContentScript({cmd:'showConfig'});
-		return
-	}
-
-	let callCallBack = function (event){
-		if (event.readyState === 4) {
-			// 200 不代表呼叫成功，只标示cgi请求的成功与否。实际状态需要实时获取线路状态才能知道
-			console.info("make call return status code : " + event.status)
-			if(event.status === 200){
-				grpClick2Talk.remotenumber = data.phonenumber
-				monitorLineStatus()
-			}else {
-				let error = 'call error ' + event.status
-				alert(error)
-			}
-		}
-	}
-
-	let accountId = parseInt(grpClick2Talk.loginData.selectedAccountId)
-	let callData = {
-		account: accountId -1,
-		phonenumber: data.phonenumber,
-		password: grpClick2Talk.loginData.password,
-		onreturn: callCallBack
-	}
-	console.info("gsApi make call data", JSON.stringify(callData, null, '    '))
-	grpClick2Talk.gsApi.makeCall(callData)
-}
-
 /**
  * getLineStatus 返回数据
  * {
@@ -196,51 +242,44 @@ function extMakeCall(data){
 			remotename: "",       // 远端display name
 			remotenumber: "3593", // 远端号码
 			state: "connected",   // 线路状态
-		},
-	    {
-			acct: 1,
-			active: 0,
-			conf: 0,
-			line: 2,
-			remotename: "",
-			remotenumber: "",
-			state: "idle",
-		}
-	 ]
+		}]
  * @type {number}
  */
-function monitorLineStatus(){
+function showLineStatus(){
 	// clear first
 	clearStatusInterval()
 
-	let count = 0
-	grpClick2Talk.getLineStatusInterval = setInterval(function (){
-		count++
-		if(count > 5){
-			console.log('auto clear interval')
-			clearStatusInterval()
-			return
-		}
-
-		grpClick2Talk.gsApi.getLineStatus({
-			onreturn: function (event){
-				if(event.readyState === 4){
-					if(event.response){
-						let response = JSON.parse(event.response)
-						if(event.status === 200 && response.response === 'success'){
-							if(response.body && response.body.length){
-								for(let i = 0; i<response.body.length; i++){
-									let lineStatus = response.body[i]
-									console.info("line " + lineStatus.line + " acct " + lineStatus.acct + " to " + lineStatus.remotenumber + " ", lineStatus.state)
-								}
-							}
+	let lineStatusCallback = function (event){
+		if(event.readyState === 4){
+			if(event.response){
+				if(event.response.indexOf('Unauthorized') >= 0){
+					grpClick2Talk.isLogin = false
+					// 鉴权过期
+					clearStatusInterval()
+					// 修改登录状态
+					sendMessage2Popup({cmd: 'updateLoginStatus', data: {className: 'grey', add: true}})
+				}else {
+					let response = JSON.parse(event.response)
+					if(event.status === 200 && response.response === 'success'){
+						if(response.body && response.body.length){
+							sendMessage2Popup({cmd: 'setLineStatus', lines: response.body})
 						}
-					}else {
-						console.info('getLineStatus error: ', event)
 					}
 				}
+			}else {
+				console.info('getLineStatus error: ', event)
 			}
-		})
+		}
+	}
+
+	let timerCount = 0
+	grpClick2Talk.getLineStatusInterval = setInterval(function (){
+		timerCount++
+		if(timerCount >5){
+			clearStatusInterval()
+		}else {
+			grpClick2Talk.gsApi.getLineStatus({onreturn: lineStatusCallback})
+		}
 	}, 1000)
 }
 
@@ -251,6 +290,17 @@ function clearStatusInterval(){
 	if(grpClick2Talk.getLineStatusInterval){
 		clearInterval(grpClick2Talk.getLineStatusInterval)
 		grpClick2Talk.getLineStatusInterval = null
+	}
+}
+
+/**
+ * 清除获取设备当前登录状态的定时器
+ */
+function clearPhoneStatusInterval(){
+	// clear first
+	if(grpClick2Talk.getPhoneStatusInterval){
+		clearInterval(grpClick2Talk.getPhoneStatusInterval)
+		grpClick2Talk.getPhoneStatusInterval = null
 	}
 }
 
@@ -305,13 +355,14 @@ function updateCallCfg(data){
 	if(isServerChange){
 		console.info("Recheck permission of : " + data.url)
 		permissionCheck(data.url)
-	}else if(isLoginDataChange){
-		console.log('username or password had change..')
+	}else if(isLoginDataChange || !grpClick2Talk.isLogin){
+		console.log('username/password change or logout..')
 		accountLogin()
 	}
 }
 
-/**************************（二）Content-script 和 backgroundJS 间的通信处理*******************************/
+/*******************************************************************************************************************/
+/***************************************（二）Content-script 和 backgroundJS 间的通信处理*******************************/
 /**
  * Chrome插件中有2种通信方式，
  * 一个是短连接（chrome.tabs.sendMessage和chrome.runtime.sendMessage），
@@ -396,6 +447,12 @@ function chromeRuntimeOnMessage(request){
 			break
 		case "contentScriptMakeCall":
 			console.info("request.data:", request.data)
+			if(!grpClick2Talk.isLogin){
+				alert('please login first!!!')
+				sendMessageToContentScript({cmd:'showContentConfig'});
+				return
+			}
+
 			extMakeCall(request.data)
 			break
 		case 'contentScriptPageClose':
@@ -410,25 +467,40 @@ function chromeRuntimeOnMessage(request){
 	}
 }
 
-/**************************（三）backgroundJS 监听 popup 传递来的消息*******************************/
+/*******************************************************************************************************************/
+/**********************************************（三）backgroundJS 监听 popup 传递来的消息*******************************/
 /**
  *  使用长连接 - 监听 popup 传递来的消息
  */
 chrome.extension.onConnect.addListener(port => {
-	console.log('连接中------------')
+	XPopupPort = port
+
 	port.onMessage.addListener(request => {
 		if(request && request.requestType === 'popupMessage2Background'){
-			chromeExtensionOnMessage(request)
+			recvPopupMessage(request, port)
 		}
+	})
 
-		port.postMessage('popup，我收到了你的信息~')
+	port.onDisconnect.addListener(function (){
+		console.log('onDisconnect')
+		XPopupPort = null
 	})
 })
 
 /**
- * 获取所有 tab
+ * 给popup发送消息
+ * @param data
  */
-function chromeExtensionOnMessage(request) {
+function sendMessage2Popup(data){
+	if(XPopupPort){
+		XPopupPort.postMessage(data)
+	}
+}
+
+/**
+ * 收到popup发送的消息
+ */
+function recvPopupMessage(request, port) {
 	if(!request){
 		return
 	}
@@ -436,16 +508,14 @@ function chromeExtensionOnMessage(request) {
 	switch (request.cmd){
 		case "popupOnOpen":
 			// popup 页面打开
-			/* 获取popup页面元素的方式 */
-			const views = chrome.extension.getViews({type: 'popup'})
-			for (let view of views) {
-				console.log('insert element to popup')
-				let popupContent = view.document.getElementById('popupContent')
-				if(popupContent){
-					showConfig(view)
-					sendMessageToContentScript({cmd:'popupOpen'});
-				}
-			}
+			// 返回当前的配置信息
+			console.log('islogin ', grpClick2Talk.isLogin)
+			port.postMessage({cmd: 'popupShowConfig', grpClick2TalObj: grpClick2Talk})
+			// 关闭content-script的配置窗口
+			sendMessageToContentScript({cmd:'popupOpen'});
+
+			// 获取线路的状态
+			showLineStatus()
 			break
 		case "popupAccountChange":
 		case 'popupUpdateLoginInfo':
@@ -458,103 +528,31 @@ function chromeExtensionOnMessage(request) {
 			console.info("request.data:", request.data)
 			extMakeCall(request.data)
 			break
+		case 'popupHangupLine':
+			/**
+			 * 话机部分通话相关操作接口
+			 * extend/endcall/holdcall/unhold/acceptcall/rejectcall/cancel
+			 * grpClick2Talk.gsApi.phoneOperation
+			 */
+			console.info('hangup line ', request.lineId)
+			grpClick2Talk.gsApi.phoneOperation({
+				arg: request.lineId,
+				cmd: 'endcall',
+				sid: grpClick2Talk.sid,
+				onreturn: function (event){
+					if (event.readyState === 4 && event.status === 200){
+						showLineStatus()
+					}
+				}
+			})
+			break
 		default:
 			break
 	}
 }
 
-/**
- * 在popup 弹框中显示配置
- * @param view
- */
-function showConfig(view){
-	if(!view){
-		return
-	}
-
-	let insertParent = view.document.getElementById('popupContent')
-	// 根据当前语言设置界面显示【这里还未处理完全】
-	let langInfo = grpClick2Talk.latestLangInfo
-	let configTips = {
-		title: langInfo === 'en_US' ? 'Click to Dial' : '点击拨打',
-		loginInnerText: langInfo === 'en_US' ? 'Login/Save' : '登录/保存',
-		callInnerText: langInfo === 'en_US' ? 'Call' : '呼叫'
-	}
-
-	// 处理账号下拉框列表
-	let options = '<option value="0">First Available</option>'
-	let checkOption = ''
-	let selectAccount = parseInt(grpClick2Talk.loginData?.selectedAccountId)
-	let loginDatas = grpClick2Talk?.loginData
-	if(loginDatas && loginDatas.accountLists && loginDatas.accountLists.length){
-		for(let i = 0; i<loginDatas.accountLists.length; i++){
-			let acct = loginDatas.accountLists[i]
-			if(parseInt(acct.reg) === 1){
-				let acctId = parseInt(acct.id)
-				if(selectAccount && selectAccount === acctId){
-					checkOption = '<option value=' + acctId +' selected>Account ' + acctId + '_' + acct.sip_id + '</option>'
-				}
-				options = options + '<option value=' + acctId +'>Account ' + acctId + '_' + acct.sip_id + '</option>'
-			}else {
-				// 0 未注册
-			}
-		}
-	}
-	if(checkOption){
-		options = checkOption + options
-	}
-
-	let configDiv = document.createElement('div')
-	configDiv.id = 'grpCallConfig'
-	configDiv.innerHTML = `<div id="configHead">🎃` + configTips.title + `</div>
-	<div id="xMessageTip"></div>
-	<table id="xConfigTable">
-        <tbody>
-            <tr>
-                <td class="xLabelTip"><label>Address</label></td>
-                <td><input type="text" id="x-serverAddress" value=` + grpClick2Talk.loginData?.url + `></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td class="xLabelTip"><label>Username</label></td>
-                <td><input type="text" id="x-userName" value=` + grpClick2Talk.loginData?.username + ` ></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td class="xLabelTip"><label>Password</label></td>
-                <td><input type="text" id="x-password" value=` + grpClick2Talk.loginData?.password + ` ></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td></td>
-                <td>
-                    <button id="submitConfig">
-                    ` + configTips.loginInnerText + `
-                    </button></td>
-                <td></td>
-            </tr>
-            <tr>
-                <td class="xLabelTip"><label>Accounts</label></td>
-                <td>
-			        <select name="" id="x-account">` + options + `</select>
-			    </td>
-                <td></td>
-            </tr>
-            <tr>
-                <td class="xLabelTip"><label>Dial Number</label></td>
-                <td><input type="text" id="x-phoneNumber" value="359301" placeholder="359301"></td>
-                <td>
-                    <button id="x-makeCall">
-                     ` + configTips.callInnerText + `
-                    </button>
-                </td>
-            </tr>
-        </tbody>
-    </table>`
-	insertParent.appendChild(configDiv);
-}
-
-/***************************************（三）修改GRP请求头和响应*******************************************/
+/*******************************************************************************************************************/
+/***************************************************（三）修改GRP请求头和响应*******************************************/
 
 /**
  * 判断时是否是GRP发起的请求
@@ -594,7 +592,7 @@ window.onload = function (){
 			let requestURL = grpClick2Talk.loginData?.url
 			// let isGRPRequestHeader = details.requestHeaders.find(isGRPSendRequestHeaders)
 			// if(isGRPRequestHeader){}
-			if(details && details.url && requestURL && details.url.match(requestURL) && details.initiator.indexOf('chrome-extension') >= 0){
+			if(details && details.url && requestURL && details.url.match(requestURL) && details.initiator && details.initiator.indexOf('chrome-extension') >= 0){
 				let accessControl = false
 				requestHeaders = details.requestHeaders.map(item => {
 					if (item.name === 'Origin') {
@@ -672,7 +670,7 @@ window.onload = function (){
 			let requestURL = grpClick2Talk.loginData?.url
 			// let isGRPResponseHeader = details.responseHeaders.find(isGRPSendResponseHeaders)
 			// if(isGRPResponseHeader){}
-			if(details && details.url && requestURL && details.url.match(requestURL) && details.initiator.indexOf('chrome-extension') >= 0){
+			if(details && details.url && requestURL && details.url.match(requestURL) && details.initiator && details.initiator.indexOf('chrome-extension') >= 0){
 				let accessControl = false
 				responseHeaders = details.responseHeaders.map(item => {
 					if (item.name.toLowerCase() === 'access-control-allow-origin') {
@@ -695,7 +693,7 @@ window.onload = function (){
 	)
 }
 
-/*****************************************************************************************************/
+/*******************************************************************************************************************/
 /***
  * Function that deep clone an object.
  * @param obj

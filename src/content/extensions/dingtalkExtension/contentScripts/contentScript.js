@@ -1,5 +1,5 @@
+/****************************************dingtalk adaptation****************************************************/
 let XConfigObj = {}
-
 let closeButton
 let serverInput
 let usernameInput
@@ -8,8 +8,7 @@ let accountSelect
 let phoneNumberInput
 let submitBtn
 let makeCallBtn
-
-/****************************************page resize****************************************************/
+let grpCallConfig
 
 /**
  * dingtalk auto full screen
@@ -41,9 +40,11 @@ function pageResize() {
 }
 
 window.onresize = function () {
-	pageResize();
+	if(window.location.href.indexOf('im.dingtalk') >= 0){
+		pageResize();
+	}
 }
-/*****************************************************************************************************/
+/**************************************************************************************************************/
 
 console.log('load ding talk extension!');
 function getUserUid(){
@@ -99,9 +100,9 @@ function pageMutationObserver(){
 	observer.observe(article, options);
 }
 
-/****************************************Add button****************************************************/
-
-
+/**
+ * 添加左侧配置按钮
+ */
 function insertConfigArea(){
 	/**
 	 * 页面插入配置页面
@@ -146,7 +147,7 @@ function insertConfigArea(){
             <tr>
                 <td></td>
                 <td>
-                    <button id="submitConfig" style="margin: 5px 0px;height: 34px;width: 180px;font-family: cursive;border-radius: 15px;font-size: 14px;border: 0;">
+                    <button id="submitConfig" style="margin: 5px 0px;height: 34px;width: 180px;font-family: cursive;border-radius: 5px;font-size: 14px;border: 0;">
                     ` + configTips.loginInnerText + `
                     </button></td>
                 <td></td>
@@ -168,7 +169,7 @@ function insertConfigArea(){
              <tr>
                 <td></td>
                 <td>
-                    <button id="x-makeCall" style="margin: 5px 0px;border-radius: 15px;font-size: 14px; width: 180px;height: 34px;border: 0;">
+                    <button id="x-makeCall" style="margin: 5px 0px;border-radius: 5px;font-size: 14px; width: 180px;height: 34px;border: 0;">
                      ` + configTips.callInnerText + `
                     </button></td>
                 <td></td>
@@ -178,10 +179,6 @@ function insertConfigArea(){
 	insertParent.appendChild(configDiv);
 
 	// 绑定新增元素的点击事件
-	bindingDomEvent()
-}
-
-function bindingDomEvent(){
 	serverInput = document.getElementById('x-serverAddress')
 	usernameInput = document.getElementById('x-userName')
 	pwdInput = document.getElementById('x-password')
@@ -213,6 +210,9 @@ function onSelectAccountChange(){
 	})
 }
 
+/**
+ * 呼叫
+ */
 function checkToMakeCall(){
 	let phoneNumber = phoneNumberInput.value
 	if(!phoneNumber){
@@ -297,6 +297,7 @@ function makeGRPConfigBtn(){
 			newItem.className = 'menu-item menu-micro-app ng-scope'
 			newItem.innerHTML = '<div class="menu-item-content">' + '<i class="iconfont icon-modify-alias" style="font-size: 26px;font-weight: bold;color: brown;" title='+ tip +'></i></div>'
 			newItem.onclick = showConfigArea
+			newItem.style.display = 'none'
 			parent.appendChild(newItem);
 
 			let newItem2 = document.createElement('li')
@@ -311,24 +312,45 @@ function makeGRPConfigBtn(){
 
 function showConfigArea(){
 	updateInputValue()
+	reloadAccountSelectOptions()
 
-	let grpCallConfig = document.getElementById('grpCallConfig')
-	grpCallConfig.style.opacity = '1'
-	grpCallConfig.style['z-index'] = '2050'
+	grpCallConfig = grpCallConfig || document.getElementById('grpCallConfig')
+
+	if(grpCallConfig){
+		grpCallConfig.style.opacity = '1'
+		grpCallConfig.style['z-index'] = '2050'
+	}
 
 	let xConfigMaskLayer = document.getElementById('xConfigMaskLayer')
-	xConfigMaskLayer.style.opacity = '0.55'
-	xConfigMaskLayer.style['z-index'] = '2040'
+	if(xConfigMaskLayer){
+		xConfigMaskLayer.style.opacity = '0.55'
+		xConfigMaskLayer.style['z-index'] = '2040'
+	}
 }
 
 function hiddenConfigArea(){
-	let grpCallConfig = document.getElementById('grpCallConfig')
-	grpCallConfig.style.opacity = '0'
-	grpCallConfig.style['z-index'] = '-999'
+	grpCallConfig = grpCallConfig || document.getElementById('grpCallConfig')
+	if(grpCallConfig){
+		grpCallConfig.style.opacity = '0'
+		grpCallConfig.style['z-index'] = '-999'
+	}
 
 	let xConfigMaskLayer = document.getElementById('xConfigMaskLayer')
-	xConfigMaskLayer.style.opacity = '0'
-	xConfigMaskLayer.style['z-index'] = '-999'
+	if(xConfigMaskLayer){
+		xConfigMaskLayer.style.opacity = '0'
+		xConfigMaskLayer.style['z-index'] = '-999'
+	}
+}
+
+
+/**
+ * 点击遮罩层时关闭弹框
+ * @param event
+ */
+window.onclick = function (event){
+	if(event.srcElement && event.srcElement.id === 'xConfigMaskLayer'){
+		hiddenConfigArea()
+	}
 }
 
 /**
@@ -387,8 +409,6 @@ function updateInputValue(data){
 		if(XConfigObj.password && pwdInput){
 			pwdInput.value = XConfigObj.password
 		}
-
-		reloadAccountSelectOptions()
 	}
 }
 
@@ -417,34 +437,28 @@ function showTipInPage(data){
 }
 
 window.onload = function (){
-	insertConfigArea()
+	// dingtalk
+	if(window.location.href.indexOf('im.dingtalk') >= 0){
+		insertConfigArea()
 
-	setTimeout(function (){
-		pageResize();
-		makeGRPConfigBtn()
-	}, 2*1000)
+		setTimeout(function (){
+			pageResize();
+			makeGRPConfigBtn()
+		}, 2*1000)
 
-	pageMutationObserver()
+		pageMutationObserver()
 
-	// 钉钉页面
-	window.onunload = function (){
-		sendMessageToBackgroundJS({
-			cmd: 'contentScriptPageClose'
-		})
+		// 钉钉页面
+		window.onunload = function (){
+			sendMessageToBackgroundJS({
+				cmd: 'contentScriptPageClose'
+			})
+		}
 	}
 }
+/*******************************************************************************************************************/
 
-/**
- * 点击遮罩层时关闭弹框
- * @param event
- */
-window.onclick = function (event){
-	if(event.srcElement && event.srcElement.id === 'xConfigMaskLayer'){
-		hiddenConfigArea()
-	}
-}
-
-/************************** Content-script 和 backgroundJS 间的通信处理*******************************/
+/******************************************* Content-script 和 backgroundJS 间的通信处理*******************************/
 
 /**
  *  发送
@@ -471,7 +485,6 @@ function sendMessageToBackgroundJS(message, callback){
 if(chrome.runtime && chrome.runtime.onMessage){
 	chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 		if(request && request.requestType === 'backgroundMessage2ContentScript'){
-			console.info("onMessage request:", request.cmd)
 			switch (request.cmd){
 				case "autoLogin":  // 钉钉首次加载页面，获取信息后自动登录
 					if(request.data){
@@ -492,14 +505,13 @@ if(chrome.runtime && chrome.runtime.onMessage){
 					break
 				case "setAccountLists":
 					XConfigObj.accountLists = request.accountLists
-					reloadAccountSelectOptions()
+					// reloadAccountSelectOptions()
 					break
-				case "showConfig":
+				case "showContentConfig":
 					console.log('login first, show config area')
 					showConfigArea()
 					break
 				case 'popupOpen':
-					console.log('popup is open.')
 					hiddenConfigArea()
 					break
 				case "pageReload":
@@ -515,6 +527,7 @@ if(chrome.runtime && chrome.runtime.onMessage){
 		sendResponse('request success');
 	});
 
+	// 不自动登录
 	sendMessageToBackgroundJS({
 		cmd: 'contentScriptAutoLogin',
 		DTLatestLangInfo: localStorage.getItem('latest_lang_info')
