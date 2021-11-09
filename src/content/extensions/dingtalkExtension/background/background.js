@@ -15,6 +15,7 @@ let grpClick2Talk = {
 	call401Authentication: false,
 	getLineStatusInterval: null,
 	getPhoneStatusInterval: null,
+	waitingCall: false
 }
 
 /**
@@ -91,8 +92,12 @@ function accountLogin(){
 					// 获取当前话机配置的账号列表及账号是否注册等状态
 					getAccounts()
 
-					if(grpClick2Talk.call401Authentication){
-						console.log('Call 401, re-authentication')
+					if(grpClick2Talk.call401Authentication || grpClick2Talk.waitingCall){
+						if(grpClick2Talk.waitingCall){
+							grpClick2Talk.waitingCall = false
+						}else {
+							console.log('Call 401, re-authentication')
+						}
 						extMakeCall({
 							phonenumber: grpClick2Talk.remotenumber
 						})
@@ -187,12 +192,29 @@ function extMakeCall(data){
 		return
 	}
 
+	grpClick2Talk.remotenumber = data.phonenumber
+	if(!grpClick2Talk.gsApi){
+		// 先登录
+		let loginDatas = grpClick2Talk.loginData
+		if(loginDatas && loginDatas.url && loginDatas.username && loginDatas.password){
+			console.info('check permission before auto login')
+			grpClick2Talk.waitingCall = true
+			permissionCheck(loginDatas.url)
+		}else {
+			alert('请点击左上角配置页面进行登录')
+		}
+		return
+	}
+
 	let callCallBack = function (event){
 		if (event.readyState === 4) {
 			// 200 不代表呼叫成功，只标示cgi请求的成功与否。实际状态需要实时获取线路状态才能知道
 			console.info("make call return status code : " + event.status)
 			if(event.status === 200){
-				grpClick2Talk.call401Authentication = false
+				if(grpClick2Talk.call401Authentication){
+					grpClick2Talk.call401Authentication = false
+				}
+
 				showLineStatus()
 			}else if(event.status === 401 && !grpClick2Talk.call401Authentication){
 				// 其他地方登录导致sid变化，需要重新登录
@@ -200,7 +222,9 @@ function extMakeCall(data){
 				grpClick2Talk.call401Authentication = true
 				accountLogin()
 			} else {
-				grpClick2Talk.call401Authentication = false
+				if(grpClick2Talk.call401Authentication){
+					grpClick2Talk.call401Authentication = false
+				}
 				showLineStatus()
 			}
 		}
@@ -214,7 +238,6 @@ function extMakeCall(data){
 		onreturn: callCallBack
 	}
 	console.info("gsApi call phone number " + callData.phonenumber)
-	grpClick2Talk.remotenumber = callData.phonenumber
 	grpClick2Talk.gsApi.makeCall(callData)
 }
 
@@ -465,12 +488,6 @@ function chromeRuntimeOnMessage(request){
 			break
 		case "contentScriptMakeCall":
 			console.info("request.data:", request.data)
-			if(!grpClick2Talk.isLogin){
-				alert('please login first!!!')
-				sendMessageToContentScript({cmd:'showContentConfig'});
-				return
-			}
-
 			extMakeCall(request.data)
 			break
 		case 'contentScriptPageClose':

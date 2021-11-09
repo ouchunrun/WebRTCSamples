@@ -351,6 +351,8 @@ window.onclick = function (event){
 	if(event.srcElement && event.srcElement.id === 'xConfigMaskLayer'){
 		hiddenConfigArea()
 	}
+
+	// 聊天tool-bar添加快捷拨号
 }
 
 /**
