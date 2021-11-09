@@ -448,12 +448,12 @@ window.onload = function (){
 
 		pageMutationObserver()
 
-		// 钉钉页面
-		window.onunload = function (){
-			sendMessageToBackgroundJS({
-				cmd: 'contentScriptPageClose'
-			})
-		}
+		// // 钉钉页面
+		// window.onunload = function (){
+		// 	sendMessageToBackgroundJS({
+		// 		cmd: 'contentScriptPageClose'
+		// 	})
+		// }
 	}
 }
 /*******************************************************************************************************************/
@@ -471,6 +471,7 @@ function sendMessageToBackgroundJS(message, callback){
 		message.latestLangInfo = localStorage.getItem('latest_lang_info')
 		message.requestType = 'contentMessage2Background'
 
+		console.log(message)
 		chrome.runtime.sendMessage(message, function(response) {
 			if(callback){
 				callback(response)
@@ -527,10 +528,11 @@ if(chrome.runtime && chrome.runtime.onMessage){
 		sendResponse('request success');
 	});
 
-	// 不自动登录
-	sendMessageToBackgroundJS({
-		cmd: 'contentScriptAutoLogin',
-		DTLatestLangInfo: localStorage.getItem('latest_lang_info')
-	})
+	// chrome.runtime.onConnect.addListener(function (){
+	// 	sendMessageToBackgroundJS({  		// 不自动登录
+	// 		cmd: 'contentScriptAutoLogin',
+	// 		DTLatestLangInfo: localStorage.getItem('latest_lang_info')
+	// 	})
+	// })
 }
 /*****************************************************************************************************/

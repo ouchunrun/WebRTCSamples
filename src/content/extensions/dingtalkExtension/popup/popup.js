@@ -44,6 +44,10 @@ popupPort.onMessage.addListener(msg => {
 			break
 		case 'updateLoginStatus':  // 更新当前登录状态
 			let data = msg.data
+			if(msg.grpClick2TalObj){
+				grpClick2Talk = msg.grpClick2TalObj
+			}
+
 			if(loginIdentity){
 				let className = data.className
 				if(data.add){
@@ -53,6 +57,17 @@ popupPort.onMessage.addListener(msg => {
 					loginIdentity.classList.remove(className)
 					console.info('remove class ', className)
 				}
+				// 显示tip 提示
+				if(data.message){
+					showTipInPage({message: data.message})
+				}
+				loginIdentity.innerText = grpClick2Talk.loginData?.username
+			}
+			break
+		case 'updateAccountLists':
+			if(msg.accountLists){
+				grpClick2Talk.loginData.accountLists = msg.accountLists
+				accountSelect.innerHTML = getSelectOptions()
 			}
 			break
 		case 'setLineStatus':   // 显示线路信息
@@ -127,9 +142,9 @@ function getSelectOptions(){
 			if(parseInt(acct.reg) === 1){
 				let acctId = parseInt(acct.id)
 				if(selectAccount && selectAccount === acctId){
-					checkOption = '<option value=' + acctId +' selected>Account ' + acctId + '_' + acct.sip_id + '</option>'
+					checkOption = '<option value=' + acctId +' selected>Account' + acctId + '_' + acct.sip_id + '</option>'
 				}
-				options = options + '<option value=' + acctId +'>Account ' + acctId + '_' + acct.sip_id + '</option>'
+				options = options + '<option value=' + acctId +'>Account' + acctId + '_' + acct.sip_id + '</option>'
 			}else {
 				// 0 未注册
 			}

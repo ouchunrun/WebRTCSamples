@@ -98,12 +98,20 @@ function accountLogin(){
 						})
 					}
 
-					sendMessage2Popup({cmd: 'updateLoginStatus', data: {className: 'grey', add: false}})
+					sendMessage2Popup({
+						cmd: 'updateLoginStatus',
+						grpClick2TalObj: grpClick2Talk,
+						data: {className: 'grey', add: false, message: response.response}
+					})
 
 					// 清除保活定时器
 					grpClick2Talk.gsApi.stopKeepAlive()
 				}else {
-					sendMessage2Popup({cmd: 'updateLoginStatus', data: {className: 'grey', add: true}})
+					sendMessage2Popup({
+						cmd: 'updateLoginStatus',
+						grpClick2TalObj: grpClick2Talk,
+						data: {className: 'grey', add: true, message: response.response}
+					})
 				}
 
 				// 【消息提示】 通知页面当前登录状态。
@@ -149,7 +157,8 @@ function startGetPhoneStatus(){
 
 				sendMessage2Popup({
 					cmd: 'updateLoginStatus',
-					data: {className: 'grey', add: true}
+					grpClick2TalObj: grpClick2Talk,
+					data: {className: 'grey', add: true, message: 'login authentication failed'}
 				})
 			}
 		}
@@ -162,7 +171,9 @@ function startGetPhoneStatus(){
 
 	// 仅获取一次
 	setTimeout(function (){
-		grpClick2Talk.gsApi.getPhoneStatus({onreturn: getPhoneStatusCallback})
+		if(grpClick2Talk && grpClick2Talk.gsApi){
+			grpClick2Talk.gsApi.getPhoneStatus({onreturn: getPhoneStatusCallback})
+		}
 	}, 5000)
 }
 
@@ -218,6 +229,8 @@ function getAccounts(){
 			if(text.response === "success"){
 				if(text.body.length){
 					grpClick2Talk.loginData.accountLists = text.body
+					sendMessage2Popup({cmd: 'updateAccountLists', accountLists: text.body})
+
 					sendMessageToContentScript({cmd:'setAccountLists', accountLists: text.body});
 				}else {
 					console.info('account []')
@@ -257,7 +270,11 @@ function showLineStatus(){
 					// 鉴权过期
 					clearStatusInterval()
 					// 修改登录状态
-					sendMessage2Popup({cmd: 'updateLoginStatus', data: {className: 'grey', add: true}})
+					sendMessage2Popup({
+						cmd: 'updateLoginStatus',
+						grpClick2TalObj: grpClick2Talk,
+						data: {className: 'grey', add: true, message: 'login unauthorized'}
+					})
 				}else {
 					let response = JSON.parse(event.response)
 					if(event.status === 200 && response.response === 'success'){
@@ -275,10 +292,11 @@ function showLineStatus(){
 	let timerCount = 0
 	grpClick2Talk.getLineStatusInterval = setInterval(function (){
 		timerCount++
-		if(timerCount >5){
-			clearStatusInterval()
-		}else {
+
+		if(grpClick2Talk && grpClick2Talk.gsApi && timerCount <= 5){
 			grpClick2Talk.gsApi.getLineStatus({onreturn: lineStatusCallback})
+		}else {
+			clearStatusInterval()
 		}
 	}, 1000)
 }

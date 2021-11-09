@@ -120,23 +120,23 @@ hr{
     margin-right: 23px;
 }
 .lineState{
-    background: darkturquoise;
+    background: #ececed;
+    color: black;
     height: 30px;
     width: 175px;
     font-family: cursive;
-    display: inline-block;
+    /*display: inline-block;*/
     margin-bottom: 3px;
     line-height: 30px;
     border-radius: 2px;
-    font-size: 13px;
-    color: aliceblue;
+    font-size: 14px;
 }
 .lineBusy{
-    background: crimson;
+    color: crimson;
 }
 #linesTable button{
     width: 60px;
     margin-left: 5px;
-    background: crimson;
-    border: 1px solid crimson;
+    background: #a52a2a;
+    border: 1px solid #a52a2a;
 }
