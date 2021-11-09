@@ -342,17 +342,63 @@ function hiddenConfigArea(){
 	}
 }
 
+/**
+ * 聊天窗口添加呼叫按钮
+ */
+function addCallShortcutButton(){
+	let insertDomInterval
+
+	let insertDom = function (){
+		let chatCallLink = document.getElementsByClassName('chat-call-link')[0]
+		if(chatCallLink.classList.contains('fade-in')){
+			let parent = document.getElementsByClassName('tool-bar')[0]
+			let newChild = document.createElement("li");
+			newChild.id = 'shortcutCall'
+			newChild.classList.add('tool-item')
+			newChild.innerHTML = '<span conv="conv" class="ng-isolate-scope"><i class="iconfont tool-icon icon-code ng-scope tipper-attached"></i></span>';
+			newChild.onclick = function (){
+				chatCallLink.click()
+			}
+			parent.appendChild(newChild)
+		}else {
+			clearInterval(insertDomInterval)
+		}
+	}
+
+	let shortcutCall
+	insertDomInterval = setInterval(function (){
+		shortcutCall = document.getElementById('shortcutCall')
+		if(!shortcutCall){
+			insertDom()
+		}else {
+			clearInterval(insertDomInterval)
+		}
+	}, 1000)
+}
 
 /**
  * 点击遮罩层时关闭弹框
  * @param event
  */
 window.onclick = function (event){
-	if(event.srcElement && event.srcElement.id === 'xConfigMaskLayer'){
-		hiddenConfigArea()
-	}
+	if(window.location.href.indexOf('im.dingtalk') >= 0){
+		if(event.srcElement && event.srcElement.id === 'xConfigMaskLayer'){
+			hiddenConfigArea()
+		}
 
-	// 聊天tool-bar添加快捷拨号
+		// 聊天tool-bar添加快捷拨号
+		let chatToolBar = document.getElementsByClassName('tool-bar')[0]
+		if(!chatToolBar){
+			setTimeout(function (){
+				chatToolBar = document.getElementsByClassName('tool-bar')[0]
+				if(chatToolBar){
+					addCallShortcutButton()
+				}
+			}, 700)
+		}else {
+			addCallShortcutButton()
+		}
+	}
 }
 
 /**

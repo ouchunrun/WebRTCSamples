@@ -80,6 +80,29 @@ chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
 
 ```
 
+### 8.JavaScript中 appendChild追加子节点无效的解决办法
+
+```
+// Dom 节点插入失败
+let divs = document.getElementsByClassName('test');
+let btn = document.createElement('div');
+ 
+for(let i=0;i<divs.length;i++){
+    divs[i].appendChild(btn);
+}
+```
+
+- 原因：因为一个元素只能有一个父元素，上面这段代码试图将 btn添加到多个元素中。
+- 解决方法：
+```
+let divs = document.getElementsByClassName('test');
+for(let i=0;i<divs.length;i++){
+    let btn = document.createElement('div');
+    divs[i].appendChild(btn);
+}
+```
+
+
 ## 参考
 
 - [chrome.webRequest](https://developer.chrome.com/docs/extensions/reference/webRequest/
