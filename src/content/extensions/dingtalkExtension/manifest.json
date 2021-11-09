@@ -1,6 +1,6 @@
 {
   "name": "DingTalkExtension",
-  "version": "2.0.1",
+  "version": "2.0.4",
   "description": "办公号码一键呼叫和钉钉窗口自动全屏",
   "browser_action":
   {
