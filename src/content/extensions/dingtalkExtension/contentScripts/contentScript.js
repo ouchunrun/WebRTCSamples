@@ -350,7 +350,7 @@ function addCallShortcutButton(){
 
 	let insertDom = function (){
 		let chatCallLink = document.getElementsByClassName('chat-call-link')[0]
-		if(chatCallLink.classList.contains('fade-in')){
+		if(chatCallLink && chatCallLink.classList.contains('fade-in')){
 			let parent = document.getElementsByClassName('tool-bar')[0]
 			let newChild = document.createElement("li");
 			newChild.id = 'shortcutCall'
