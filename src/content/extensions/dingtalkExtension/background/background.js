@@ -170,16 +170,9 @@ function startGetPhoneStatus(){
 	}
 	clearPhoneStatusInterval()
 
-	// grpClick2Talk.getPhoneStatusInterval = setInterval(function (){
-	// 	grpClick2Talk.gsApi.getPhoneStatus({onreturn: getPhoneStatusCallback})
-	// }, 5*1000)
-
-	// 仅获取一次
-	setTimeout(function (){
-		if(grpClick2Talk && grpClick2Talk.gsApi){
-			grpClick2Talk.gsApi.getPhoneStatus({onreturn: getPhoneStatusCallback})
-		}
-	}, 5000)
+	grpClick2Talk.getPhoneStatusInterval = setInterval(function (){
+		grpClick2Talk.gsApi.getPhoneStatus({onreturn: getPhoneStatusCallback})
+	}, 10*1000)
 }
 
 /**
@@ -312,11 +305,8 @@ function showLineStatus(){
 		}
 	}
 
-	let timerCount = 0
 	grpClick2Talk.getLineStatusInterval = setInterval(function (){
-		timerCount++
-
-		if(grpClick2Talk && grpClick2Talk.gsApi && timerCount <= 5){
+		if(grpClick2Talk && grpClick2Talk.gsApi){
 			grpClick2Talk.gsApi.getLineStatus({onreturn: lineStatusCallback})
 		}else {
 			clearStatusInterval()
@@ -519,6 +509,8 @@ chrome.extension.onConnect.addListener(port => {
 	port.onDisconnect.addListener(function (){
 		console.log('onDisconnect')
 		XPopupPort = null
+		clearStatusInterval()
+		clearPhoneStatusInterval()
 	})
 })
 
@@ -660,10 +652,10 @@ window.onload = function (){
 				}
 
 				// TODO: NO origin/cookies header find in requestHeaders list
-				if(details.url.match('api-make_call')){
+				// if(details.url.match('api-make_call') || details.url.match('api-get_line_status') || details.url.match('api-get_accounts')){
 					if(!requestHeaders.find(function (header){return (header.name === 'Origin')})){
 						requestHeaders.push({name: 'Origin', value: requestURL})
-						console.info(' add Origin: ', requestURL)
+						// console.info(' add Origin: ', requestURL)
 
 						if(!requestHeaders.find(function (header){return (header.name === 'Accept')})){
 							requestHeaders.push({name: 'Accept', value: "*/*"})
@@ -684,10 +676,10 @@ window.onload = function (){
 					if(!requestHeaders.find(function (header){return (header.name === 'Cookie')})){
 						let cookie = 'session-role=' + grpClick2Talk.loginData.username + '; session-identity=' + grpClick2Talk.sid + '; sid=' + grpClick2Talk.sid + ';'
 						requestHeaders.push({name: 'Cookie', value: cookie})
-						console.log('add cookies header: ', cookie)
+						// console.log('add cookies header: ', cookie)
 					}
 				}
-			}
+			// }
 
 			return { requestHeaders };
 		},

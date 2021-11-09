@@ -355,13 +355,13 @@ function addCallShortcutButton(){
 			let newChild = document.createElement("li");
 			newChild.id = 'shortcutCall'
 			newChild.classList.add('tool-item')
-			newChild.innerHTML = '<span conv="conv" class="ng-isolate-scope"><i class="iconfont tool-icon icon-code ng-scope tipper-attached"></i></span>';
+			newChild.innerHTML = '<span conv="conv" class="ng-isolate-scope"><i class="iconfont tool-icon-bold tool-icon icon-code ng-scope tipper-attached"></i></span>';
 			newChild.onclick = function (){
 				chatCallLink.click()
 			}
 			parent.appendChild(newChild)
 		}else {
-			clearInterval(insertDomInterval)
+			// clearInterval(insertDomInterval)
 		}
 	}
 
@@ -373,7 +373,7 @@ function addCallShortcutButton(){
 		}else {
 			clearInterval(insertDomInterval)
 		}
-	}, 1000)
+	}, 500)
 }
 
 /**
