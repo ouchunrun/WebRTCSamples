@@ -79,7 +79,10 @@ popupPort.onMessage.addListener(msg => {
 						let line = 'line' + lines[i].line
 						let lineTD = document.getElementsByClassName(line)
 						if(lineTD && lineTD[0]){
-							lineTD[0].innerText = lines[i].state  // 更新线路state状态，非idel时添加挂断按钮？？
+							if(lineTD[0].innerText !== lines[i].state){  // 状态改变时更新线路状态
+								lineTD[0].innerText = lines[i].state
+							}
+
 							if(lines[i].state !== 'idle'){
 								lineTD[0].classList.add('lineBusy')
 							}else {
@@ -106,8 +109,10 @@ popupPort.onMessage.addListener(msg => {
 					let lineTrList = ''
 					for(let i = 0; i<lines.length; i++){
 						let line = lines[i]
-						lineTrList = lineTrList + '<tr class="line"><td class="lineLabel">LINE' + line.line +'</td><td class="lineState line'+ line.line  +'">'+ line.state +'</td>' +
-							'<td><button style="display:none" id="line'+ line.line  +'">挂断</button></td></tr>'
+						lineTrList = lineTrList + '<tr class="line"><td class="lineLabel">LINE' + line.line +'</td>' +
+							'<td  colspan="2" class="lineState line'+ line.line  +'">'+ line.state +'</td>' +
+							// '<td><button style="display:none" id="line'+ line.line  +'">挂断</button></td>' +
+							'</tr>'
 					}
 
 					linesTable.innerHTML = lineTrList
@@ -142,9 +147,9 @@ function getSelectOptions(){
 			if(parseInt(acct.reg) === 1){
 				let acctId = parseInt(acct.id)
 				if(selectAccount && selectAccount === acctId){
-					checkOption = '<option value=' + acctId +' selected>Account' + acctId + '_' + acct.sip_id + '</option>'
+					checkOption = '<option value=' + acctId +' selected>Account ' + acctId + '(' + acct.sip_id + ')</option>'
 				}
-				options = options + '<option value=' + acctId +'>Account' + acctId + '_' + acct.sip_id + '</option>'
+				options = options + '<option value=' + acctId +'>Account ' + acctId + '(' + acct.sip_id + ')</option>'
 			}else {
 				// 0 未注册
 			}

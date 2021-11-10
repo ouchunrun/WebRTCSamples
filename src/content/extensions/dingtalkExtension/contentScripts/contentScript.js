@@ -355,13 +355,11 @@ function addCallShortcutButton(){
 			let newChild = document.createElement("li");
 			newChild.id = 'shortcutCall'
 			newChild.classList.add('tool-item')
-			newChild.innerHTML = '<span conv="conv" class="ng-isolate-scope"><i class="iconfont tool-icon-bold tool-icon icon-code ng-scope tipper-attached"></i></span>';
+			newChild.innerHTML = '<span class="ng-isolate-scope"><i style="font-size: 18px;" class="iconfont tool-icon ng-scope tipper-attached"></i></span>';
 			newChild.onclick = function (){
 				chatCallLink.click()
 			}
 			parent.appendChild(newChild)
-		}else {
-			// clearInterval(insertDomInterval)
 		}
 	}
 
@@ -575,12 +573,5 @@ if(chrome.runtime && chrome.runtime.onMessage){
 		}
 		sendResponse('request success');
 	});
-
-	// chrome.runtime.onConnect.addListener(function (){
-	// 	sendMessageToBackgroundJS({  		// 不自动登录
-	// 		cmd: 'contentScriptAutoLogin',
-	// 		DTLatestLangInfo: localStorage.getItem('latest_lang_info')
-	// 	})
-	// })
 }
 /*****************************************************************************************************/

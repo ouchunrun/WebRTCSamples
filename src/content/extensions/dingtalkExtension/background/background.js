@@ -15,7 +15,33 @@ let grpClick2Talk = {
 	call401Authentication: false,
 	getLineStatusInterval: null,
 	getPhoneStatusInterval: null,
-	waitingCall: false
+	waitingCall: false,
+	getLineIntervalTime: 1000,
+	getPhoneIntervalTime: 5*1000,
+}
+
+function createGsApi(){
+	let loginData = grpClick2Talk.loginData
+	if(!loginData){
+		console.info("Invalid parameter for login")
+		return
+	}
+
+	let config = {
+		url: loginData.url,
+		username: loginData.username,
+		password: loginData.password,
+		// requestHeader: {
+		// 	'X-Request-Server-Type': 'X-GRP',
+		// }
+	}
+	if (GsUtils.isNUllOrEmpty(grpClick2Talk.gsApi)) {
+		console.info('create new gsApi')
+		grpClick2Talk.gsApi = new GsApi(config)
+	}else {
+		console.log('update gsApi config')
+		grpClick2Talk.gsApi.updateCfg(config)
+	}
 }
 
 /**
@@ -59,27 +85,6 @@ function permissionCheck(serverURL){
  * 登录
  */
 function accountLogin(){
-	let loginData = grpClick2Talk.loginData
-	if(!loginData){
-		console.info("Invalid parameter for login")
-		return
-	}
-
-	let config = {
-		url: loginData.url,
-		username: loginData.username,
-		password: loginData.password,
-		// requestHeader: {
-		// 	'X-Request-Server-Type': 'X-GRP',
-		// }
-	}
-	if (GsUtils.isNUllOrEmpty(grpClick2Talk.gsApi)) {
-		grpClick2Talk.gsApi = new GsApi(config)
-	}else {
-		console.log('update gsApi config')
-		grpClick2Talk.gsApi.updateCfg(config)
-	}
-
 	let loginCallback = function (event){
 		if (event.readyState === 4) {
 			if(event.response){
@@ -88,9 +93,6 @@ function accountLogin(){
 				if(event.status === 200 && response.response === 'success'){
 					grpClick2Talk.sid = response.body.sid
 					grpClick2Talk.isLogin = true
-
-					// 获取当前话机配置的账号列表及账号是否注册等状态
-					getAccounts()
 
 					if(grpClick2Talk.call401Authentication || grpClick2Talk.waitingCall){
 						if(grpClick2Talk.waitingCall){
@@ -109,8 +111,12 @@ function accountLogin(){
 						data: {className: 'grey', add: false, message: response.response}
 					})
 
-					// 清除保活定时器
-					grpClick2Talk.gsApi.stopKeepAlive()
+					// 获取当前话机配置的账号列表及账号是否注册等状态
+					getAccounts()
+					// 获取线路的状态
+					showLineStatus()
+					// 获取设备当前登录状态
+					getPhoneStatus()
 				}else {
 					sendMessage2Popup({
 						cmd: 'updateLoginStatus',
@@ -136,46 +142,6 @@ function accountLogin(){
 }
 
 /**
- * 登录成功后 定时获取设备当前登录状态
- * {
-        "response": "success",
-        "body": "available",
-        // available 登录成功且有账号注册
-        // unavailable 登录成功 但账号未注册
-        // ringing 话机振铃中
-        // busy 话机通话忙碌中
-        // unauthorized 登录鉴权失败
-        "misc": "1",
-        // 1 允许idle call
-        // 0 不允许idle call
-        "session_expiring": true // 登录有效期超时
-    }
- */
-function startGetPhoneStatus(){
-	let getPhoneStatusCallback = function (event){
-		if (event.readyState === 4 && event.response){
-			let data = JSON.parse(event.response)
-			if(data && data.body === 'unauthorized'){  // 登录鉴权失败
-				console.log('login authentication failed')
-				grpClick2Talk.isLogin = false
-				clearPhoneStatusInterval()
-
-				sendMessage2Popup({
-					cmd: 'updateLoginStatus',
-					grpClick2TalObj: grpClick2Talk,
-					data: {className: 'grey', add: true, message: 'login authentication failed'}
-				})
-			}
-		}
-	}
-	clearPhoneStatusInterval()
-
-	grpClick2Talk.getPhoneStatusInterval = setInterval(function (){
-		grpClick2Talk.gsApi.getPhoneStatus({onreturn: getPhoneStatusCallback})
-	}, 10*1000)
-}
-
-/**
  * 呼叫指定号码
  * @param data
  */
@@ -187,15 +153,7 @@ function extMakeCall(data){
 
 	grpClick2Talk.remotenumber = data.phonenumber
 	if(!grpClick2Talk.gsApi){
-		// 先登录
-		let loginDatas = grpClick2Talk.loginData
-		if(loginDatas && loginDatas.url && loginDatas.username && loginDatas.password){
-			console.info('check permission before auto login')
-			grpClick2Talk.waitingCall = true
-			permissionCheck(loginDatas.url)
-		}else {
-			alert('请点击左上角配置页面进行登录')
-		}
+		automaticLoginCheck(true) 	// login first
 		return
 	}
 
@@ -207,18 +165,15 @@ function extMakeCall(data){
 				if(grpClick2Talk.call401Authentication){
 					grpClick2Talk.call401Authentication = false
 				}
-
-				showLineStatus()
 			}else if(event.status === 401 && !grpClick2Talk.call401Authentication){
 				// 其他地方登录导致sid变化，需要重新登录
-				console.info('Authentication information is invalid, log in again')
+				console.info('Authentication information is invalid, login again')
 				grpClick2Talk.call401Authentication = true
 				accountLogin()
 			} else {
 				if(grpClick2Talk.call401Authentication){
 					grpClick2Talk.call401Authentication = false
 				}
-				showLineStatus()
 			}
 		}
 	}
@@ -238,25 +193,85 @@ function extMakeCall(data){
  * 获取激活的账号列表
  */
 function getAccounts(){
+	if(!grpClick2Talk.loginData || !grpClick2Talk.loginData.url){
+		return
+	}
+
 	let xmlHttp = new XMLHttpRequest()
 	xmlHttp.onreadystatechange = function () {
-		if (xmlHttp.readyState === 4 && xmlHttp.status === 200){
-			let text = JSON.parse(xmlHttp.responseText)
-			if(text.response === "success"){
-				if(text.body.length){
-					grpClick2Talk.loginData.accountLists = text.body
-					sendMessage2Popup({cmd: 'updateAccountLists', accountLists: text.body})
+		if (xmlHttp.readyState === 4){
+			if(xmlHttp.status === 200){
+				let text = JSON.parse(xmlHttp.responseText)
+				if(text.response === "success"){
+					if(text.body.length){
+						grpClick2Talk.loginData.accountLists = text.body
+						sendMessage2Popup({cmd: 'updateAccountLists', accountLists: text.body})
 
-					sendMessageToContentScript({cmd:'setAccountLists', accountLists: text.body});
-				}else {
-					console.info('account []')
+						sendMessageToContentScript({cmd:'setAccountLists', accountLists: text.body});
+					}else {
+						console.info('account []')
+					}
 				}
+			}else /*if(xmlHttp.status === 401)*/{
+				console.info('get account unauthorized')
+				sendMessage2Popup({
+					cmd: 'updateLoginStatus',
+					grpClick2TalObj: grpClick2Talk,
+					data: {className: 'grey', add: true, message: 'login unauthorized'}
+				})
 			}
 		}
 	}
 	let requestURL = grpClick2Talk.loginData?.url + '/cgi-bin/api-get_accounts'
 	xmlHttp.open("GET", requestURL, true)
 	xmlHttp.send()
+}
+
+/**
+ * 登录成功后 定时获取设备当前登录状态
+ * {
+        "response": "success",
+        "body": "available",
+        // available 登录成功且有账号注册
+        // unavailable 登录成功 但账号未注册
+        // ringing 话机振铃中
+        // busy 话机通话忙碌中
+        // unauthorized 登录鉴权失败
+        "misc": "1",
+        // 1 允许idle call
+        // 0 不允许idle call
+        "session_expiring": true // 登录有效期超时
+    }
+ */
+function getPhoneStatus(){
+	if(!grpClick2Talk.gsApi){
+		return
+	}
+	clearPhoneStatusInterval()
+
+	let getPhoneStatusCallback = function (event){
+		if (event.readyState === 4 && event.response){
+			let data = JSON.parse(event.response)
+			if(data && data.body === 'unauthorized'){  // 登录鉴权失败
+				console.log('login authentication failed')
+				grpClick2Talk.isLogin = false
+				// 鉴权过期，或抢占下线
+				clearPhoneStatusInterval()
+				// 修改登录状态
+				sendMessage2Popup({
+					cmd: 'updateLoginStatus',
+					grpClick2TalObj: grpClick2Talk,
+					data: {className: 'grey', add: true, message: 'login unauthorized'}
+				})
+			}
+		}
+	}
+
+	grpClick2Talk.getPhoneStatusInterval = setInterval(function (){
+		grpClick2Talk.gsApi.getPhoneStatus({onreturn: getPhoneStatusCallback})
+		// 检查设备状态时重新获取账号列表
+		getAccounts()
+	}, grpClick2Talk.getPhoneIntervalTime)
 }
 
 /**
@@ -275,49 +290,42 @@ function getAccounts(){
  * @type {number}
  */
 function showLineStatus(){
+	if(!grpClick2Talk.gsApi){
+		return
+	}
 	// clear first
-	clearStatusInterval()
+	clearLineStatusInterval()
 
 	let lineStatusCallback = function (event){
 		if(event.readyState === 4){
-			if(event.response){
-				if(event.response.indexOf('Unauthorized') >= 0){
-					grpClick2Talk.isLogin = false
-					// 鉴权过期
-					clearStatusInterval()
-					// 修改登录状态
-					sendMessage2Popup({
-						cmd: 'updateLoginStatus',
-						grpClick2TalObj: grpClick2Talk,
-						data: {className: 'grey', add: true, message: 'login unauthorized'}
-					})
-				}else {
-					let response = JSON.parse(event.response)
-					if(event.status === 200 && response.response === 'success'){
-						if(response.body && response.body.length){
-							sendMessage2Popup({cmd: 'setLineStatus', lines: response.body})
-						}
-					}
+			if(event.status === 200){
+				let response = JSON.parse(event.response)
+				if(response.body && response.body.length){
+					sendMessage2Popup({cmd: 'setLineStatus', lines: response.body})
 				}
-			}else {
-				console.info('getLineStatus error: ', event)
+			}else /*if(event.status === 401)*/{
+				grpClick2Talk.isLogin = false
+				// 鉴权过期
+				clearLineStatusInterval()
+				// 修改登录状态
+				sendMessage2Popup({
+					cmd: 'updateLoginStatus',
+					grpClick2TalObj: grpClick2Talk,
+					data: {className: 'grey', add: true, message: 'login unauthorized'}
+				})
 			}
 		}
 	}
 
 	grpClick2Talk.getLineStatusInterval = setInterval(function (){
-		if(grpClick2Talk && grpClick2Talk.gsApi){
-			grpClick2Talk.gsApi.getLineStatus({onreturn: lineStatusCallback})
-		}else {
-			clearStatusInterval()
-		}
-	}, 1000)
+		grpClick2Talk.gsApi.getLineStatus({onreturn: lineStatusCallback})
+	}, grpClick2Talk.getLineIntervalTime)
 }
 
 /**
  * 清除获取线路状态的定时器
  */
-function clearStatusInterval(){
+function clearLineStatusInterval(){
 	if(grpClick2Talk.getLineStatusInterval){
 		clearInterval(grpClick2Talk.getLineStatusInterval)
 		grpClick2Talk.getLineStatusInterval = null
@@ -451,6 +459,19 @@ function checkUrlFormat(url){
 }
 
 /**
+ * 符合条件时自动登录
+ */
+function automaticLoginCheck(showAlert){
+	let loginDatas = grpClick2Talk.loginData
+	if(loginDatas && loginDatas.url && loginDatas.username && loginDatas.password){
+		console.info('check permission before auto login')
+		permissionCheck(loginDatas.url)
+	}else if(showAlert){
+		alert('请点击左上角配置页面进行登录')
+	}
+}
+
+/**
  * 处理来自content-script的消息
  * @param request
  */
@@ -465,12 +486,7 @@ function chromeRuntimeOnMessage(request){
 			}
 			sendMessageToContentScript({cmd:'updateConfig', data: grpClick2Talk.loginData});
 
-
-			let loginDatas = grpClick2Talk.loginData
-			if(loginDatas && loginDatas.url && loginDatas.username && loginDatas.password){
-				console.info('check permission before auto login')
-				permissionCheck(loginDatas.url)
-			}
+			automaticLoginCheck()
 			break
 		case "contentScriptAccountChange":
 		case "contentScriptUpdateLoginInfo":
@@ -507,10 +523,15 @@ chrome.extension.onConnect.addListener(port => {
 	})
 
 	port.onDisconnect.addListener(function (){
-		console.log('onDisconnect')
+		console.log('onDisconnect, clear interval')
 		XPopupPort = null
-		clearStatusInterval()
+
+		// 清除获取线路状态的定时器
+		clearLineStatusInterval()
+		// 清除获取设备状态的定时器
 		clearPhoneStatusInterval()
+		// 清除保活定时器
+		grpClick2Talk.gsApi.stopKeepAlive()
 	})
 })
 
@@ -537,12 +558,20 @@ function recvPopupMessage(request, port) {
 			// popup 页面打开
 			// 返回当前的配置信息
 			console.log('islogin ', grpClick2Talk.isLogin)
+			createGsApi()
 			port.postMessage({cmd: 'popupShowConfig', grpClick2TalObj: grpClick2Talk})
 			// 关闭content-script的配置窗口
-			sendMessageToContentScript({cmd:'popupOpen'});
+			// sendMessageToContentScript({cmd:'popupOpen'});
 
-			// 获取线路的状态
-			showLineStatus()
+			if(!grpClick2Talk.isLogin){
+				// server/username/password字段都有时，popup打开时自动登录
+				automaticLoginCheck()
+			}else {
+				// 获取线路的状态
+				showLineStatus()
+				// 获取设备当前登录状态
+				getPhoneStatus()
+			}
 			break
 		case "popupAccountChange":
 		case 'popupUpdateLoginInfo':
@@ -565,12 +594,7 @@ function recvPopupMessage(request, port) {
 			grpClick2Talk.gsApi.phoneOperation({
 				arg: request.lineId,
 				cmd: 'endcall',
-				sid: grpClick2Talk.sid,
-				onreturn: function (event){
-					if (event.readyState === 4 && event.status === 200){
-						showLineStatus()
-					}
-				}
+				sid: grpClick2Talk.sid
 			})
 			break
 		default:
