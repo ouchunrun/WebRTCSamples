@@ -376,7 +376,6 @@ window.onmousedown = function (event){
 let toolBarCheckInterval
 let chatCallLinkCheckInterval
 function checkToolBar(){
-	console.log('checkToolBar')
 	if(toolBarCheckInterval){
 		clearInterval(toolBarCheckInterval)
 		toolBarCheckInterval = null
