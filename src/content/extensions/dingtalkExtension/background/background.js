@@ -389,6 +389,12 @@ function updateCallCfg(data){
 	let isServerChange = false
 	let isLoginDataChange = false
 	let currentLoginData = grpClick2Talk.loginData
+
+	if(data.url){
+		// 修改url格式为https
+		data.url = checkUrlFormat(data.url)
+	}
+
 	if(data.url && data.url !== currentLoginData.url){
 		isServerChange = true
 	}else if(data.username && data.username !== currentLoginData.username){

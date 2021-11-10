@@ -145,7 +145,7 @@ function getSelectOptions(){
 			if(parseInt(acct.reg) === 1){
 				let acctId = parseInt(acct.id)
 				if(selectAccount && selectAccount === acctId){
-					checkOption = '<option value=' + acctId +' selected>Account ' + acctId + '(' + acct.sip_id + ')</option>'
+					checkOption = '<option value=' + acctId +'>Account ' + acctId + '(' + acct.sip_id + ')</option>'
 				}
 				options = options + '<option value=' + acctId +'>Account ' + acctId + '(' + acct.sip_id + ')</option>'
 			}else {
