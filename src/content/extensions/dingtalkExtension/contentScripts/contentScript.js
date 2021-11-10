@@ -379,7 +379,7 @@ function inertNewChatCallLink(){
 		newChild.id = 'shortcutCall'
 		newChild.classList.add('tool-item')
 		newChild.classList.add('newChatCallLink')
-		newChild.innerHTML = '<span class="ng-isolate-scope"><i style="font-size: 18px;" class="iconfont tool-icon ng-scope tipper-attached"></i></span>';
+		newChild.innerHTML = '<span class="ng-isolate-scope"><i style="font-size: 17px;font-weight: bold;color: #aaa;" class="iconfont tool-icon ng-scope tipper-attached"></i></span>';
 		parent.appendChild(newChild)
 	}
 
