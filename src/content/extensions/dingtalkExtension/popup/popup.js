@@ -77,16 +77,15 @@ popupPort.onMessage.addListener(msg => {
 				if(linesList && linesList.length){
 					for(let i = 0; i<lines.length; i++){
 						let line = 'line' + lines[i].line
-						let lineTD = document.getElementsByClassName(line)
-						if(lineTD && lineTD[0]){
-							if(lineTD[0].innerText !== lines[i].state){  // 状态改变时更新线路状态
-								lineTD[0].innerText = lines[i].state
+						let lineStateDom = document.getElementsByClassName(line)
+						if(lineStateDom && lineStateDom[0]){
+							if(lineStateDom[0].innerText !== lines[i].state){  // 状态改变时更新线路状态
+								lineStateDom[0].innerText = lines[i].state
 							}
-
 							if(lines[i].state !== 'idle'){
-								lineTD[0].classList.add('lineBusy')
+								lineStateDom[0].classList.add('lineBusy')
 							}else {
-								lineTD[0].classList.remove('lineBusy')
+								lineStateDom[0].classList.remove('lineBusy')
 							}
 
 							let btn = document.getElementById(line)
@@ -110,9 +109,8 @@ popupPort.onMessage.addListener(msg => {
 					for(let i = 0; i<lines.length; i++){
 						let line = lines[i]
 						lineTrList = lineTrList + '<tr class="line"><td class="lineLabel">LINE' + line.line +'</td>' +
-							'<td  colspan="2" class="lineState line'+ line.line  +'">'+ line.state +'</td>' +
-							// '<td><button style="display:none" id="line'+ line.line  +'">挂断</button></td>' +
-							'</tr>'
+							'<td  colspan="2" class="lineState"><span class="line'+ line.line  +'">'+ line.state +'</span>' +
+							'<button id="line'+ line.line  +'">挂断</button></td></tr>'
 					}
 
 					linesTable.innerHTML = lineTrList

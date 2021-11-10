@@ -126,17 +126,21 @@ hr{
     line-height: 30px;
     border-radius: 2px;
     font-size: 14px;
-    cursor: pointer;
-}
-.lineState:hover{
-    opacity: 0.9;
+    cursor: default;
 }
 .lineBusy{
     color: crimson;
 }
 #linesTable button{
+    display:none;
+    float: right;
+    border: none;
+    color: crimson;
+    font-weight: bold;
+    background: none;
+    background: #c9c9c9;
     width: 60px;
-    margin-left: 5px;
-    background: #a52a2a;
-    border: 1px solid #a52a2a;
+}
+#linesTable button:hover{
+    opacity: 0.9;
 }
