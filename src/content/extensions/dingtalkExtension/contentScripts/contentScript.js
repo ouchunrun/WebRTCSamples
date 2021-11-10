@@ -346,33 +346,67 @@ function hiddenConfigArea(){
  * 点击遮罩层时关闭弹框
  * @param event
  */
+
 window.onclick = function (event){
 	if(window.location.href.indexOf('im.dingtalk') >= 0){
 		if(event.srcElement && event.srcElement.id === 'xConfigMaskLayer'){
 			hiddenConfigArea()
 		}
 
-
-		let startTime = Date.now()
-		let toolBarCheckInterval = setInterval(function (){
-			let endTime = Date.now()
-			if(endTime - startTime > 2000){   // 2s
-				clearInterval(toolBarCheckInterval)
-			}else {
-				let chatToolBar = document.getElementsByClassName('tool-bar')[0]
-				if(chatToolBar){
-					clearInterval(toolBarCheckInterval)
-					inertNewChatCallLink()
-				}
-			}
-		}, 100)
+		checkToolBar()
 	}
+}
+document.onkeyup = function(e) {
+	// 兼容FF和IE和Opera
+	let event = e || window.event;
+	let key = event.which || event.keyCode || event.charCode;
+	if (key === 13) {
+		/*Do something. 调用一些方法*/
+		checkToolBar()
+	}
+};
+
+window.onmousedown = function (event){
+	if(event && event.button === 0){
+		// 换键会存在问题!!
+		checkToolBar()
+	}
+}
+
+let toolBarCheckInterval
+let chatCallLinkCheckInterval
+function checkToolBar(){
+	console.log('checkToolBar')
+	if(toolBarCheckInterval){
+		clearInterval(toolBarCheckInterval)
+		toolBarCheckInterval = null
+	}
+
+	let startTime = Date.now()
+	toolBarCheckInterval = setInterval(function (){
+		let endTime = Date.now()
+		if(endTime - startTime > 2000){   // 2s
+			clearInterval(toolBarCheckInterval)
+			toolBarCheckInterval = null
+		}else {
+			let chatToolBar = document.getElementsByClassName('tool-bar')[0]
+			if(chatToolBar){
+				clearInterval(toolBarCheckInterval)
+				inertNewChatCallLink()
+			}
+		}
+	}, 100)
 }
 
 /**
  * 插入新的呼叫连接
  */
 function inertNewChatCallLink(){
+	if(chatCallLinkCheckInterval){
+		clearInterval(chatCallLinkCheckInterval)
+		chatCallLinkCheckInterval = null
+	}
+
 	let parent = document.getElementsByClassName('tool-bar')[0]
 	if(parent){
 		let newChild = document.createElement("li");
@@ -384,7 +418,7 @@ function inertNewChatCallLink(){
 	}
 
 	let startTime = Date.now()
-	let chatCallLinkCheckInterval = setInterval(function (){
+	chatCallLinkCheckInterval = setInterval(function (){
 		let endTime = Date.now()
 		let shortcutCall = document.getElementById('shortcutCall')
 		if(endTime - startTime > 2000 || (shortcutCall && shortcutCall.classList.contains('newChatCallLinkFadeIn'))){   // 2s
@@ -392,7 +426,6 @@ function inertNewChatCallLink(){
 		}else {
 			let chatCallLink = document.getElementsByClassName('chat-call-link')[0]
 			if(chatCallLink && chatCallLink.classList.contains('fade-in')){
-				console.log('insert char call link')
 				clearInterval(chatCallLinkCheckInterval)
 
 				if(shortcutCall){
