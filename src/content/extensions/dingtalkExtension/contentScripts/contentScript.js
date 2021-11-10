@@ -343,38 +343,6 @@ function hiddenConfigArea(){
 }
 
 /**
- * 聊天窗口添加呼叫按钮
- */
-function addCallShortcutButton(){
-	let insertDomInterval
-
-	let insertDom = function (){
-		let chatCallLink = document.getElementsByClassName('chat-call-link')[0]
-		if(chatCallLink && chatCallLink.classList.contains('fade-in')){
-			let parent = document.getElementsByClassName('tool-bar')[0]
-			let newChild = document.createElement("li");
-			newChild.id = 'shortcutCall'
-			newChild.classList.add('tool-item')
-			newChild.innerHTML = '<span class="ng-isolate-scope"><i style="font-size: 18px;" class="iconfont tool-icon ng-scope tipper-attached"></i></span>';
-			newChild.onclick = function (){
-				chatCallLink.click()
-			}
-			parent.appendChild(newChild)
-		}
-	}
-
-	let shortcutCall
-	insertDomInterval = setInterval(function (){
-		shortcutCall = document.getElementById('shortcutCall')
-		if(!shortcutCall){
-			insertDom()
-		}else {
-			clearInterval(insertDomInterval)
-		}
-	}, 500)
-}
-
-/**
  * 点击遮罩层时关闭弹框
  * @param event
  */
@@ -384,19 +352,58 @@ window.onclick = function (event){
 			hiddenConfigArea()
 		}
 
-		// 聊天tool-bar添加快捷拨号
-		let chatToolBar = document.getElementsByClassName('tool-bar')[0]
-		if(!chatToolBar){
-			setTimeout(function (){
-				chatToolBar = document.getElementsByClassName('tool-bar')[0]
+
+		let startTime = Date.now()
+		let toolBarCheckInterval = setInterval(function (){
+			let endTime = Date.now()
+			if(endTime - startTime > 2000){   // 2s
+				clearInterval(toolBarCheckInterval)
+			}else {
+				let chatToolBar = document.getElementsByClassName('tool-bar')[0]
 				if(chatToolBar){
-					addCallShortcutButton()
+					clearInterval(toolBarCheckInterval)
+					inertNewChatCallLink()
 				}
-			}, 700)
-		}else {
-			addCallShortcutButton()
-		}
+			}
+		}, 100)
 	}
+}
+
+/**
+ * 插入新的呼叫连接
+ */
+function inertNewChatCallLink(){
+	let parent = document.getElementsByClassName('tool-bar')[0]
+	if(parent){
+		let newChild = document.createElement("li");
+		newChild.id = 'shortcutCall'
+		newChild.classList.add('tool-item')
+		newChild.classList.add('newChatCallLink')
+		newChild.innerHTML = '<span class="ng-isolate-scope"><i style="font-size: 18px;" class="iconfont tool-icon ng-scope tipper-attached"></i></span>';
+		parent.appendChild(newChild)
+	}
+
+	let startTime = Date.now()
+	let chatCallLinkCheckInterval = setInterval(function (){
+		let endTime = Date.now()
+		let shortcutCall = document.getElementById('shortcutCall')
+		if(endTime - startTime > 2000 || (shortcutCall && shortcutCall.classList.contains('newChatCallLinkFadeIn'))){   // 2s
+			clearInterval(chatCallLinkCheckInterval)
+		}else {
+			let chatCallLink = document.getElementsByClassName('chat-call-link')[0]
+			if(chatCallLink && chatCallLink.classList.contains('fade-in')){
+				console.log('insert char call link')
+				clearInterval(chatCallLinkCheckInterval)
+
+				if(shortcutCall){
+					shortcutCall.onclick = function (){
+						chatCallLink.click()
+					}
+					shortcutCall.classList.add('newChatCallLinkFadeIn')
+				}
+			}
+		}
+	}, 100)
 }
 
 /**
@@ -493,13 +500,6 @@ window.onload = function (){
 		}, 2*1000)
 
 		pageMutationObserver()
-
-		// // 钉钉页面
-		// window.onunload = function (){
-		// 	sendMessageToBackgroundJS({
-		// 		cmd: 'contentScriptPageClose'
-		// 	})
-		// }
 	}
 }
 /*******************************************************************************************************************/

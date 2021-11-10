@@ -85,6 +85,10 @@ function permissionCheck(serverURL){
  * 登录
  */
 function accountLogin(){
+	if(!grpClick2Talk.gsApi){
+		createGsApi()
+	}
+
 	let loginCallback = function (event){
 		if (event.readyState === 4) {
 			if(event.response){
@@ -138,7 +142,11 @@ function accountLogin(){
 	}
 
 	grpClick2Talk.isLogin = false
-	grpClick2Talk.gsApi.login({onreturn: loginCallback})
+	if(grpClick2Talk.gsApi){
+		grpClick2Talk.gsApi.login({onreturn: loginCallback})
+	}else {
+		console.log('gsApi not init!')
+	}
 }
 
 /**
@@ -153,6 +161,7 @@ function extMakeCall(data){
 
 	grpClick2Talk.remotenumber = data.phonenumber
 	if(!grpClick2Talk.gsApi){
+		grpClick2Talk.waitingCall = true
 		automaticLoginCheck(true) 	// login first
 		return
 	}
@@ -467,6 +476,7 @@ function automaticLoginCheck(showAlert){
 		console.info('check permission before auto login')
 		permissionCheck(loginDatas.url)
 	}else if(showAlert){
+		grpClick2Talk.waitingCall = false
 		alert('请点击左上角配置页面进行登录')
 	}
 }
@@ -493,7 +503,7 @@ function chromeRuntimeOnMessage(request){
 			updateCallCfg(request.data)
 			break
 		case "contentScriptMakeCall":
-			console.info("request.data:", request.data)
+			console.info(" call phonenumber:", request.data.phonenumber)
 			extMakeCall(request.data)
 			break
 		case 'contentScriptPageClose':

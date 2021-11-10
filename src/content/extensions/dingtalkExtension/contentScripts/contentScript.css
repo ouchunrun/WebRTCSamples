@@ -100,3 +100,10 @@
     /*background: #dfedfa;*/
     height: 18px;
 }
+.newChatCallLink{
+    opacity: 0;
+    -webkit-transition: all .5s linear;
+}
+.newChatCallLinkFadeIn{
+    opacity: 1;
+}
