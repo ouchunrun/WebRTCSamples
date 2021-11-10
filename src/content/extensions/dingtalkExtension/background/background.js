@@ -20,9 +20,9 @@ let grpClick2Talk = {
 	getPhoneIntervalTime: 5*1000,
 }
 
-function createGsApi(){
+function createGsApiOrUpdateConfig(){
 	let loginData = grpClick2Talk.loginData
-	if(!loginData){
+	if(!loginData || !loginData.url || !loginData.username || !loginData.password){
 		console.info("Invalid parameter for login")
 		return
 	}
@@ -35,7 +35,7 @@ function createGsApi(){
 		// 	'X-Request-Server-Type': 'X-GRP',
 		// }
 	}
-	if (GsUtils.isNUllOrEmpty(grpClick2Talk.gsApi)) {
+	if (!grpClick2Talk.gsApi) {
 		console.info('create new gsApi')
 		grpClick2Talk.gsApi = new GsApi(config)
 	}else {
@@ -85,10 +85,6 @@ function permissionCheck(serverURL){
  * 登录
  */
 function accountLogin(){
-	if(!grpClick2Talk.gsApi){
-		createGsApi()
-	}
-
 	let loginCallback = function (event){
 		if (event.readyState === 4) {
 			if(event.response){
@@ -130,7 +126,9 @@ function accountLogin(){
 				}
 
 				// 【消息提示】 通知页面当前登录状态。
-				sendMessageToContentScript({cmd: 'loginStatus', response: response});
+				if(!XPopupPort){
+					sendMessageToContentScript({cmd: 'loginStatus', response: response});
+				}
 			}else {
 				console.info("login return response: ", event)
 				if(grpClick2Talk.call401Authentication){
@@ -141,11 +139,16 @@ function accountLogin(){
 		}
 	}
 
-	grpClick2Talk.isLogin = false
-	if(grpClick2Talk.gsApi){
-		grpClick2Talk.gsApi.login({onreturn: loginCallback})
+	if(!grpClick2Talk.gsApi){
+		createGsApiOrUpdateConfig()
+
+		setTimeout(function (){
+			grpClick2Talk.isLogin = false
+			grpClick2Talk.gsApi.login({onreturn: loginCallback})
+		}, 1000)
 	}else {
-		console.log('gsApi not init!')
+		grpClick2Talk.isLogin = false
+		grpClick2Talk.gsApi.login({onreturn: loginCallback})
 	}
 }
 
@@ -352,6 +355,12 @@ function clearPhoneStatusInterval(){
 	}
 }
 
+function clearApiKeepAliveInterval(){
+	if(grpClick2Talk.gsApi && grpClick2Talk.gsApi.stopKeepAlive){
+		grpClick2Talk.gsApi.stopKeepAlive()
+	}
+}
+
 /**
  * 设置登录信息
  * @param data
@@ -374,6 +383,9 @@ function updateLoginData(data){
 	// TODO: 保存配置信息到localStorage
 	let copyLoginData = objectDeepClone(grpClick2Talk.loginData)
 	localStorage.setItem('XNewestData', JSON.stringify(copyLoginData, null, '   '))
+
+	// update config
+	createGsApiOrUpdateConfig()
 }
 
 /**
@@ -389,11 +401,6 @@ function updateCallCfg(data){
 	let isServerChange = false
 	let isLoginDataChange = false
 	let currentLoginData = grpClick2Talk.loginData
-
-	if(data.url){
-		// 修改url格式为https
-		data.url = checkUrlFormat(data.url)
-	}
 
 	if(data.url && data.url !== currentLoginData.url){
 		isServerChange = true
@@ -506,6 +513,9 @@ function chromeRuntimeOnMessage(request){
 			break
 		case "contentScriptAccountChange":
 		case "contentScriptUpdateLoginInfo":
+			if(request.data && request.data.url){
+				request.data.url = checkUrlFormat(request.data.url)
+			}
 			updateCallCfg(request.data)
 			break
 		case "contentScriptMakeCall":
@@ -514,10 +524,10 @@ function chromeRuntimeOnMessage(request){
 			break
 		case 'contentScriptPageClose':
 			// 页面刷新或关闭的时候，如果处于登录状态，清除login定时器
-			if(grpClick2Talk && grpClick2Talk.isLogin && grpClick2Talk.gsApi && grpClick2Talk.gsApi.stopKeepAlive){
-				console.log('clear keep alive interval')
-				grpClick2Talk.gsApi.stopKeepAlive()
-			}
+			// if(grpClick2Talk && grpClick2Talk.isLogin){
+			// 	console.log('clear keep alive interval')
+			// 	clearApiKeepAliveInterval()
+			// }
 			break
 		default:
 			break
@@ -546,8 +556,8 @@ chrome.extension.onConnect.addListener(port => {
 		clearLineStatusInterval()
 		// 清除获取设备状态的定时器
 		clearPhoneStatusInterval()
-		// 清除保活定时器
-		grpClick2Talk.gsApi.stopKeepAlive()
+		// 清除gs API保活定时器
+		clearApiKeepAliveInterval()
 	})
 })
 
@@ -574,7 +584,7 @@ function recvPopupMessage(request, port) {
 			// popup 页面打开
 			// 返回当前的配置信息
 			console.log('islogin ', grpClick2Talk.isLogin)
-			createGsApi()
+			createGsApiOrUpdateConfig()
 			port.postMessage({cmd: 'popupShowConfig', grpClick2TalObj: grpClick2Talk})
 			// 关闭content-script的配置窗口
 			// sendMessageToContentScript({cmd:'popupOpen'});
@@ -591,6 +601,10 @@ function recvPopupMessage(request, port) {
 			break
 		case "popupAccountChange":
 		case 'popupUpdateLoginInfo':
+			if(request.data && request.data.url){
+				request.data.url = checkUrlFormat(request.data.url)
+			}
+
 			// 登录或更新登录信息
 			updateCallCfg(request.data)
 			// 同步更新content-script中的设置

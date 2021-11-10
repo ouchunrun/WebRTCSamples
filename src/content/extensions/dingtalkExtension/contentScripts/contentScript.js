@@ -540,9 +540,9 @@ if(chrome.runtime && chrome.runtime.onMessage){
 					break
 				case "loginStatus":
 					console.info('login return data: ', request.response)
-					// if(request.response && request.response.response === "error"){
-					// 	alert('请点击左上角配置页面进行登录')
-					// }
+					if(request.response && request.response.response === "error"){
+						alert('请点击左上角配置页面进行登录')
+					}
 					showTipInPage(request.response)
 					break
 				case 'showTip':  // 显示tip提示
