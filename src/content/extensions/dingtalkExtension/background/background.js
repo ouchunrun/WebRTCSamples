@@ -85,60 +85,6 @@ function permissionCheck(serverURL){
  * 登录
  */
 function accountLogin(){
-	let loginCallback = function (event){
-		if (event.readyState === 4) {
-			if(event.response){
-				let response = JSON.parse(event.response)
-				console.info('login response:' + response.response)
-				if(event.status === 200 && response.response === 'success'){
-					grpClick2Talk.sid = response.body.sid
-					grpClick2Talk.isLogin = true
-
-					if(grpClick2Talk.call401Authentication || grpClick2Talk.waitingCall){
-						if(grpClick2Talk.waitingCall){
-							grpClick2Talk.waitingCall = false
-						}else {
-							console.log('Call 401, re-authentication')
-						}
-						extMakeCall({
-							phonenumber: grpClick2Talk.remotenumber
-						})
-					}
-
-					sendMessage2Popup({
-						cmd: 'updateLoginStatus',
-						grpClick2TalObj: grpClick2Talk,
-						data: {className: 'grey', add: false, message: response.response}
-					})
-
-					// 获取当前话机配置的账号列表及账号是否注册等状态
-					getAccounts()
-					// 获取线路的状态
-					showLineStatus()
-					// 获取设备当前登录状态
-					getPhoneStatus()
-				}else {
-					sendMessage2Popup({
-						cmd: 'updateLoginStatus',
-						grpClick2TalObj: grpClick2Talk,
-						data: {className: 'grey', add: true, message: response.response}
-					})
-				}
-
-				// 【消息提示】 通知页面当前登录状态。
-				if(!XPopupPort){
-					sendMessageToContentScript({cmd: 'loginStatus', response: response});
-				}
-			}else {
-				console.info("login return response: ", event)
-				if(grpClick2Talk.call401Authentication){
-					console.info('call failed')
-					grpClick2Talk.call401Authentication = false
-				}
-			}
-		}
-	}
-
 	if(!grpClick2Talk.gsApi){
 		createGsApiOrUpdateConfig()
 
@@ -150,6 +96,138 @@ function accountLogin(){
 		grpClick2Talk.isLogin = false
 		grpClick2Talk.gsApi.login({onreturn: loginCallback})
 	}
+}
+
+function loginCallback(event){
+	if (event.readyState === 4) {
+		if(event.response){
+			let response = JSON.parse(event.response)
+			console.info('login response:' + response.response)
+			if(event.status === 200 && response.response === 'success'){
+				grpClick2Talk.sid = response.body.sid
+				grpClick2Talk.isLogin = true
+
+				sendMessage2Popup({
+					cmd: 'updateLoginStatus',
+					grpClick2TalObj: grpClick2Talk,
+					data: {className: 'grey', add: false, message: response.response}
+				})
+
+				// 获取当前话机配置的账号列表及账号是否注册等状态
+				getAccounts()
+				// 获取线路的状态
+				showLineStatus()
+				// 获取设备当前登录状态
+				getPhoneStatus()
+
+				clickToDialFeatureCheck(function (clickToDialEnable){
+					console.log('Click-To-Dial Feature enable: ', clickToDialEnable)
+					if(grpClick2Talk.call401Authentication || grpClick2Talk.waitingCall){
+						if(grpClick2Talk.waitingCall){
+							grpClick2Talk.waitingCall = false
+						}else {
+							console.log('Call 401, re-authentication success')
+						}
+
+						if(clickToDialEnable){
+							extMakeCall({phonenumber: grpClick2Talk.remotenumber})
+						}
+					}
+				})
+			}else {
+				sendMessage2Popup({
+					cmd: 'updateLoginStatus',
+					grpClick2TalObj: grpClick2Talk,
+					data: {className: 'grey', add: true, message: response.response}
+				})
+			}
+
+			// 【消息提示】 通知页面当前登录状态。
+			if(!XPopupPort){
+				sendMessageToContentScript({cmd: 'loginStatus', response: response});
+			}
+		}else {
+			console.info("login return response: ", event)
+			if(grpClick2Talk.call401Authentication){
+				console.info('call failed')
+				grpClick2Talk.call401Authentication = false
+			}
+		}
+	}
+}
+
+/**
+ * 检查是否开启了 Click-To-Dial Feature 功能
+ * @param actionCallback
+ */
+function clickToDialFeatureCheck(actionCallback){
+	if(!grpClick2Talk.gsApi){
+		return
+	}
+
+	let configGetCallBack = function (ev){
+		if (ev.readyState === 4){
+			if(ev.status === 200 && ev.response !== 'error'){
+				let configs = JSON.parse(ev.response).configs
+				if(configs && configs.length && configs[0].pvalue === '1561'){
+					if(configs[0].value === '1'){
+						actionCallback && actionCallback(true)  // 功能已经开启
+					}else {
+						console.info('Click-To-Dial Feature is not enabled')
+						if (confirm('检测到您未开启点击拨打功能，无法正常拨号，是否开启？') === true){
+							let configUpdateCallBack = function (event){
+								if (event.readyState === 4){
+									if(event.status === 200){
+										let response = JSON.parse(event.response)
+										if(response && response.body && response.body.status === 'right'){
+											console.info('config update success')
+											actionCallback && actionCallback(true)
+										}else {
+											console.info('config update failed: ', response.body.status)
+											actionCallback && actionCallback(false)
+										}
+									}else {
+										console.log('config update failed, code: ', event.status)
+										actionCallback && actionCallback(false)
+									}
+								}
+							}
+
+							apiConfigUpdate({
+								body: {alias: {}, pvalue: {'1561': "1"},},
+								callback: configUpdateCallBack
+							})
+						}else{
+							confirm('您已拒绝开启点击拨打功能，将无法正常呼叫')
+						}
+					}
+				}
+			}else {
+				console.log('config get response:', ev.response)
+				actionCallback && actionCallback(ev.response)
+			}
+		}
+	}
+
+	grpClick2Talk.gsApi.configGet({
+		pvalues: '1561',
+		onreturn: configGetCallBack
+	})
+}
+
+/**
+ * 更新配置
+ * @param data
+ */
+function apiConfigUpdate(data){
+	if(!data || !grpClick2Talk.gsApi){
+		return
+	}
+
+	grpClick2Talk.gsApi.configUpdate({
+		body: data.body,
+		onreturn: data.callback
+	})
 }
 
 /**
@@ -176,6 +254,44 @@ function extMakeCall(data){
 			if(event.status === 200){
 				if(grpClick2Talk.call401Authentication){
 					grpClick2Talk.call401Authentication = false
+				}
+
+				let response = JSON.parse(event.response)
+				let tipMessage = '呼叫失败，请确保设备已解锁并有可用账号且开启点击拨打功能'
+				if(response && response.response === 'error'){
+					if(XPopupPort){
+						/**
+						 * Invalid Request case:
+						 * 1. 未开启拨打功能
+						 * 2. 号码为空
+						 * 3. 找不到可用账号进行呼叫
+						 * 4. 键盘被锁
+						 */
+						if(response.body !== 'Invalid Request'){
+							tipMessage = 'call error ' + (response.body || '')
+						}
+						sendMessage2Popup({
+							cmd: 'updateLoginStatus',
+							grpClick2TalObj: grpClick2Talk,
+							data: {className: 'grey', add: false, message: tipMessage}
+						})
+					}else {
+						confirm(tipMessage)
+					}
+
+					// 呼叫失败时，自动开启点击拨打功能
+					apiConfigUpdate({
+						body: {alias: {}, pvalue: {'1561': "1"},},
+						callback: function (e){
+							if(e.readyState === 4){
+								if(e.status === 200){
+									console.log('auto enabled Click-To-Dial Feature response ', e.response)
+								}else {
+									console.log('auto enabled Click-To-Dial Feature response code', e.status)
+								}
+							}
+						}
+					})
 				}
 			}else if(event.status === 401 && !grpClick2Talk.call401Authentication){
 				// 其他地方登录导致sid变化，需要重新登录
@@ -315,7 +431,7 @@ function showLineStatus(){
 				if(response.body && response.body.length){
 					sendMessage2Popup({cmd: 'setLineStatus', lines: response.body})
 				}
-			}else /*if(event.status === 401)*/{
+			}else{
 				grpClick2Talk.isLogin = false
 				// 鉴权过期
 				clearLineStatusInterval()
@@ -597,6 +713,10 @@ function recvPopupMessage(request, port) {
 				showLineStatus()
 				// 获取设备当前登录状态
 				getPhoneStatus()
+				// 已登录时，检查点击拨打功能是否开启
+				clickToDialFeatureCheck(function (enable){
+					console.log('click to dial feature enable ', enable)
+				})
 			}
 			break
 		case "popupAccountChange":
