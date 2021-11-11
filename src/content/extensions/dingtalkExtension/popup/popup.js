@@ -50,13 +50,16 @@ popupPort.onMessage.addListener(msg => {
 
 			if(loginIdentity){
 				let className = data.className
-				if(data.add){
-					loginIdentity.classList.add(className)
-					console.info('add class ', className)
-				}else {
-					loginIdentity.classList.remove(className)
-					console.info('remove class ', className)
+				if(className){
+					if(data.add){
+						loginIdentity.classList.add(className)
+						console.info('add class ', className)
+					}else {
+						loginIdentity.classList.remove(className)
+						console.info('remove class ', className)
+					}
 				}
+
 				// 显示tip 提示
 				if(data.message){
 					showTipInPage({message: data.message})

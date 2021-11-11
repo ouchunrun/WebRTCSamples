@@ -107,18 +107,20 @@ function loginCallback(event){
 				grpClick2Talk.sid = response.body.sid
 				grpClick2Talk.isLogin = true
 
-				sendMessage2Popup({
-					cmd: 'updateLoginStatus',
-					grpClick2TalObj: grpClick2Talk,
-					data: {className: 'grey', add: false, message: response.response}
-				})
+				if(XPopupPort){
+					sendMessage2Popup({
+						cmd: 'updateLoginStatus',
+						grpClick2TalObj: grpClick2Talk,
+						data: {className: 'grey', add: false, message: response.response}
+					})
 
-				// 获取当前话机配置的账号列表及账号是否注册等状态
-				getAccounts()
-				// 获取线路的状态
-				showLineStatus()
-				// 获取设备当前登录状态
-				getPhoneStatus()
+					// 获取当前话机配置的账号列表及账号是否注册等状态
+					getAccounts()
+					// 获取线路的状态
+					showLineStatus()
+					// 获取设备当前登录状态
+					getPhoneStatus()
+				}
 
 				clickToDialFeatureCheck(function (clickToDialEnable){
 					console.log('Click-To-Dial Feature enable: ', clickToDialEnable)
@@ -260,20 +262,14 @@ function extMakeCall(data){
 				let tipMessage = '呼叫失败，请确保设备已解锁并有可用账号且开启点击拨打功能'
 				if(response && response.response === 'error'){
 					if(XPopupPort){
-						/**
-						 * Invalid Request case:
-						 * 1. 未开启拨打功能
-						 * 2. 号码为空
-						 * 3. 找不到可用账号进行呼叫
-						 * 4. 键盘被锁
-						 */
+						/* Invalid Request case:1. 未开启拨打功能  2. 号码为空 3. 找不到可用账号进行呼叫 4. 键盘被锁*/
 						if(response.body !== 'Invalid Request'){
 							tipMessage = 'call error ' + (response.body || '')
 						}
 						sendMessage2Popup({
 							cmd: 'updateLoginStatus',
 							grpClick2TalObj: grpClick2Talk,
-							data: {className: 'grey', add: false, message: tipMessage}
+							data: {message: tipMessage}
 						})
 					}else {
 						confirm(tipMessage)
@@ -282,12 +278,25 @@ function extMakeCall(data){
 					// 呼叫失败时，自动开启点击拨打功能
 					apiConfigUpdate({
 						body: {alias: {}, pvalue: {'1561': "1"},},
-						callback: function (e){
-							if(e.readyState === 4){
-								if(e.status === 200){
-									console.log('auto enabled Click-To-Dial Feature response ', e.response)
+						callback: function (even){
+							if(even.readyState === 4){
+								if(even.status === 200){
+									console.log('auto enabled Click-To-Dial Feature response ', even.response)
+									let response = JSON.parse(even.response)
+									if(response && response.body && response.body.status === 'right'){
+										console.info('config update success')
+										if(XPopupPort){
+											sendMessage2Popup({
+												cmd: 'updateLoginStatus',
+												grpClick2TalObj: grpClick2Talk,
+												data: {message: '呼叫失败，已为您成功开启点击拨打功能，请重试!'}
+											})
+										}else {
+											confirm('已为您成功开启点击拨打功能，请重试!')
+										}
+									}
 								}else {
-									console.log('auto enabled Click-To-Dial Feature response code', e.status)
+									console.log('auto enabled Click-To-Dial Feature response code', even.status)
 								}
 							}
 						}

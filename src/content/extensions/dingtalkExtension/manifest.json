@@ -1,10 +1,10 @@
 {
-  "name": "Click To Dial",
+  "name": "Click2Dial",
   "version": "2.0.6",
   "description": "web版钉钉网页自动全屏和第三方即时通信系统的话机浏览器扩展支持(Chrome)",
   "browser_action":
   {
-    "default_title": "Click To Dial",
+    "default_title": "Click2Dial",
     "default_icon": "popup/logo.png",
     "default_popup": "popup/popup.html"
   },
