@@ -19,7 +19,7 @@ function pageResize() {
 
 	let dingBody = document.getElementById('body')
 	let headerEle = document.getElementById('header')
-	let widthScale = window.screen.width / 1920;
+	let widthScale = window.screen.width / window.screen.availWidth;
 
 	if(layoutContainer && layoutMainEle){
 		let height = ''
