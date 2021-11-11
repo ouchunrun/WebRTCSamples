@@ -608,7 +608,7 @@ function recvPopupMessage(request, port) {
 			// 登录或更新登录信息
 			updateCallCfg(request.data)
 			// 同步更新content-script中的设置
-			sendMessageToContentScript({cmd:'updateConfig', data: request.data});
+			// sendMessageToContentScript({cmd:'updateConfig', data: request.data});
 			break
 		case "popupMakeCall":
 			console.info("request.data:", request.data)

@@ -80,6 +80,14 @@ let inject = '(' + function () {
 			clearInterval(remoteDomCheckInterval)
 			inputEle.onclick = function (){
 				if(socketClick2talk.socket){
+					if(socketClick2talk.socket && socketClick2talk.socket.readyState !== 1){
+						console.info('WebSocket is CLOSE!!!')
+						if(confirm('检测到WebSocket异常，请刷新重试') === true){
+							window.location.reload(true)
+						}
+						return
+					}
+
 					// todo: 通过uid获取用户分机号等信息，在websocket onmessage中处理请求结果
 					let mid = generateMixedMid(8) + ' 0'
 					let calleeUID = inputEle.value
