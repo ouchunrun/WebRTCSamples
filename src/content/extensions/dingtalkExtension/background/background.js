@@ -658,9 +658,9 @@ function recvPopupMessage(request, port) {
 				// 获取设备当前登录状态
 				getPhoneStatus()
 				// 已登录时，检查点击拨打功能是否开启
-				clickToDialFeatureCheck(function (enable){
-					console.log('click to dial feature enable ', enable)
-				})
+				// clickToDialFeatureCheck(function (enable){
+				// 	console.log('click to dial feature enable ', enable)
+				// })
 			}
 			break
 		case "popupAccountChange":
