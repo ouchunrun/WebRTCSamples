@@ -122,21 +122,15 @@ function loginCallback(event){
 					getPhoneStatus()
 				}
 
-				clickToDialFeatureCheck(function (clickToDialEnable){
-					console.log('Click-To-Dial Feature enable: ', clickToDialEnable)
-					if(grpClick2Talk.call401Authentication || grpClick2Talk.waitingCall){
-						if(grpClick2Talk.waitingCall){
-							grpClick2Talk.waitingCall = false
-						}else {
-							console.log('Call 401, re-authentication success')
-						}
-
-						if(clickToDialEnable){
-							extMakeCall({phonenumber: grpClick2Talk.remotenumber})
-						}
+				if(grpClick2Talk.call401Authentication || grpClick2Talk.waitingCall){
+					if(grpClick2Talk.waitingCall){
+						grpClick2Talk.waitingCall = false
+					}else {
+						console.log('Call 401, re-authentication success')
 					}
-				})
-			}else {
+					extMakeCall({phonenumber: grpClick2Talk.remotenumber})
+				}
+			}else if(XPopupPort){
 				sendMessage2Popup({
 					cmd: 'updateLoginStatus',
 					grpClick2TalObj: grpClick2Talk,
@@ -156,80 +150,6 @@ function loginCallback(event){
 			}
 		}
 	}
-}
-
-/**
- * 检查是否开启了 Click-To-Dial Feature 功能
- * @param actionCallback
- */
-function clickToDialFeatureCheck(actionCallback){
-	if(!grpClick2Talk.gsApi){
-		return
-	}
-
-	let configGetCallBack = function (ev){
-		if (ev.readyState === 4){
-			if(ev.status === 200 && ev.response !== 'error'){
-				let configs = JSON.parse(ev.response).configs
-				if(configs && configs.length && configs[0].pvalue === '1561'){
-					if(configs[0].value === '1'){
-						actionCallback && actionCallback(true)  // 功能已经开启
-					}else {
-						console.info('Click-To-Dial Feature is not enabled')
-						if (confirm('检测到您未开启点击拨打功能，无法正常拨号，是否开启？') === true){
-							let configUpdateCallBack = function (event){
-								if (event.readyState === 4){
-									if(event.status === 200){
-										let response = JSON.parse(event.response)
-										if(response && response.body && response.body.status === 'right'){
-											console.info('config update success')
-											actionCallback && actionCallback(true)
-										}else {
-											console.info('config update failed: ', response.body.status)
-											actionCallback && actionCallback(false)
-										}
-									}else {
-										console.log('config update failed, code: ', event.status)
-										actionCallback && actionCallback(false)
-									}
-								}
-							}
-
-							apiConfigUpdate({
-								body: {alias: {}, pvalue: {'1561': "1"},},
-								callback: configUpdateCallBack
-							})
-						}else{
-							confirm('您已拒绝开启点击拨打功能，将无法正常呼叫')
-						}
-					}
-				}
-			}else {
-				console.log('config get response:', ev.response)
-				actionCallback && actionCallback(ev.response)
-			}
-		}
-	}
-
-	grpClick2Talk.gsApi.configGet({
-		pvalues: '1561',
-		onreturn: configGetCallBack
-	})
-}
-
-/**
- * 更新配置
- * @param data
- */
-function apiConfigUpdate(data){
-	if(!data || !grpClick2Talk.gsApi){
-		return
-	}
-
-	grpClick2Talk.gsApi.configUpdate({
-		body: data.body,
-		onreturn: data.callback
-	})
 }
 
 /**
@@ -274,33 +194,6 @@ function extMakeCall(data){
 					}else {
 						confirm(tipMessage)
 					}
-
-					// 呼叫失败时，自动开启点击拨打功能
-					apiConfigUpdate({
-						body: {alias: {}, pvalue: {'1561': "1"},},
-						callback: function (even){
-							if(even.readyState === 4){
-								if(even.status === 200){
-									console.log('auto enabled Click-To-Dial Feature response ', even.response)
-									let response = JSON.parse(even.response)
-									if(response && response.body && response.body.status === 'right'){
-										console.info('config update success')
-										if(XPopupPort){
-											sendMessage2Popup({
-												cmd: 'updateLoginStatus',
-												grpClick2TalObj: grpClick2Talk,
-												data: {message: '呼叫失败，已为您成功开启点击拨打功能，请重试!'}
-											})
-										}else {
-											confirm('已为您成功开启点击拨打功能，请重试!')
-										}
-									}
-								}else {
-									console.log('auto enabled Click-To-Dial Feature response code', even.status)
-								}
-							}
-						}
-					})
 				}
 			}else if(event.status === 401 && !grpClick2Talk.call401Authentication){
 				// 其他地方登录导致sid变化，需要重新登录
@@ -315,15 +208,97 @@ function extMakeCall(data){
 		}
 	}
 
-	let accountId = parseInt(grpClick2Talk.loginData.selectedAccountId)
-	let callData = {
-		account: accountId -1,
-		phonenumber: data.phonenumber,
-		password: grpClick2Talk.loginData.password,
-		onreturn: callCallBack
+	// 每次呼叫前检查click to dial功能是否开启
+	clickToDialFeatureCheck(function (enable){
+		console.log('click to dial feature enable ', enable)
+		if(enable !== false){
+			let accountId = parseInt(grpClick2Talk.loginData.selectedAccountId)
+			let callData = {
+				account: accountId -1,
+				phonenumber: data.phonenumber,
+				password: grpClick2Talk.loginData.password,
+				onreturn: callCallBack
+			}
+			console.info("gsApi call phone number " + callData.phonenumber)
+			grpClick2Talk.gsApi.makeCall(callData)
+		}else {
+			// 已开启或请求失败（失败时无法正常判断当前是否开启了click to dial功能，按正常呼叫处理，呼叫失败后再做提示）
+		}
+	})
+}
+
+
+/**
+ * 检查是否开启了 Click-To-Dial Feature 功能
+ * @param actionCallback
+ */
+function clickToDialFeatureCheck(actionCallback){
+	if(!grpClick2Talk.gsApi){
+		return
 	}
-	console.info("gsApi call phone number " + callData.phonenumber)
-	grpClick2Talk.gsApi.makeCall(callData)
+
+	let configGetCallBack = function (ev){
+		if (ev.readyState === 4){
+			if(ev.status === 200 && ev.response !== 'error'){
+				let configs = JSON.parse(ev.response).configs
+				if(configs && configs.length && configs[0].pvalue === '1561'){
+					console.log('Click-To-Dial Feature enable: ', configs[0].value)
+					if(configs[0].value === '1'){
+						actionCallback && actionCallback(true)  // 功能已经开启
+					}else {
+						console.info('Click-To-Dial Feature is not enabled')
+						if (confirm('检测到您未开启点击拨打功能，无法正常拨号，是否开启？') === true){
+							apiConfigUpdate({callback: actionCallback})
+						}else{
+							confirm('您已拒绝开启点击拨打功能，无法正常拨号')
+						}
+					}
+				}
+			}else {
+				console.log('config get response:', ev.response)
+				actionCallback && actionCallback(ev.response)
+			}
+		}
+	}
+
+	grpClick2Talk.gsApi.configGet({
+		pvalues: '1561',
+		onreturn: configGetCallBack
+	})
+}
+
+/**
+ * 更新配置
+ * @param data
+ */
+function apiConfigUpdate(data){
+	if(!data || !grpClick2Talk.gsApi){
+		return
+	}
+	let actionCallback = data.callback
+	let configUpdateCallBack = function (event){
+		if (event.readyState === 4){
+			if(event.status === 200){
+				let response = JSON.parse(event.response)
+				if(response && response.body && response.body.status === 'right'){
+					console.info('config update success')
+					actionCallback && actionCallback(true)
+				}else {
+					console.info('config update failed: ', response.body.status)
+					actionCallback && actionCallback(false)
+				}
+			}else {
+				console.log('config update failed, code: ', event.status)
+				actionCallback && actionCallback(false)
+			}
+		}
+	}
+
+
+	grpClick2Talk.gsApi.configUpdate({
+		body: {alias: {}, pvalue: {'1561': "1"},},
+		onreturn: configUpdateCallBack
+	})
 }
 
 /**
@@ -487,33 +462,6 @@ function clearApiKeepAliveInterval(){
 }
 
 /**
- * 设置登录信息
- * @param data
- */
-function updateLoginData(data){
-	if(!data){
-		console.info('Invalid parameter to set for login')
-		return
-	}
-
-	Object.keys(data).forEach(function (key){
-		if(key === 'url'){
-			grpClick2Talk.loginData[key] = checkUrlFormat(data[key])
-		}else {
-			grpClick2Talk.loginData[key] = data[key]
-		}
-	})
-
-
-	// TODO: 保存配置信息到localStorage
-	let copyLoginData = objectDeepClone(grpClick2Talk.loginData)
-	localStorage.setItem('XNewestData', JSON.stringify(copyLoginData, null, '   '))
-
-	// update config
-	createGsApiOrUpdateConfig()
-}
-
-/**
  * 更新登录信息
  * @param data
  */
@@ -525,18 +473,23 @@ function updateCallCfg(data){
 	}
 	let isServerChange = false
 	let isLoginDataChange = false
-	let currentLoginData = grpClick2Talk.loginData
-
-	if(data.url && data.url !== currentLoginData.url){
-		isServerChange = true
-	}else if(data.username && data.username !== currentLoginData.username){
-		isLoginDataChange = true
-	}else if(data.password && data.password !== currentLoginData.password){
-		isLoginDataChange = true
-	}
-
-	// updateConfig first
-	updateLoginData(data)   // 注意仅账号更改时，这里就很重要
+	/* update save config and check info change or not */
+	Object.keys(data).forEach(function (key){
+		if(key === 'url'){
+			data[key] = checkUrlFormat(data[key])
+			if(data[key] !== grpClick2Talk.loginData.url){
+				isServerChange = true
+			}
+		}else if((key === 'username' || key === 'password') && data[key] !== grpClick2Talk.loginData[key]){
+			isLoginDataChange = true
+		}
+		grpClick2Talk.loginData[key] = data[key]
+	})
+	/* 保存配置信息到localStorage */
+	let copyLoginData = objectDeepClone(grpClick2Talk.loginData)
+	localStorage.setItem('XNewestData', JSON.stringify(copyLoginData, null, '   '))
+	// update gsApi config
+	createGsApiOrUpdateConfig()
 
 	if(isServerChange){
 		console.info("Recheck permission of : " + data.url)
@@ -625,17 +578,6 @@ function automaticLoginCheck(showAlert){
  */
 function chromeRuntimeOnMessage(request){
 	switch (request.cmd){
-		case "contentScriptAutoLogin":
-			// 需要区分不同的产品，否则会相互影响
-			if(request.DTLatestLangInfo){
-				grpClick2Talk.DTLatestLangInfo = request.DTLatestLangInfo
-				localStorage.setItem('DTLatestLangInfo', grpClick2Talk.DTLatestLangInfo)
-				console.info('set dingTalk latest langInfo', grpClick2Talk.DTLatestLangInfo)
-			}
-			sendMessageToContentScript({cmd:'updateConfig', data: grpClick2Talk.loginData});
-
-			automaticLoginCheck()
-			break
 		case "contentScriptAccountChange":
 		case "contentScriptUpdateLoginInfo":
 			if(request.data && request.data.url){
@@ -646,13 +588,6 @@ function chromeRuntimeOnMessage(request){
 		case "contentScriptMakeCall":
 			console.info(" call phonenumber:", request.data.phonenumber)
 			extMakeCall(request.data)
-			break
-		case 'contentScriptPageClose':
-			// 页面刷新或关闭的时候，如果处于登录状态，清除login定时器
-			// if(grpClick2Talk && grpClick2Talk.isLogin){
-			// 	console.log('clear keep alive interval')
-			// 	clearApiKeepAliveInterval()
-			// }
 			break
 		default:
 			break

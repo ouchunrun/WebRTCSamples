@@ -11,125 +11,6 @@ let makeCallBtn
 let configHead
 let linesTable
 
-
-/************************** 和 backgroundJS 建立长连接*******************************/
-let popupPort = chrome.extension.connect({name: 'popup'})
-
-/**
- * 发送消息
- * @param message
- */
-function popupSendMessage2Background(message){
-	if(!message){
-		return
-	}
-
-	message.requestType = 'popupMessage2Background'
-	popupPort.postMessage(message)
-}
-
-/**
- * 处理backgroundJS发送的消息
- */
-popupPort.onMessage.addListener(msg => {
-	if(!msg){
-		return
-	}
-
-	switch (msg.cmd){
-		case "popupShowConfig":
-			console.log('set popup config')
-			grpClick2Talk = msg.grpClick2TalObj
-			setPopupContent()
-			break
-		case 'updateLoginStatus':  // 更新当前登录状态
-			let data = msg.data
-			if(msg.grpClick2TalObj){
-				grpClick2Talk = msg.grpClick2TalObj
-			}
-
-			if(loginIdentity){
-				let className = data.className
-				if(className){
-					if(data.add){
-						loginIdentity.classList.add(className)
-						console.info('add class ', className)
-					}else {
-						loginIdentity.classList.remove(className)
-						console.info('remove class ', className)
-					}
-				}
-
-				// 显示tip 提示
-				if(data.message){
-					showTipInPage({message: data.message})
-				}
-				loginIdentity.innerText = grpClick2Talk.loginData?.username
-			}
-			break
-		case 'updateAccountLists':
-			if(msg.accountLists){
-				grpClick2Talk.loginData.accountLists = msg.accountLists
-				accountSelect.innerHTML = getSelectOptions()
-			}
-			break
-		case 'setLineStatus':   // 显示线路信息
-			let lines = msg.lines
-			if(lines){
-				let linesList = document.getElementsByClassName('line')
-				if(linesList && linesList.length){
-					for(let i = 0; i<lines.length; i++){
-						let line = 'line' + lines[i].line
-						let lineStateDom = document.getElementsByClassName(line)
-						if(lineStateDom && lineStateDom[0]){
-							if(lineStateDom[0].innerText !== lines[i].state){  // 状态改变时更新线路状态
-								lineStateDom[0].innerText = lines[i].state
-							}
-							if(lines[i].state !== 'idle'){
-								lineStateDom[0].classList.add('lineBusy')
-							}else {
-								lineStateDom[0].classList.remove('lineBusy')
-							}
-
-							let btn = document.getElementById(line)
-							if(btn){
-								if(lines[i].state !== 'idle'){
-									btn.style.display = 'block'
-									btn.onclick = function (){
-										popupSendMessage2Background({
-											cmd: 'popupHangupLine',
-											lineId: lines[i].line,
-										})
-									}
-								}else {
-									btn.style.display = 'none'
-								}
-							}
-						}
-					}
-				}else {
-					let lineTrList = ''
-					for(let i = 0; i<lines.length; i++){
-						let line = lines[i]
-						lineTrList = lineTrList + '<tr class="line"><td class="lineLabel">LINE' + line.line +'</td>' +
-							'<td  colspan="2" class="lineState"><span class="line'+ line.line  +'">'+ line.state +'</span>' +
-							'<button id="line'+ line.line  +'">挂断</button></td></tr>'
-					}
-
-					linesTable.innerHTML = lineTrList
-				}
-			}
-			break
-		default:
-			break
-	}
-})
-
-/**
- * 1.发送消息给backgroundJs，获取用户配置信息
- */
-popupSendMessage2Background({cmd: 'popupOnOpen'})
-
 /******************************************** 页面内容显示处理 ********************************************************/
 
 /**
@@ -270,6 +151,9 @@ function call(){
 	})
 }
 
+/**
+ * 账号下来值发生改变
+ */
 function onSelectAccountChange(){
 	let index = accountSelect.selectedIndex; // 选中索引
 	let selectValue = accountSelect.options[index].value;
@@ -281,6 +165,54 @@ function onSelectAccountChange(){
 			selectedAccountId: selectValue
 		}
 	})
+}
+
+/**
+ * 更新线路状态信息
+ */
+function updateLineStatus(lines){
+	let linesList = document.getElementsByClassName('line')
+	if(linesList && linesList.length){
+		for(let i = 0; i<lines.length; i++){
+			let line = 'line' + lines[i].line
+			let lineStateDom = document.getElementsByClassName(line)
+			if(lineStateDom && lineStateDom[0]){
+				if(lineStateDom[0].innerText !== lines[i].state){  // 状态改变时更新线路状态
+					lineStateDom[0].innerText = lines[i].state
+				}
+				if(lines[i].state !== 'idle'){
+					lineStateDom[0].classList.add('lineBusy')
+				}else {
+					lineStateDom[0].classList.remove('lineBusy')
+				}
+
+				let btn = document.getElementById(line)
+				if(btn){
+					if(lines[i].state !== 'idle'){
+						btn.style.display = 'block'
+						btn.onclick = function (){
+							popupSendMessage2Background({
+								cmd: 'popupHangupLine',
+								lineId: lines[i].line,
+							})
+						}
+					}else {
+						btn.style.display = 'none'
+					}
+				}
+			}
+		}
+	}else {
+		let lineTrList = ''
+		for(let i = 0; i<lines.length; i++){
+			let line = lines[i]
+			lineTrList = lineTrList + '<tr class="line"><td class="lineLabel">LINE' + line.line +'</td>' +
+				'<td  colspan="2" class="lineState"><span class="line'+ line.line  +'">'+ line.state +'</span>' +
+				'<button id="line'+ line.line  +'">挂断</button></td></tr>'
+		}
+
+		linesTable.innerHTML = lineTrList
+	}
 }
 
 /**
@@ -313,3 +245,80 @@ function getDom(){
 window.onload = function (){
 	getDom()
 }
+
+/*************************************************************************************************************/
+/***************************************************** 和 backgroundJS 建立长连接*******************************/
+let popupPort = chrome.extension.connect({name: 'popup'})
+
+/**
+ * 发送消息
+ * @param message
+ */
+function popupSendMessage2Background(message){
+	if(!message){
+		return
+	}
+
+	message.requestType = 'popupMessage2Background'
+	popupPort.postMessage(message)
+}
+
+/**
+ * 处理backgroundJS发送的消息
+ */
+popupPort.onMessage.addListener(msg => {
+	if(!msg){
+		return
+	}
+
+	switch (msg.cmd){
+		case "popupShowConfig":
+			console.log('set popup config')
+			grpClick2Talk = msg.grpClick2TalObj
+			setPopupContent()
+			break
+		case 'updateLoginStatus':  // 更新当前登录状态
+			let data = msg.data
+			if(msg.grpClick2TalObj){
+				grpClick2Talk = msg.grpClick2TalObj
+			}
+
+			if(loginIdentity){
+				let className = data.className
+				if(className){
+					if(data.add){
+						loginIdentity.classList.add(className)
+						console.info('add class ', className)
+					}else {
+						loginIdentity.classList.remove(className)
+						console.info('remove class ', className)
+					}
+				}
+
+				// 显示tip 提示
+				if(data.message){
+					showTipInPage({message: data.message})
+				}
+				loginIdentity.innerText = grpClick2Talk.loginData?.username
+			}
+			break
+		case 'updateAccountLists':
+			if(msg.accountLists){
+				grpClick2Talk.loginData.accountLists = msg.accountLists
+				accountSelect.innerHTML = getSelectOptions()
+			}
+			break
+		case 'setLineStatus':   // 显示线路信息
+			if(msg.lines){
+				updateLineStatus(msg.lines)
+			}
+			break
+		default:
+			break
+	}
+})
+
+/**
+ * 1.发送消息给backgroundJs，获取用户配置信息
+ */
+popupSendMessage2Background({cmd: 'popupOnOpen'})
