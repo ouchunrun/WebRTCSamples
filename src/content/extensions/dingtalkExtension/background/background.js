@@ -34,6 +34,7 @@ function createGsApiOrUpdateConfig(){
 		// requestHeader: {
 		// 	'X-Request-Server-Type': 'X-GRP',
 		// }
+		onerror: onErrorCatchHandler
 	}
 	if (!grpClick2Talk.gsApi) {
 		console.info('create new gsApi')
@@ -45,9 +46,26 @@ function createGsApiOrUpdateConfig(){
 }
 
 /**
+ * 错误处理
+ * @param event
+ */
+function onErrorCatchHandler(event){
+	console.log('** An error occurred during the transaction, readyState,'+ event.target.readyState +' status ', event.target.status);
+
+	if(grpClick2Talk.loginData && grpClick2Talk.loginData.url){
+		console.log('error occurred, check permission!')
+		permissionCheck(grpClick2Talk.loginData.url, function (){
+			console.log("success!!!!!!!!!!")
+		})
+	}else {
+		console.log('url empty.')
+	}
+}
+
+/**
  * 检查是否已授权访问grp host连接
  */
-function permissionCheck(serverURL){
+function permissionCheck(serverURL, actionCallback){
 	if(!serverURL){
 		return
 	}
@@ -63,8 +81,8 @@ function permissionCheck(serverURL){
 	};
 	httpRequest.onreadystatechange = function () {
 		if (httpRequest.readyState === 4 && httpRequest.status === 200) {
-			console.info('api-will_login request success')
-			accountLogin()
+			console.info('connection authorized already.')
+			actionCallback && actionCallback()
 		}
 	}
 	httpRequest.onerror = function (event) {
@@ -90,11 +108,17 @@ function accountLogin(){
 
 		setTimeout(function (){
 			grpClick2Talk.isLogin = false
-			grpClick2Talk.gsApi.login({onreturn: loginCallback})
+			grpClick2Talk.gsApi.login({
+				onreturn: loginCallback,
+				onerror: onErrorCatchHandler
+			})
 		}, 1000)
 	}else {
 		grpClick2Talk.isLogin = false
-		grpClick2Talk.gsApi.login({onreturn: loginCallback})
+		grpClick2Talk.gsApi.login({
+			onreturn: loginCallback,
+			onerror: onErrorCatchHandler
+		})
 	}
 }
 
@@ -208,23 +232,29 @@ function extMakeCall(data){
 		}
 	}
 
-	// 每次呼叫前检查click to dial功能是否开启
-	clickToDialFeatureCheck(function (enable){
-		console.log('click to dial feature enable ', enable)
-		if(enable !== false){
-			let accountId = parseInt(grpClick2Talk.loginData.selectedAccountId)
-			let callData = {
-				account: accountId -1,
-				phonenumber: data.phonenumber,
-				password: grpClick2Talk.loginData.password,
-				onreturn: callCallBack
+	let permissionCheckCallback = function (){
+		// 每次呼叫前检查click to dial功能是否开启
+		clickToDialFeatureCheck(function (enable){
+			console.log('click to dial feature enable ', enable)
+			if(enable !== false){
+				let accountId = parseInt(grpClick2Talk.loginData.selectedAccountId)
+				let callData = {
+					account: accountId -1,
+					phonenumber: data.phonenumber,
+					password: grpClick2Talk.loginData.password,
+					onreturn: callCallBack,
+					onerror: onErrorCatchHandler
+				}
+				console.info("gsApi call phone number " + callData.phonenumber)
+				grpClick2Talk.gsApi.makeCall(callData)
+			}else {
+				// 已开启或请求失败（失败时无法正常判断当前是否开启了click to dial功能，按正常呼叫处理，呼叫失败后再做提示）
 			}
-			console.info("gsApi call phone number " + callData.phonenumber)
-			grpClick2Talk.gsApi.makeCall(callData)
-		}else {
-			// 已开启或请求失败（失败时无法正常判断当前是否开启了click to dial功能，按正常呼叫处理，呼叫失败后再做提示）
-		}
-	})
+		})
+	}
+
+	// 呼叫前先检查连接是否授权
+	permissionCheck(grpClick2Talk.loginData.url, permissionCheckCallback)
 }
 
 
@@ -263,7 +293,8 @@ function clickToDialFeatureCheck(actionCallback){
 
 	grpClick2Talk.gsApi.configGet({
 		pvalues: '1561',
-		onreturn: configGetCallBack
+		onreturn: configGetCallBack,
+		onerror: onErrorCatchHandler
 	})
 }
 
@@ -297,7 +328,8 @@ function apiConfigUpdate(data){
 
 	grpClick2Talk.gsApi.configUpdate({
 		body: {alias: {}, pvalue: {'1561': "1"},},
-		onreturn: configUpdateCallBack
+		onreturn: configUpdateCallBack,
+		onerror: onErrorCatchHandler
 	})
 }
 
@@ -380,7 +412,10 @@ function getPhoneStatus(){
 	}
 
 	grpClick2Talk.getPhoneStatusInterval = setInterval(function (){
-		grpClick2Talk.gsApi.getPhoneStatus({onreturn: getPhoneStatusCallback})
+		grpClick2Talk.gsApi.getPhoneStatus({
+			onreturn: getPhoneStatusCallback,
+			onerror: onErrorCatchHandler
+		})
 		// 检查设备状态时重新获取账号列表
 		getAccounts()
 	}, grpClick2Talk.getPhoneIntervalTime)
@@ -430,7 +465,10 @@ function showLineStatus(){
 	}
 
 	grpClick2Talk.getLineStatusInterval = setInterval(function (){
-		grpClick2Talk.gsApi.getLineStatus({onreturn: lineStatusCallback})
+		grpClick2Talk.gsApi.getLineStatus({
+			onreturn: lineStatusCallback,
+			onerror: onErrorCatchHandler
+		})
 	}, grpClick2Talk.getLineIntervalTime)
 }
 
@@ -457,7 +495,9 @@ function clearPhoneStatusInterval(){
 
 function clearApiKeepAliveInterval(){
 	if(grpClick2Talk.gsApi && grpClick2Talk.gsApi.stopKeepAlive){
-		grpClick2Talk.gsApi.stopKeepAlive()
+		grpClick2Talk.gsApi.stopKeepAlive({
+			onerror: onErrorCatchHandler
+		})
 	}
 }
 
@@ -493,7 +533,7 @@ function updateCallCfg(data){
 
 	if(isServerChange){
 		console.info("Recheck permission of : " + data.url)
-		permissionCheck(data.url)
+		permissionCheck(data.url, accountLogin)
 	}else if(isLoginDataChange || !grpClick2Talk.isLogin){
 		console.log('username/password change or logout..')
 		accountLogin()
@@ -565,7 +605,7 @@ function automaticLoginCheck(showAlert){
 	let loginDatas = grpClick2Talk.loginData
 	if(loginDatas && loginDatas.url && loginDatas.username && loginDatas.password){
 		console.info('check permission before auto login')
-		permissionCheck(loginDatas.url)
+		permissionCheck(loginDatas.url, accountLogin)
 	}else if(showAlert){
 		grpClick2Talk.waitingCall = false
 		alert('请点击左上角配置页面进行登录')
@@ -688,7 +728,8 @@ function recvPopupMessage(request, port) {
 			grpClick2Talk.gsApi.phoneOperation({
 				arg: request.lineId,
 				cmd: 'endcall',
-				sid: grpClick2Talk.sid
+				sid: grpClick2Talk.sid,
+				onerror: onErrorCatchHandler
 			})
 			break
 		default:
