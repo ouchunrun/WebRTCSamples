@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VAD Noise Detection</title>
+    <link rel="stylesheet" href="main.css">
+</head>
+<body>
+    <div>
+        <!--    设备选择部分    -->
+        <div class="select">
+            <label for="audioSource">Audio input source: </label><select id="audioSource"></select>
+        </div>
+
+        <div class="select">
+            <label for="audioOutput">Audio output destination: </label><select id="audioOutput"></select>
+        </div>
+    </div>
+    <hr>
+    <div>
+        <h1>scoreAvg < 0.2 && audioLevelAvg > 0.04</h1>
+
+        <audio id="gum-local" controls autoplay muted></audio>
+        <div style="clear: both">
+            <button onclick="getAudioStream()">get audio stream</button>
+            <button onclick="muteSwitch()">mute switch</button>
+        </div>
+        <div>
+            <span id="errorMsg"></span>
+        </div>
+    </div>
+
+
+    <!--  引入必要文件  -->
+    <script type="application/javascript" src="js/RNNoiseWasmModule.js"></script>
+    <script type="application/javascript" src="js/RnnoiseProcessor.js"></script>
+
+    <script type="application/javascript" src="detection/JitsiConferenceEvents.js"></script>
+    <script type="application/javascript" src="detection/MathUtil.js"></script>
+    <script type="application/javascript" src="detection/DetectionEvents.js"></script>
+    <script type="application/javascript" src="detection/events.js"></script>
+    <script type="application/javascript" src="detection/TrackVADEmitter.js"></script>
+    <script type="application/javascript" src="detection/VADAudioAnalyser.js"></script>
+    <script type="application/javascript" src="detection/VADNoiseDetection.js"></script>
+<!--    <script type="application/javascript" src="detection/VADTalkMutedDetection.js"></script>-->
+
+    <!--  逻辑处理  -->
+    <script type="application/javascript" src="tip.js"></script>
+    <script type="application/javascript" src="main.js"></script>
+    <script type="application/javascript" src="audioProcess.js"></script>
+</body>
+</html>
