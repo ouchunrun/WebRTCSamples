@@ -146,7 +146,6 @@ class TrackVADEmitter extends EventEmitter {
                 timestamp: sampleTimestamp,
                 score: vadScore,
                 pcmData: pcmSample,
-                // deviceId: this._localTrack.getDeviceId()
             });
         }
 
@@ -185,29 +184,9 @@ class TrackVADEmitter extends EventEmitter {
      */
     _cleanupResources() {
         this._disconnectAudioGraph();
-        // this._localTrack.stopStream();
         this._localStream.getTracks().forEach(track => {
             track.stop();
         });
-    }
-
-    /**
-     * Get the associated track device ID.
-     *
-     * @returns {string}
-     */
-    getDeviceId() {
-        return this._localTrack.getDeviceId();
-    }
-
-
-    /**
-     * Get the associated track label.
-     *
-     * @returns {string}
-     */
-    getTrackLabel() {
-        return this._localTrack.getDeviceLabel();
     }
 
     /**

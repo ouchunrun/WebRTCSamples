@@ -169,6 +169,22 @@ function showLog(msg) {
 	logElement.appendChild(line);
 }
 
+let noiseDetection
+window.onload = function (){
+	console.log('window onload...')
+	noiseDetection = new NoiseDetection()
+}
+
+function setupNewTrack(stream){
+	noiseDetection.setupNewTrack(stream)
+}
+
+
+function trackMuteChanged(stream){
+	noiseDetection.trackMuteChanged(stream)
+}
+
+
 /******************************************************************************************************************/
 
 function beautyDate(date) {

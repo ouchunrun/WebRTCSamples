@@ -29,7 +29,7 @@ class VADAudioAnalyser extends EventEmitter {
         this._createVADProcessor = createVADProcessor;
 
         /**
-         * Current {@link TrackVADEmitter}. VAD Emitter uses a {@link JitsiLocalTrack} and VAD processor to generate
+         * Current {@link TrackVADEmitter}. VAD Emitter uses a audioTrack and VAD processor to generate
          * period voice probability scores.
          */
         this._vadEmitter = null;
@@ -59,9 +59,9 @@ class VADAudioAnalyser extends EventEmitter {
         this._processVADScore = this._processVADScore.bind(this);
 
 
-        conference.on(JitsiConferenceEvents.TRACK_ADDED, this._trackAdded.bind(this));
-        conference.on(JitsiConferenceEvents.TRACK_REMOVED, this._trackRemoved.bind(this));
-        conference.on(JitsiConferenceEvents.TRACK_MUTE_CHANGED, this._trackMuteChanged.bind(this));
+        conference.on(DetectionEvents.TRACK_ADDED, this._trackAdded.bind(this));
+        conference.on(DetectionEvents.TRACK_REMOVED, this._trackRemoved.bind(this));
+        conference.on(DetectionEvents.TRACK_MUTE_CHANGED, this._trackMuteChanged.bind(this));
     }
 
     /**

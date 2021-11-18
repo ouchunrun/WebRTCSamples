@@ -1,23 +1,19 @@
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
+/**
+ * event 事件类型
+ */
+let DetectionEvents = {
+	DETECTOR_STATE_CHANGE : 'detector_state_change',
+	AUDIO_INPUT_STATE_CHANGE : 'audio_input_state_changed',
+	NO_AUDIO_INPUT : 'no_audio_input_detected',
+	VAD_NOISY_DEVICE : 'detection.vad_noise_device',
+	VAD_REPORT_PUBLISHED : 'vad-report-published',
+	VAD_SCORE_PUBLISHED : 'detection.vad_score_published',
+	VAD_TALK_WHILE_MUTED : 'detection.vad_talk_while_muted',
+	TRACK_ADDED : 'detection.trackAdded',
+	TRACK_REMOVED : 'detection.trackRemoved',
+	TRACK_MUTE_CHANGED : 'detection.trackMuteChanged',
+	NOISY_MIC : 'detection.noisy_mic',
+}
 
 function EventEmitter() {
 	this._events = this._events || {};
@@ -26,7 +22,6 @@ function EventEmitter() {
 
 // Backwards-compat with node 0.10.x
 EventEmitter.EventEmitter = EventEmitter;
-
 EventEmitter.prototype._events = undefined;
 EventEmitter.prototype._maxListeners = undefined;
 
@@ -149,28 +144,6 @@ EventEmitter.prototype.addListener = function(type, listener) {
 };
 
 EventEmitter.prototype.on = EventEmitter.prototype.addListener;
-
-EventEmitter.prototype.once = function(type, listener) {
-	if (!isFunction(listener))
-		throw TypeError('listener must be a function');
-
-	var fired = false;
-
-	function g() {
-		this.removeListener(type, g);
-
-		if (!fired) {
-			fired = true;
-			listener.apply(this, arguments);
-		}
-	}
-
-	g.listener = listener;
-	this.on(type, g);
-
-	return this;
-};
-
 // emits a 'removeListener' event iff the listener was removed
 EventEmitter.prototype.removeListener = function(type, listener) {
 	var list, position, length, i;
@@ -253,6 +226,27 @@ EventEmitter.prototype.removeAllListeners = function(type) {
 			this.removeListener(type, listeners[listeners.length - 1]);
 	}
 	delete this._events[type];
+
+	return this;
+};
+
+EventEmitter.prototype.once = function(type, listener) {
+	if (!isFunction(listener))
+		throw TypeError('listener must be a function');
+
+	var fired = false;
+
+	function g() {
+		this.removeListener(type, g);
+
+		if (!fired) {
+			fired = true;
+			listener.apply(this, arguments);
+		}
+	}
+
+	g.listener = listener;
+	this.on(type, g);
 
 	return this;
 };
