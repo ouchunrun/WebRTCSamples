@@ -6,13 +6,13 @@
 const VAD_EMITTER_SAMPLE_RATE = 4096;
 
 /**
- * Connects a TrackVADEmitter to the target conference local audio track and manages various services that use
+ * Connects a TrackVADEmitter to the target noiseDetection local audio track and manages various services that use
  * the data to produce audio analytics (VADTalkMutedDetection and VADNoiseDetection).
  */
 class VADAudioAnalyser extends EventEmitter {
     /**
      * Creates <tt>VADAudioAnalyser</tt>
-     * @param  conference - JitsiConference instance that created us.
+     * @param  noiseDetection - instance that created us.
      * @param {Object} createVADProcessor - Function that creates a Voice activity detection processor. The processor
      * needs to implement the following functions:
      * - <tt>getSampleLength()</tt> - Returns the sample size accepted by getSampleLength.
@@ -20,7 +20,7 @@ class VADAudioAnalyser extends EventEmitter {
      * - <tt>calculateAudioFrameVAD(pcmSample)</tt> - Process a 32 float pcm sample of getSampleLength size.
      * @constructor
      */
-    constructor( conference, createVADProcessor) {
+    constructor( noiseDetection, createVADProcessor) {
         super();
 
         /**
@@ -46,7 +46,7 @@ class VADAudioAnalyser extends EventEmitter {
 
         /**
          * Promise used to chain create and destroy operations associated with TRACK_ADDED and TRACK_REMOVED events
-         * coming from the conference.
+         * coming from the noiseDetection.
          * Because we have an async created component (VAD Processor) we need to make sure that it's initialized before
          * we destroy it ( when changing the device for instance), or when we use it from an external point of entry
          * i.e. (TRACK_MUTE_CHANGED event callback).
@@ -59,9 +59,9 @@ class VADAudioAnalyser extends EventEmitter {
         this._processVADScore = this._processVADScore.bind(this);
 
 
-        conference.on(DetectionEvents.TRACK_ADDED, this._trackAdded.bind(this));
-        conference.on(DetectionEvents.TRACK_REMOVED, this._trackRemoved.bind(this));
-        conference.on(DetectionEvents.TRACK_MUTE_CHANGED, this._trackMuteChanged.bind(this));
+        noiseDetection.on(DetectionEvents.TRACK_ADDED, this._trackAdded.bind(this));
+        noiseDetection.on(DetectionEvents.TRACK_REMOVED, this._trackRemoved.bind(this));
+        noiseDetection.on(DetectionEvents.TRACK_MUTE_CHANGED, this._trackMuteChanged.bind(this));
     }
 
     /**
@@ -139,7 +139,7 @@ class VADAudioAnalyser extends EventEmitter {
     }
 
     /**
-     * Notifies the detector that a track was added to the associated {@link JitsiConference}.
+     * Notifies the detector that a track was added to the associated.
      * Only take into account local audio tracks.
      * @param  stream - The added track.
      * @returns {void}
@@ -168,9 +168,9 @@ class VADAudioAnalyser extends EventEmitter {
     }
 
     /**
-     * Notifies the detector that the mute state of a {@link JitsiConference} track has changed. Only takes into account
+     * Notifies the detector that the mute state of a track has changed. Only takes into account
      * local audio tracks.
-     * @param {JitsiTrack} track - The track whose mute state has changed.
+     * @param track - The track whose mute state has changed.
      * @returns {void}
      * @listens TRACK_MUTE_CHANGED
      */
@@ -184,10 +184,10 @@ class VADAudioAnalyser extends EventEmitter {
     }
 
     /**
-     * Notifies the detector that a track associated with the {@link JitsiConference} was removed. Only takes into
+     * Notifies the detector that a track associated with the was removed. Only takes into
      * account local audio tracks. Cleans up resources associated with the track and resets the processing context.
      *
-     * @param {JitsiTrack} track - The removed track.
+     * @param track - The removed track.
      * @returns {void}
      * @listens TRACK_REMOVED
      */

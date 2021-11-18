@@ -11,7 +11,7 @@ function createAudioContext(options) {
 
 
 /**
- * Connects an audio JitsiLocalTrack to a vadProcessor using WebAudio ScriptProcessorNode.
+ * Connects an audio LocalTrack to a vadProcessor using WebAudio ScriptProcessorNode.
  * Once an object is created audio from the local track flows through the ScriptProcessorNode as raw PCM.
  * The PCM is processed by the injected vad module and a voice activity detection score is obtained, the
  * score is published to consumers via an EventEmitter.
@@ -26,7 +26,7 @@ class TrackVADEmitter extends EventEmitter {
      * @param {number} procNodeSampleRate - Sample rate of the ScriptProcessorNode. Possible values  256, 512, 1024,
      *  2048, 4096, 8192, 16384. Passing other values will default to closes neighbor.
      * @param {Object} vadProcessor - VAD processor that allows us to calculate VAD score for PCM samples.
-     * @param {localStream} localStream - JitsiLocalTrack corresponding to micDeviceId.
+     * @param {localStream} localStream - LocalTrack corresponding to micDeviceId.
      */
     constructor(procNodeSampleRate, vadProcessor, localStream) {
         super();
@@ -42,7 +42,7 @@ class TrackVADEmitter extends EventEmitter {
         this._vadProcessor = vadProcessor;
 
         /**
-         * The JitsiLocalTrack instance.
+         * The LocalTrack instance.
          */
         this._localStream = localStream;
 
