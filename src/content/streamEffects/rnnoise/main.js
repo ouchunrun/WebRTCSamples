@@ -135,10 +135,9 @@ function muteSwitch(){
 	if(!localAudioStream){
 		return
 	}
-	if(isMute === false){
-		isMute = true
-	}
 
+	isMute = isMute === false;
+	console.log('mute switch, mute ' + isMute)
 	for (let i = 0; i < localAudioStream.getAudioTracks().length; i++) {
 		if (isMute) {
 			if (localAudioStream.getAudioTracks()[i].enabled === true) {
