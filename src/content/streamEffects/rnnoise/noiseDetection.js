@@ -1,19 +1,31 @@
 
 
 function NoiseDetection(){
+	let This = this
 	this.eventEmitter = new EventEmitter();
 	this.audioAnalyser = null
 
 	this.createVADProcessor = this.createRnNoiseProcessor;
 	// Disable noisy mic detection on safari since it causes the audio input to
 	// fail on Safari on iPadOS.
-	this.audioAnalyser = new VADAudioAnalyser(this, this.createVADProcessor)
+	this.audioAnalyser = new VADAudioAnalyser(This, This.createVADProcessor)
 	const vadNoiseDetection = new VADNoiseDetection();
-	// // 添加监听
-	vadNoiseDetection.on(NoiseDetection.VAD_NOISY_DEVICE, () => this.eventEmitter.emit(NoiseDetection.NOISY_MIC));
+	vadNoiseDetection.on(DetectionEvents.VAD_NOISY_DEVICE, () => this.eventEmitter.emit(DetectionEvents.NOISY_MIC));
+
 	this.audioAnalyser.addVADDetectionService(vadNoiseDetection);
 
-	this.addNoiseEventListener()
+	this.on(DetectionEvents.NOISY_MIC, async () => {
+		console.warn("NOISY_MIC!!!!!!!!!!!!")
+		showLog(tips.toolbar.noisyAudioInputTitle)
+	});
+
+	this.on(DetectionEvents.TRACK_MUTE_CHANGED, track => {
+		console.warn('track mute change: ', track)
+		// Hide the notification in case the user mutes the microphone
+		if (This.localAudioStream && This.localAudioStream.getAudioTracks().length && !This.localAudioStream.getAudioTracks()[0].enabled) {
+			console.warn('Hide the notification in case the user mutes the microphone')
+		}
+	});
 }
 
 /**
@@ -24,25 +36,6 @@ function NoiseDetection(){
 NoiseDetection.prototype.createRnNoiseProcessor = function (){
 	let rnNoiseModule = RNNoiseWasmModule();
 	return rnNoiseModule.then(mod => new RnnoiseProcessor(mod));
-}
-
-
-NoiseDetection.prototype.addNoiseEventListener = function (){
-	let This = this
-	this.on(DetectionEvents.TRACK_MUTE_CHANGED,
-		track => {
-			console.warn('track mute change: ', track)
-			// Hide the notification in case the user mutes the microphone
-			if (This.localAudioStream && This.localAudioStream.getAudioTracks().length && !This.localAudioStream.getAudioTracks()[0].enabled) {
-				console.warn('Hide the notification in case the user mutes the microphone')
-			}
-		});
-
-	this.on(DetectionEvents.NOISY_MIC, async () => {
-		console.warn("NOISY_MIC!!!!!!!!!!!!")
-		// 加上时间！！
-		showLog(tips.toolbar.noisyAudioInputTitle)
-	});
 }
 
 NoiseDetection.prototype.setupNewTrack = function (stream){

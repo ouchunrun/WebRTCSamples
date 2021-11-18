@@ -86,8 +86,9 @@ EventEmitter.prototype.emit = function(type) {
 		args = Array.prototype.slice.call(arguments, 1);
 		listeners = handler.slice();
 		len = listeners.length;
-		for (i = 0; i < len; i++)
+		for (i = 0; i < len; i++){
 			listeners[i].apply(this, args);
+		}
 	}
 
 	return true;
