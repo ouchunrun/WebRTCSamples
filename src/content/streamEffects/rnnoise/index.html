@@ -2,11 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <link rel="shortcut icon" href="#"/>
     <title>VAD Noise Detection</title>
     <link rel="stylesheet" href="main.css">
 </head>
 <body>
-    <div>
+
+    <div id="container">
+        <h1>VAD Noise Detection Sample</h1>
+
         <!--    设备选择部分    -->
         <div class="select">
             <label for="audioSource">Audio input source: </label><select id="audioSource"></select>
@@ -15,18 +19,19 @@
         <div class="select">
             <label for="audioOutput">Audio output destination: </label><select id="audioOutput"></select>
         </div>
-    </div>
-    <hr>
-    <div>
-        <h1>scoreAvg < 0.2 && audioLevelAvg > 0.04</h1>
+        <hr>
 
-        <audio id="gum-local" controls autoplay muted></audio>
-        <div style="clear: both">
+        <div id="actionArea">
+            <h1>Noise Condition: <span style="font-size: 20px;color: red;">scoreAvg < 0.2 && audioLevelAvg > 0.04</span></h1>
+            <div> <audio id="gum-local" controls autoplay muted></audio></div>
             <button onclick="getAudioStream()">get audio stream</button>
             <button onclick="muteSwitch()">mute switch</button>
         </div>
+
         <div>
+            <h1>Logs: </h1>
             <span id="errorMsg"></span>
+            <div id="logs"></div>
         </div>
     </div>
 

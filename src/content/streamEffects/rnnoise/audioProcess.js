@@ -38,7 +38,8 @@ function JitsiConference(){
 
 	this.on(JitsiConferenceEvents.NOISY_MIC, async () => {
 		console.warn("NOISY_MIC!!!!!!!!!!!!")
-		handleError(tips.toolbar.noisyAudioInputTitle)
+		// 加上时间！！
+		showLog(tips.toolbar.noisyAudioInputTitle)
 	});
 }
 

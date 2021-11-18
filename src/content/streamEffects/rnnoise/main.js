@@ -9,6 +9,7 @@ let audioEle = document.getElementById('gum-local')
 const audioInputSelect = document.querySelector('select#audioSource');
 const audioOutputSelect = document.querySelector('select#audioOutput');
 const selectors = [audioInputSelect, audioOutputSelect];
+let logElement = document.getElementById('logs');
 
 /**
  * 获取设备列表
@@ -114,8 +115,7 @@ function handleError(error) {
 		errorMessage = error
 	}
 
-	document.getElementById('errorMsg').innerText = errorMessage;
-	console.log(errorMessage);
+	console.warn(errorMessage);
 }
 
 function changeAudioDestination() {
@@ -156,7 +156,41 @@ function muteSwitch(){
 	trackMuteChanged(localAudioStream)
 }
 
+/**
+ * 页面打印提示
+ * @param msg
+ */
+function showLog(msg) {
+	console.log(msg);
+	let logTime = new Date(parseInt((new Date()).getTime()))
+	logTime = beautyDate(logTime);
+
+	let line = document.createElement('div');
+	line.textContent = logTime + ' ' + msg;
+	logElement.appendChild(line);
+}
+
 /******************************************************************************************************************/
+
+function beautyDate(date) {
+	var yyyy = date.getFullYear();
+	var m = date.getMonth() + 1; // getMonth() is zero-based
+	var d = date.getDate();
+	var h = date.getHours();
+	var mi = date.getMinutes();
+	var sec = date.getSeconds();
+	var msec = date.getMilliseconds();
+
+	var mm  = m < 10 ? "0" + m : m;
+	var dd  = d < 10 ? "0" + d : d;
+	var hh  = h < 10 ? "0" + h : h;
+	var min = mi < 10 ? "0" + mi : mi;
+	var ss  = sec < 10 ? "0" + sec : sec;
+	var mss = msec < 10 ? "00" + msec : ( msec < 100 ? "0" + msec : msec );
+
+	return "".concat(yyyy).concat("-").concat(mm).concat("-").concat(dd).concat("@").concat(hh).concat(":").concat(min).concat(":").concat(ss).concat(".").concat(mss);
+}
+
 /**
  * userAgent 解析
  * @returns {{}}
