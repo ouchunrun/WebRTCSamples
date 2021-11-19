@@ -45,11 +45,11 @@ class VADAudioAnalyser extends EventEmitter {
         this._detectionServices = [];
 
         /**
-         * Promise used to chain create and destroy operations associated with TRACK_ADDED and TRACK_REMOVED events
+         * Promise used to chain create and destroy operations associated with STREAM_ADDED and STREAM_REMOVED events
          * coming from the noiseDetection.
          * Because we have an async created component (VAD Processor) we need to make sure that it's initialized before
          * we destroy it ( when changing the device for instance), or when we use it from an external point of entry
-         * i.e. (TRACK_MUTE_CHANGED event callback).
+         * i.e. (STREAM_MUTE_CHANGED event callback).
          */
         this._vadInitTracker = Promise.resolve();
 
@@ -59,9 +59,9 @@ class VADAudioAnalyser extends EventEmitter {
         this._processVADScore = this._processVADScore.bind(this);
 
 
-        noiseDetection.on(DetectionEvents.TRACK_ADDED, this._trackAdded.bind(this));
-        noiseDetection.on(DetectionEvents.TRACK_REMOVED, this._trackRemoved.bind(this));
-        noiseDetection.on(DetectionEvents.TRACK_MUTE_CHANGED, this._trackMuteChanged.bind(this));
+        noiseDetection.on(DetectionEvents.STREAM_ADDED, this._StreamAdded.bind(this));
+        noiseDetection.on(DetectionEvents.STREAM_REMOVED, this._StreamRemoved.bind(this));
+        noiseDetection.on(DetectionEvents.STREAM_MUTE_CHANGED, this._StreamMuteChanged.bind(this));
     }
 
     /**
@@ -141,11 +141,11 @@ class VADAudioAnalyser extends EventEmitter {
     /**
      * Notifies the detector that a track was added to the associated.
      * Only take into account local audio tracks.
-     * @param  stream - The added track.
+     * @param  stream - The stream track.
      * @returns {void}
-     * @listens TRACK_ADDED
+     * @listens STREAM_ADDED
      */
-    _trackAdded(stream) {
+    _StreamAdded(stream) {
         // Keep a track promise so we take into account successive TRACK_ADD events being generated so that we
         // destroy/create the processing context in the proper order.
         let track = stream.getAudioTracks()[0]
@@ -170,16 +170,24 @@ class VADAudioAnalyser extends EventEmitter {
     /**
      * Notifies the detector that the mute state of a track has changed. Only takes into account
      * local audio tracks.
-     * @param track - The track whose mute state has changed.
+     * @param stream - The track whose mute state has changed.
      * @returns {void}
-     * @listens TRACK_MUTE_CHANGED
+     * @listens STREAM_MUTE_CHANGED
      */
-    _trackMuteChanged(track) {
+    _StreamMuteChanged(stream) {
+        if(!stream){
+            console.warn("stream is null")
+            return
+        }
         // On a mute toggle reset the state.
         this._vadInitTracker = this._vadInitTracker.then(() => {
             // Set mute status for the attached detection services.
-            let isMuted = !track['enabled']
-            this._changeDetectorsMuteState(isMuted);
+            let track = stream.getAudioTracks()[0]
+            if(track){
+                let isMuted = !track['enabled']
+                console.log('stream mute change, isMute ', isMuted)
+                this._changeDetectorsMuteState(isMuted);
+            }
         });
     }
 
@@ -189,9 +197,9 @@ class VADAudioAnalyser extends EventEmitter {
      *
      * @param track - The removed track.
      * @returns {void}
-     * @listens TRACK_REMOVED
+     * @listens STREAM_REMOVED
      */
-    _trackRemoved(track) {
+    _StreamRemoved(track) {
         // Use the promise to make sure operations are in sequence.
         this._vadInitTracker = this._vadInitTracker.then(() => {
             console.debug('Removing track from VAD detection - ', track);

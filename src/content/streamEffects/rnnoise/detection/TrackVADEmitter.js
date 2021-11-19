@@ -84,20 +84,11 @@ class TrackVADEmitter extends EventEmitter {
      * @returns {Promise<TrackVADEmitter>} - Promise resolving in a new instance of TrackVADEmitter.
      */
     static create(stream, procNodeSampleRate, vadProcessor) {
-        // return RTC.obtainAudioAndVideoPermissions({
-        //     devices: [ 'audio' ],
-        //     micDeviceId
-        // }).then(localTrack => {
-            // We only expect one audio track when specifying a device id.
-            if (!stream || !stream.getAudioTracks().length) {
-                throw new Error(`Failed to get local track`);
-            }
+        if (!stream || !stream.getAudioTracks().length) {
+            throw new Error(`Failed to get local track`);
+        }
 
-            return new TrackVADEmitter(procNodeSampleRate, vadProcessor, stream);
-
-            // We have no exception handling at this point as there is nothing to clean up, the vadProcessor
-            // life cycle is handled by whoever created this instance.
-        // });
+        return new TrackVADEmitter(procNodeSampleRate, vadProcessor, stream);
     }
 
     /**

@@ -9,9 +9,9 @@ let DetectionEvents = {
 	VAD_REPORT_PUBLISHED : 'vad-report-published',
 	VAD_SCORE_PUBLISHED : 'detection.vad_score_published',
 	VAD_TALK_WHILE_MUTED : 'detection.vad_talk_while_muted',
-	TRACK_ADDED : 'detection.trackAdded',
-	TRACK_REMOVED : 'detection.trackRemoved',
-	TRACK_MUTE_CHANGED : 'detection.trackMuteChanged',
+	STREAM_ADDED : 'detection.streamAdded',
+	STREAM_REMOVED : 'detection.streamRemoved',
+	STREAM_MUTE_CHANGED : 'detection.streamMuteChanged',
 	NOISY_MIC : 'detection.noisy_mic',
 }
 

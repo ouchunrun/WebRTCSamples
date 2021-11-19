@@ -173,6 +173,11 @@ let noiseDetection
 window.onload = function (){
 	console.log('window onload...')
 	noiseDetection = new NoiseDetection()
+	// 添加声音检测提示事件
+	noiseDetection.on(DetectionEvents.NOISY_MIC, async () => {
+		console.warn("NOISY_MIC!!!!!!!!!!!!")
+		showLog(tips.toolbar.noisyAudioInputTitle)
+	});
 }
 
 function setupNewTrack(stream){
@@ -183,8 +188,6 @@ function setupNewTrack(stream){
 function trackMuteChanged(stream){
 	noiseDetection.trackMuteChanged(stream)
 }
-
-
 /******************************************************************************************************************/
 
 function beautyDate(date) {

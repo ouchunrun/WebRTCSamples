@@ -11,21 +11,7 @@ function NoiseDetection(){
 	this.audioAnalyser = new VADAudioAnalyser(This, This.createVADProcessor)
 	const vadNoiseDetection = new VADNoiseDetection();
 	vadNoiseDetection.on(DetectionEvents.VAD_NOISY_DEVICE, () => this.eventEmitter.emit(DetectionEvents.NOISY_MIC));
-
 	this.audioAnalyser.addVADDetectionService(vadNoiseDetection);
-
-	this.on(DetectionEvents.NOISY_MIC, async () => {
-		console.warn("NOISY_MIC!!!!!!!!!!!!")
-		showLog(tips.toolbar.noisyAudioInputTitle)
-	});
-
-	this.on(DetectionEvents.TRACK_MUTE_CHANGED, track => {
-		console.warn('track mute change: ', track)
-		// Hide the notification in case the user mutes the microphone
-		if (This.localAudioStream && This.localAudioStream.getAudioTracks().length && !This.localAudioStream.getAudioTracks()[0].enabled) {
-			console.warn('Hide the notification in case the user mutes the microphone')
-		}
-	});
 }
 
 /**
@@ -40,10 +26,8 @@ NoiseDetection.prototype.createRnNoiseProcessor = function (){
 
 NoiseDetection.prototype.setupNewTrack = function (stream){
 	if(this.audioAnalyser){
-		this.localAudioStream = stream
-		let audioTrack = stream.getAudioTracks()[0]
-		console.log('setup new track, ', audioTrack)
-		this.audioAnalyser._trackAdded(stream)
+		console.log('setup new stream, id ', stream.id)
+		this.eventEmitter.emit(DetectionEvents.STREAM_ADDED, stream);
 	}else {
 		console.warn("track not found")
 	}
@@ -55,8 +39,8 @@ NoiseDetection.prototype.trackMuteChanged = function (stream){
 	}
 
 	let track = stream.getAudioTracks()[0]
-	console.warn('track.enabled ', track.enabled)
-	this.audioAnalyser._trackMuteChanged(track)
+	console.log('track.enabled ', track.enabled)
+	this.eventEmitter.emit(DetectionEvents.STREAM_MUTE_CHANGED, stream);
 }
 
 /**
