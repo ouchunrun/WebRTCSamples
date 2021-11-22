@@ -342,37 +342,6 @@ function hiddenConfigArea(){
 	}
 }
 
-/**
- * 点击遮罩层时关闭弹框
- * @param event
- */
-
-window.onclick = function (event){
-	if(window.location.href.indexOf('im.dingtalk') >= 0){
-		if(event.srcElement && event.srcElement.id === 'xConfigMaskLayer'){
-			hiddenConfigArea()
-		}
-
-		checkToolBar()
-	}
-}
-document.onkeyup = function(e) {
-	// 兼容FF和IE和Opera
-	let event = e || window.event;
-	let key = event.which || event.keyCode || event.charCode;
-	if (key === 13) {
-		/*Do something. 调用一些方法*/
-		checkToolBar()
-	}
-};
-
-window.onmousedown = function (event){
-	if(event && event.button === 0){
-		// 换键会存在问题!!
-		checkToolBar()
-	}
-}
-
 let toolBarCheckInterval
 let chatCallLinkCheckInterval
 function checkToolBar(){
@@ -521,9 +490,204 @@ function showTipInPage(data){
 	}, 2000)
 }
 
+/*******************************************************************************************************************/
+/********************************************** slack adaptation****************************************************/
+/*******************************************************************************************************************/
+
+let slackAppExpand = {
+	userTeams: null,
+	teamsMembers: null,
+	pathname: window.location.pathname,
+	headerActionCheckInterval: null,
+
+	getTeamsInfoFromLocalStorage: function (){
+		let localConfig = localStorage.getItem('localConfig_v2')
+		console.log('[EXT] localConfig:', localConfig)
+		if(localConfig){
+			localConfig = JSON.parse(localConfig)
+			if(localConfig.lastActiveTeamId && localConfig.teams){
+				slackAppExpand.userTeams = localConfig.teams[localConfig.lastActiveTeamId]
+			}else {
+				console.log('[EXT] Authentication token and teams info is not found.')
+			}
+		}
+	},
+
+	/**
+	 * 获取团队列表
+	 */
+	getTeamsMembers: function (){
+		let This = this
+		let xmlHttp = new XMLHttpRequest()
+		xmlHttp.onreadystatechange = function () {
+			if (xmlHttp.readyState === 4){
+				let response = JSON.parse(xmlHttp.response)
+				console.log('[EXT] get teams members success, ', response.ok)
+				if(response.ok === true){
+					let members = response.members
+					let membersList = {}
+					if(members && members.length){
+						for(let i = 0; i<members.length; i++){
+							let member = members[i]
+							membersList[member.id] = {
+								real_name: member.profile.real_name,
+								display_name: member.profile.display_name,
+								phone: member.profile.phone,
+								email: member.profile.email,
+								team: member.profile.team
+							}
+						}
+
+						slackAppExpand.teamsMembers = membersList
+						localStorage.setItem('teamsMembers', JSON.stringify(slackAppExpand.teamsMembers))
+						console.log("[EXT] get teams members: ", slackAppExpand.teamsMembers)
+					}
+				}
+			}
+		}
+
+		// 没有验证信息时重新获取
+		if(!slackAppExpand.userTeams.id || !slackAppExpand.userTeams.token){
+			console.info('[EXT] invalid_cursor for request! get from localStorage')
+			slackAppExpand.getTeamsInfoFromLocalStorage()
+		}
+
+		let url = window.location.origin + '/api/users.list?include_locale=true&pretty=1&team_id=' + slackAppExpand.userTeams.id
+		xmlHttp.open("POST", url, true)
+		xmlHttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded')
+		xmlHttp.withCredentials = true
+		let data = "content=null&token=" + slackAppExpand.userTeams.token
+		xmlHttp.send(data)
+	},
+
+	/**
+	 * 发起呼叫
+	 */
+	makeCall: function (){
+		let memberDom = document.getElementsByClassName('c-link c-member_slug')[0]
+		if(memberDom){
+			let memberDataset = memberDom.dataset
+			let memberId = memberDataset?.memberId
+			if(memberId){
+				let phoneNumber = slackAppExpand.teamsMembers[memberId].phone
+				if(!phoneNumber){
+					console.log('[EXT] The user does  not configured phone number')
+					let real_name = slackAppExpand.teamsMembers[memberId].real_name
+					alert(real_name + ' does not configured phone number')
+				}else {
+					console.log('[EXT] get phoneNumber, ', phoneNumber)
+					sendMessageToBackgroundJS({
+						cmd: 'contentScriptMakeCall',
+						data: {
+							phonenumber: phoneNumber?.trim(),
+						}
+					})
+				}
+			}
+		}else {
+			console.info('[EXT] member DOM not found.')
+		}
+	},
+
+	/**
+	 * 根据不同的请求接口添加请求参数
+	 * @param method
+	 * @param params
+	 */
+	getRequestURL: function (method, params){
+		if(!method){
+			return ''
+		}
+
+		let url = window.location.origin + '/api/' + method
+		switch (method){
+			case 'users.list':
+				url = url + '?include_locale=true&pretty=1&team_id=' + params.team
+				break
+			default:
+				break
+		}
+		return url
+	},
+
+	/**
+	 * step1:
+	 * document.getElementsByClassName('p-view_header__actions')[0].children[0].ariaLabel   // 'Call shyzhang'
+	 * document.getElementsByClassName('p-view_header__actions')[0].children[0].dataset.qa  // 'channel_header_calls_button'
+	 */
+	addNewChatCallButton: function (){
+		let callOfficeBtn = document.getElementById('callOfficePhone')
+		// step1: check call exist or not
+		let headerActions = document.getElementsByClassName('p-view_header__actions')[0]
+		if(headerActions && headerActions.children && headerActions.children[0]){
+			let child = headerActions.children[0]
+			if (child.dataset && child.dataset.qa === 'channel_header_calls_button' && child.ariaLabel && child.ariaLabel.indexOf('Call') >= 0) {
+				if(callOfficeBtn){
+					callOfficeBtn.style.display = 'block'
+				}else {
+					// step2: add new call btn in chat bar
+					let audioComposerButton = document.getElementsByClassName('p-audio_composer_button')[0]
+					if (audioComposerButton) {
+						let newChild = document.createElement('button');
+						newChild.id = 'callOfficePhone'
+						newChild.style.textAlign = 'center'
+						// TODO: title 提示需要处理!!!
+						newChild.title = 'Call office phone'
+						newChild.className = 'c-button-unstyled c-icon_button c-icon_button--light c-icon_button--size_small c-wysiwyg_container__button'
+						newChild.ariaLabel = 'Call office phone'
+						newChild.innerHTML = '<i class="c-icon c-icon--phone" type="phone" aria-hidden="true"></i>';
+						newChild.onclick = slackAppExpand.makeCall
+						audioComposerButton.parentElement.appendChild(newChild)
+					}
+				}
+			}else if(callOfficeBtn){
+				callOfficeBtn.style.display = 'none'
+			}
+		}else {
+			if(callOfficeBtn){
+				callOfficeBtn.style.display = 'none'
+			}
+		}
+	},
+
+	checkForAWhile: function (){
+		if(slackAppExpand.headerActionCheckInterval){
+			slackAppExpand.clearHeaderActionCheckInterval()
+		}
+
+		let count = 0
+		slackAppExpand.headerActionCheckInterval = setInterval(function (){
+			count++
+			if(count > 10){
+				slackAppExpand.clearHeaderActionCheckInterval()
+			}else {
+				slackAppExpand.addNewChatCallButton()
+			}
+		}, 200)
+	},
+
+	clearHeaderActionCheckInterval: function (){
+		if(slackAppExpand.headerActionCheckInterval){
+			clearInterval(slackAppExpand.headerActionCheckInterval)
+			slackAppExpand.headerActionCheckInterval = null
+		}
+	},
+
+	listenHrefChange: function (){
+		if(slackAppExpand.pathname !== location.pathname){
+			slackAppExpand.pathname = location.pathname
+			slackAppExpand.checkForAWhile()
+		}
+	}
+}
+
+
+/*******************************************************************************************************************/
+/******************************************* window 监听事件 *********************************************************/
+/*******************************************************************************************************************/
+
 window.onload = function (){
-	// dingtalk
-	if(window.location.href.indexOf('im.dingtalk') >= 0){
+	if(window.location.href.indexOf('im.dingtalk') >= 0){          // dingtalk
 		insertConfigArea()
 
 		setTimeout(function (){
@@ -532,11 +696,63 @@ window.onload = function (){
 		}, 2*1000)
 
 		pageMutationObserver()
+	}else if(window.location.href.indexOf('app.slack.com') >= 0){   // slack
+		slackAppExpand.getTeamsInfoFromLocalStorage()
+
+		if(slackAppExpand.userTeams){
+			slackAppExpand.getTeamsMembers()
+		}
+
+		setTimeout(function (){
+			console.info('[EXT] add new button if can do ')
+			slackAppExpand.checkForAWhile()
+		}, 2000)
 	}
 }
-/*******************************************************************************************************************/
 
+/**
+ * 点击遮罩层时关闭弹框
+ * @param event
+ */
+
+window.onclick = function (event){
+	if(window.location.href.indexOf('im.dingtalk') >= 0){
+		if(event.srcElement && event.srcElement.id === 'xConfigMaskLayer'){
+			hiddenConfigArea()
+		}
+		checkToolBar()
+	}else if(window.location.href.indexOf('app.slack.com') >= 0){
+		slackAppExpand.listenHrefChange()
+	}
+}
+document.onkeyup = function(e) {
+	if(window.location.href.indexOf('im.dingtalk') >= 0){
+		// 兼容FF和IE和Opera
+		let event = e || window.event;
+		let key = event.which || event.keyCode || event.charCode;
+		if (key === 13) {
+			/*Do something. 调用一些方法*/
+			checkToolBar()
+		}
+	}else if(window.location.href.indexOf('app.slack.com') >= 0){
+		slackAppExpand.listenHrefChange()
+	}
+};
+
+window.onmousedown = function (event){
+	if(window.location.href.indexOf('im.dingtalk') >= 0){
+		if(event && event.button === 0){
+			// 换键会存在问题!!
+			checkToolBar()
+		}
+	}else if(window.location.href.indexOf('app.slack.com') >= 0){
+		slackAppExpand.listenHrefChange()
+	}
+}
+
+/*******************************************************************************************************************/
 /******************************************* Content-script 和 backgroundJS 间的通信处理*******************************/
+/*******************************************************************************************************************/
 
 /**
  *  发送

@@ -1,6 +1,6 @@
 {
   "name": "Click2Dial",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "web版钉钉网页自动全屏和第三方即时通信系统的话机浏览器扩展支持(Chrome)",
   "browser_action":
   {
@@ -19,7 +19,8 @@
   [
     {
       "matches": [
-        "https://im.dingtalk.com/*"
+        "https://im.dingtalk.com/*",
+        "https://app.slack.com/*"
       ],
       "js": [
         "contentScripts/injectScript.js",
