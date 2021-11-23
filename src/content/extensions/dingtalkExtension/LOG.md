@@ -1,4 +1,9 @@
-# 2021-11-12
+# 2021-11-23
+
+- 1.查看Slack-storage 消息保存，使用左侧已选项的ChannelID同步message内容，但是ChannelID与teams info不存在关联
+- 2.slack 号码查找方式修改为 通过real name查找phone number
+
+# 2021-11-22
 
 - 1.添加slack兼容
 

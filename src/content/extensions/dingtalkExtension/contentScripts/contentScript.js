@@ -268,6 +268,7 @@ function makeCallWithRemoteNumber(){
 	let phoneNumber = document.getElementById('callRemoteNumber')?.value
 	if(!phoneNumber){
 		console.info("phoneNumber is empty!!")
+		alert('No callable number')
 		return
 	}
 	sendMessageToBackgroundJS({
@@ -514,10 +515,16 @@ let slackAppExpand = {
 	},
 
 	/**
+	 * 从IndexedDB中获取已有的channel信息
+	 */
+	getChannelsFromIndexedDB: function (){
+
+	},
+
+	/**
 	 * 获取团队列表
 	 */
 	getTeamsMembers: function (){
-		let This = this
 		let xmlHttp = new XMLHttpRequest()
 		xmlHttp.onreadystatechange = function () {
 			if (xmlHttp.readyState === 4){
@@ -529,12 +536,13 @@ let slackAppExpand = {
 					if(members && members.length){
 						for(let i = 0; i<members.length; i++){
 							let member = members[i]
-							membersList[member.id] = {
+							membersList[member.real_name] = {
 								real_name: member.profile.real_name,
 								display_name: member.profile.display_name,
 								phone: member.profile.phone,
 								email: member.profile.email,
-								team: member.profile.team
+								team: member.profile.team,
+								id: member.id
 							}
 						}
 
@@ -564,28 +572,25 @@ let slackAppExpand = {
 	 * 发起呼叫
 	 */
 	makeCall: function (){
-		let memberDom = document.getElementsByClassName('c-link c-member_slug')[0]
-		if(memberDom){
-			let memberDataset = memberDom.dataset
-			let memberId = memberDataset?.memberId
-			if(memberId){
-				let phoneNumber = slackAppExpand.teamsMembers[memberId].phone
-				if(!phoneNumber){
-					console.log('[EXT] The user does  not configured phone number')
-					let real_name = slackAppExpand.teamsMembers[memberId].real_name
-					alert(real_name + ' does not configured phone number')
-				}else {
-					console.log('[EXT] get phoneNumber, ', phoneNumber)
-					sendMessageToBackgroundJS({
-						cmd: 'contentScriptMakeCall',
-						data: {
-							phonenumber: phoneNumber?.trim(),
-						}
-					})
-				}
+		let memberNameHeader = document.getElementsByClassName('p-view_header__member_name')[0]
+		let memberName = memberNameHeader?.innerText
+		if(memberName){
+			console.log('[EXT] get member name ', memberName)
+			let phoneNumber = slackAppExpand.teamsMembers[memberName].phone
+			if(!phoneNumber){
+				console.log('[EXT] The user does  not configured phone number')
+				alert(memberName + ' does not configured phone number')
+			}else {
+				console.log('[EXT] get phoneNumber, ', phoneNumber)
+				sendMessageToBackgroundJS({
+					cmd: 'contentScriptMakeCall',
+					data: {
+						phonenumber: phoneNumber?.trim(),
+					}
+				})
 			}
 		}else {
-			console.info('[EXT] member DOM not found.')
+			console.info('[EXT] member name DOM is not found.')
 		}
 	},
 
