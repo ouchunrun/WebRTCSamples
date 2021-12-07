@@ -1,0 +1,103 @@
+
+#wrapper {
+    display: flex;
+    justify-content: space-between;
+}
+
+main, aside {
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    width: 60%;
+}
+aside{
+    width: 35%;
+}
+
+
+button{
+    height: 40px;
+    font-size: 14px;
+    cursor: pointer;
+    width: 230px;
+    margin: 10px;
+    border: 1px solid black;
+    letter-spacing: 0.1em;
+    font-family: emoji;
+}
+
+#actions button:hover{
+    opacity: 0.6;
+}
+
+#take-call-lock, #release-call-lock{
+    font-weight: bold;
+    color: blue;
+}
+
+#sdkInit, #pairing{
+    font-weight: bold;
+    background: #ffd100;
+}
+
+section{
+    padding: 20px 20px 30px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-bottom: 25px;
+}
+
+h3 {
+    display: block;
+    font-size: 1.17em;
+    margin-block-start: 1em;
+    margin-block-end: 1em;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+    font-weight: bold;
+}
+
+#device-id {
+    font-weight: normal;
+    font-size: 13px;
+    margin: -10px 0 10px;
+}
+
+#signal-logs, #action-logs{
+    border-top: 1px solid #ccc;
+    overflow-y: scroll;
+}
+
+#signal-logs span, #action-logs span{
+    display: block;
+    padding: 7px 20px;
+    border-bottom: 1px solid #eee;
+    line-height: 1.6;
+    color: #4f95d4;
+    letter-spacing: 0.05em;
+    font-size: 12px;
+}
+
+.aside-button{
+    background: rgb(245, 245, 235);
+    appearance: none;
+    border: 1px solid rgb(220, 220, 220);
+    width: 50px;
+    height: 30px;
+    right: 15px;
+    position: absolute;
+    border-radius: 5px;
+    padding: 4px 8px;
+    letter-spacing: 0.1em;
+    font-weight: bold;
+    font-size: 12px;
+    user-select: none;
+    line-height: 1;
+    margin: 0;
+    text-align: center;
+    cursor: pointer;
+    font-family: Arial;
+    margin-bottom: 20px;
+}
