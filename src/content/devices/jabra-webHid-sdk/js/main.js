@@ -11,11 +11,8 @@ import {
  * Initial state
  */
 const state = {
-	/** @type {import('@gnaudio/jabra-js').ICallControl[]} */
 	callControlDevices: [],
-	/** @type {import('@gnaudio/jabra-js').ICallControl|null} */
 	callControl: null,
-	/** @type {import('rxjs').Subscription|null} */
 	signalSubscription: null,
 };
 

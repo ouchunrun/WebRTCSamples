@@ -7,8 +7,10 @@
 
 - Install `jabra-node-sdk`
 ```
-npm install --save @gnaudio/jabra-node-sdk
+npm i @gnaudio/jabra-js --save
 ```
+
+- [jabra-js node_modules Download](https://registry.npmmirror.com/@gnaudio/jabra-js/download/@gnaudio/jabra-js-4.1.0.tgz)
 
 ## Refer To
 
