@@ -18,7 +18,7 @@
 
 - 1.生成后的canvas人像显示尺寸比较小，与img不一致
     - 原因：canvas的样式的height和width跟sourcePlayback设置可能不一样
-    
+
 - 2.tflite `RuntimeError: memory access out of bounds`
     - 原因：没有调用`newSelectedTFLite._loadModel(model.byteLength)` 等方法
 
