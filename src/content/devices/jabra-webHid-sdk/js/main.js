@@ -41,27 +41,25 @@ let JabraWebHid = {
 		/**
 		 * Subscribe to device attach events
 		 */
-		jabra.deviceAdded.subscribe((d) => {
+		jabra.deviceAdded.subscribe((device) => {
 			// Skip devices that do not support call control
-			if (!ccFactory.supportsCallControl(d)) {
+			if (!ccFactory.supportsCallControl(device)) {
 				return;
 			}
 
 			// Convert the ISdkDevice to a ICallControlDevice
-			ccFactory.createCallControl(d).then((newCallControl) => {
+			ccFactory.createCallControl(device).then((newCallControl) => {
 				console.log('save call control devices')
 				if(!newCallControl){
 					console.warn("No device connected");
 				}else {
 					state.callControlDevices.push(newCallControl);
-					console.log('set currentCallControl id: ', newCallControl.device.id)
 					state.callControl = newCallControl
 					// Unsubscribe from button clicks from the "old" device
 					state.signalSubscription?.unsubscribe();
 					// Subscribe to button clicks from the "new" device
 					subscribeToDeviceSignals()
-
-					updateUiWithDeviceInfo(newCallControl.device.name, newCallControl.device.id)
+					updateUiWithDeviceInfo(newCallControl.device)
 				}
 			}).catch((err) => {
 				console.error('createCallControl error, ', err)
@@ -148,12 +146,13 @@ document.getElementById('signalsClear').onclick = function (){
 
 /**
  * 页面显示设备名和设备id
- * @param name
- * @param id
+ * @param device
  */
-function updateUiWithDeviceInfo(name, id = "n/a") {
-	document.getElementById("device-name").innerText = name;
-	document.getElementById("device-id").innerText = `Device ID: ${id}`;
+function updateUiWithDeviceInfo(device) {
+	document.getElementById("device-name").innerText = `${device.name}`;
+	document.getElementById('productId').innerText = `ProductId: ${device.productId}`
+	document.getElementById('vendorId').innerText = `VendorId: ${device.vendorId}`
+	document.getElementById("device-id").innerText = `Device ID: ${device.id}`;
 }
 
 // Listen for button clicks and call Jabra SDK commands
