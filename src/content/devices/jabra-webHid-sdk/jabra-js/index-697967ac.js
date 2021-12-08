@@ -3681,7 +3681,7 @@ class Mr {
 xr = new WeakMap, Gr = new WeakMap;
 export {
 	lr as A,
-	br as C,
+	br as CallControlFactory,
 	$e as D,
 	Gt as E,
 	dr as H,
@@ -3717,7 +3717,7 @@ export {
 	fn as s,
 	Zt as t,
 	Ye as u,
-	Hn as v,
-	jn as w,
+	Hn as init,
+	jn as webHidPairing,
 	Mr as x
 };

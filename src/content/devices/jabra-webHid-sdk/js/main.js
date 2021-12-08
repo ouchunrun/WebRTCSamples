@@ -1,10 +1,6 @@
+
 import {
-	init,
-	webHidPairing,
-	RequestedBrowserTransport,
-	TransportContext,
-	LogLevel,
-	CallControlFactory
+	JabraWebHid
 } from "../jabra-js/index.js";
 
 /**
@@ -15,98 +11,38 @@ const state = {
 	callControl: null,
 	signalSubscription: null,
 };
+let jabraWebHidSdk
 
-let JabraWebHid = {
-	init: async function (){
-		let config = {
-			appId: "abra WebHid",
-			appName: "Jabra WebHid",
-			logger: "",   // error、warning、info
-			partnerKey: "",
-			transport: "web-hid",
+window.onload = function (){
+	jabraWebHidSdk = new JabraWebHid()
+	jabraWebHidSdk.on('deviceAdded', function (newCallControl){
+		if(!newCallControl){
+			console.warn("No device connected");
+			return
 		}
 
-		console.warn('Initialize the Jabra SDK config:', config)
-		const jabra = await init(config).catch((err) => {
-			console.error(err)
-		});
+		state.callControlDevices.push(newCallControl);
+		state.callControl = newCallControl
+		// Unsubscribe from button clicks from the "old" device
+		state.signalSubscription?.unsubscribe();
+		// Subscribe to button clicks from the "new" device
+		subscribeToDeviceSignals()
+		updateUiWithDeviceInfo(newCallControl.device)
+	})
 
-		if (!jabra) {
-			console.error("The Jabra SDK failed to initialize. See error above for more details.")
-			return;
+
+	jabraWebHidSdk.on('deviceRemoved', function (removedDevice){
+		const index = state.callControlDevices.findIndex((d) =>
+			d.device.id.equals(removedDevice.id)
+		);
+
+		if (index > -1) {
+			state.callControlDevices.splice(index, 1);
+		} else {
+			console.warn(`Device removed event was not processed, as the removed device (${removedDevice.name}) does not support easy call control.`)
 		}
-
-		const ccFactory = new CallControlFactory(jabra);
-
-		/**
-		 * Subscribe to device attach events
-		 */
-		jabra.deviceAdded.subscribe((device) => {
-			// Skip devices that do not support call control
-			if (!ccFactory.supportsCallControl(device)) {
-				return;
-			}
-
-			// Convert the ISdkDevice to a ICallControlDevice
-			ccFactory.createCallControl(device).then((newCallControl) => {
-				console.log('save call control devices')
-				if(!newCallControl){
-					console.warn("No device connected");
-				}else {
-					state.callControlDevices.push(newCallControl);
-					state.callControl = newCallControl
-					// Unsubscribe from button clicks from the "old" device
-					state.signalSubscription?.unsubscribe();
-					// Subscribe to button clicks from the "new" device
-					subscribeToDeviceSignals()
-					updateUiWithDeviceInfo(newCallControl.device)
-				}
-			}).catch((err) => {
-				console.error('createCallControl error, ', err)
-			});
-		});
-
-		/**
-		 * Subscribe to device detach events
-		 */
-		await jabra.deviceRemoved.subscribe((removed) => {
-			console.warn('removed device id: ', removed.id)
-			const index = state.callControlDevices.findIndex((d) =>
-				d.device.id.equals(removed.id)
-			);
-
-			if (index > -1) {
-				state.callControlDevices.splice(index, 1);
-			} else {
-				console.warn(`Device removed event was not processed, as the removed device (${removed.name}) does not support easy call control.`)
-			}
-		});
-
-		/**
-		 * Display version numbers in log
-		 */
-		try {
-			const sdkVersion = jabra.getVersion();
-			console.log(`jabra-js version: ${sdkVersion}`);
-			console.log(`Transport context: ${jabra.transportContext}`);
-
-			const chromehostVersion = await jabra.getChromehostVersion();
-			console.log(`Chromehost version: ${chromehostVersion}`);
-
-			const chromeExtensionVersion = await jabra.getChromeExtensionVersion();
-			console.log(`Chrome Extension version: ${chromeExtensionVersion}`);
-		} catch (err) {
-			console.error(err);
-		}
-	},
-
-	webHidPairing: async function (){
-		console.log('webhid-consent prepare pairing')
-		await webHidPairing();
-	}
+	})
 }
-
-/*********************************************Button 事件绑定********************************************************/
 
 /**
  * 页面显示action 操作日志
@@ -192,12 +128,12 @@ document.querySelectorAll("#actions button").forEach((button) => {
 				case sdkInit:
 					console.log('jabra sdk init')
 					logAction('jabra sdk init')
-					await JabraWebHid.init()
+					await jabraWebHidSdk.init()
 					break
 				case devicePairing:
 					console.log('get device pairing')
 					logAction('Device pairing')
-					await JabraWebHid.webHidPairing()
+					await jabraWebHidSdk.webHidPairing()
 					break
 				case takeCallLock:
 					console.log("Take call lock");
@@ -263,3 +199,4 @@ document.querySelectorAll("#actions button").forEach((button) => {
 		}
 	};
 });
+
