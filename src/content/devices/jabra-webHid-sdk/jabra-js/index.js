@@ -19,7 +19,7 @@ import {
 	T as TransportContext,
 	V as ValueType,
 	init,
-	webHidPairing
+	webHidPairing, J
 } from "./index-697967ac.js";
 
 
@@ -27,7 +27,7 @@ function JabraWebHid(){
 	this.EVENTS = []
 }
 
-JabraWebHid.prototype.init = async function (){
+JabraWebHid.prototype.init = async function (type){
 	let This = this
 	let config = {
 		appId: "abra WebHid sdk",
@@ -43,32 +43,17 @@ JabraWebHid.prototype.init = async function (){
 		return;
 	}
 
-	const ccFactory = new CallControlFactory(jabra);
-	/**
-	 * Subscribe to device attach events
-	 */
-	jabra.deviceAdded.subscribe((device) => {
-		// Skip devices that do not support call control
-		if (!ccFactory.supportsCallControl(device)) {
-			return;
-		}
-
-		// Convert the ISdkDevice to a ICallControlDevice
-		ccFactory.createCallControl(device).then((newCallControl) => {
-			console.log('save call control devices')
-			This.trigger('deviceAdded', newCallControl)
-		}).catch((err) => {
-			console.error('createCallControl error, ', err)
-		});
-	});
-
-	/**
-	 * Subscribe to device detach events
-	 */
-	await jabra.deviceRemoved.subscribe((removed) => {
-		console.warn('removed device id: ', removed.id)
-		This.trigger('deviceRemoved', removed)
-	});
+	let ccFactory = null
+	switch (type){
+		case 'CallControl':
+			ccFactory = This.initCallControlFactory(jabra);
+			break
+		case 'EasyCallControl':
+			ccFactory = This.initEasyCallControlFactory(jabra);
+			break
+		default:
+			break
+	}
 
 	/**
 	 * Display version numbers in log
@@ -86,6 +71,61 @@ JabraWebHid.prototype.init = async function (){
 	} catch (err) {
 		console.error(err);
 	}
+}
+
+JabraWebHid.prototype.initCallControlFactory = async function (jabra){
+	let This = this
+	let ccFactory = new CallControlFactory(jabra);
+	/**
+	 * Subscribe to device attach events
+	 */
+	jabra.deviceAdded.subscribe(async (device) => {
+		// Skip devices that do not support call control
+		if (!ccFactory.supportsCallControl(device)) {
+			return;
+		}
+
+		// Convert the ISdkDevice to a ICallControlDevice
+		const ccDevice = await ccFactory.createCallControl(device);
+		This.trigger('deviceAdded', ccDevice)
+	});
+
+	/**
+	 * Subscribe to device detach events
+	 */
+	await jabra.deviceRemoved.subscribe((removed) => {
+		console.warn('removed device id: ', removed.id)
+		This.trigger('deviceRemoved', removed)
+	});
+
+	return ccFactory
+}
+
+JabraWebHid.prototype.initEasyCallControlFactory = async function (jabra){
+	let This = this
+	const eccFactory = new EasyCallControlFactory(jabra);
+	/**
+	 * Subscribe to device attach events
+	 */
+	jabra.deviceAdded.subscribe(async (d) => {
+		// Skip devices that do not support call control
+		if (!eccFactory.supportsEasyCallControl(d)) {
+			return;
+		}
+
+		// Convert the ISdkDevice to a ICallControlDevice
+		const ccDevice = await eccFactory.createMultiCallControl(d);
+		console.warn('ccDevice:', ccDevice)
+		This.trigger('deviceAdded', ccDevice)
+	});
+
+	/**
+	 * Subscribe to device detach events
+	 */
+	jabra.deviceRemoved.subscribe((removed) => {
+		This.trigger('deviceRemoved', removed)
+	});
+	return eccFactory
 }
 
 JabraWebHid.prototype.webHidPairing = async function (){

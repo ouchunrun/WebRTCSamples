@@ -10,8 +10,29 @@ const state = {
 	callControlDevices: [],
 	callControl: null,
 	signalSubscription: null,
+
+	/**
+	 * IEasyCallControl
+	 */
+	/** @type {import('@gnaudio/jabra-js').IEastCallControl|null} */
+	currentCallControl: null,
+	/** @type {import('rxjs').Subscription|null} */
+	muteSubscription: null,
+	/** @type {import('rxjs').Subscription|null} */
+	callSubscription: null,
+	/** @type {import('rxjs').Subscription|null} */
+	holdSubscription: null,
+	/** @type {import('rxjs').Subscription|null} */
+	swapSubscription: null,
+	deviceState: {
+		ongoingCalls: 0,
+		muteState: "unmuted",
+		holdState: "not-on-hold",
+	},
 };
+
 let jabraWebHidSdk
+let actionType
 
 window.onload = function (){
 	jabraWebHidSdk = new JabraWebHid()
@@ -23,6 +44,7 @@ window.onload = function (){
 
 		state.callControlDevices.push(newCallControl);
 		state.callControl = newCallControl
+		state.currentCallControl = newCallControl
 		// Unsubscribe from button clicks from the "old" device
 		state.signalSubscription?.unsubscribe();
 		// Subscribe to button clicks from the "new" device
@@ -67,12 +89,55 @@ document.getElementById('logClear').onclick = function (){
  */
 let signalLogsWrapper = document.getElementById("signal-logs")
 function subscribeToDeviceSignals() {
-	state.signalSubscription = state.callControl.deviceSignals.subscribe((s) => {
-		const newElem = document.createElement('span');
-		newElem.setAttribute('class','scroll-area');
-		newElem.innerText = s.toString()
-		signalLogsWrapper.appendChild(newElem);
-	});
+	if(actionType === 'CallControl'){
+		// Call Control Demo
+		state.signalSubscription = state.callControl.deviceSignals.subscribe((s) => {
+			const newElem = document.createElement('span');
+			newElem.setAttribute('class','scroll-area');
+			newElem.innerText = s.toString()
+			signalLogsWrapper.appendChild(newElem);
+		});
+	}else if(actionType === 'EasyCallControl'){
+		// Unsubscribe from current device
+		state.muteSubscription?.unsubscribe();
+		state.callSubscription?.unsubscribe();
+		state.holdSubscription?.unsubscribe();
+		state.swapSubscription?.unsubscribe();
+
+		// Subscribe to the muteState of the new device
+		state.muteSubscription = state.currentCallControl.muteState.subscribe(
+			(newMuteState) => {
+				logAction(`Mute state emitted: ${newMuteState}`);
+				state.deviceState.muteState = newMuteState;
+				console.log('newMuteState:', newMuteState)
+			}
+		);
+
+		// Subscribe to the call state of the new device
+		state.callSubscription = state.currentCallControl.ongoingCalls.subscribe(
+			(ongoingCalls) => {
+				logAction(`Call state emitted: ${ongoingCalls}`);
+				state.deviceState.ongoingCalls = ongoingCalls;
+				console.log('ongoingCalls:', ongoingCalls)
+
+			}
+		);
+
+		// Subscribe to the hold state of the new device
+		state.holdSubscription = state.currentCallControl.holdState.subscribe(
+			(newHoldState) => {
+				logAction(`Hold state emitted: ${newHoldState}`);
+				state.deviceState.holdState = newHoldState;
+				console.log('newHoldState:', newHoldState)
+			}
+		);
+
+		state.swapSubscription = state.currentCallControl.swapRequest.subscribe(
+			() => {
+				logAction(`Swap event emitted!`);
+			}
+		)
+	}
 }
 
 document.getElementById('signalsClear').onclick = function (){
@@ -91,6 +156,9 @@ function updateUiWithDeviceInfo(device) {
 	document.getElementById("device-id").innerText = `Device ID: ${device.id}`;
 }
 
+/**
+ * Call Control Demo: https://sdk.jabra.com/demos/cc-demo-full/index.html
+ */
 // Listen for button clicks and call Jabra SDK commands
 document.querySelectorAll("#actions button").forEach((button) => {
 	button.onclick = async (event) => {
@@ -128,7 +196,8 @@ document.querySelectorAll("#actions button").forEach((button) => {
 				case sdkInit:
 					console.log('jabra sdk init')
 					logAction('jabra sdk init')
-					await jabraWebHidSdk.init()
+					actionType = 'CallControl'
+					await jabraWebHidSdk.init('CallControl')
 					break
 				case devicePairing:
 					console.log('get device pairing')
@@ -200,3 +269,95 @@ document.querySelectorAll("#actions button").forEach((button) => {
 	};
 });
 
+
+/**
+ * Easy Call Control Demo - Multiple Calls Handling: https://sdk.jabra.com/demos/ecc-demo-multi/index.html
+ */
+// Listen for button clicks and call Jabra SDK commands
+document.querySelectorAll("#easyCallActions button").forEach((button) => {
+	button.onclick = async (event) => {
+		try {
+			const buttonIds = [
+				"sdkInit",
+				"pairing",
+				"start-call",
+				"signal-incoming-call",
+				"accept-incoming-call",
+				"reject-incoming-call",
+				"mute-microphone",
+				"unmute-microphone",
+				"end-current-call",
+				"hold-call",
+				"resume-call",
+			];
+			const [
+				sdkInit,
+				devicePairing,
+				startCall,
+				signalIncomingCall,
+				acceptIncomingCall,
+				rejectIncomingCall,
+				muteMicrophone,
+				unmuteMicrophone,
+				endCurrentCall,
+				holdCall,
+				resumeCall,
+			] = buttonIds;
+
+			switch (event.currentTarget.id) {
+				case sdkInit:
+					console.log('jabra sdk init')
+					logAction('jabra sdk init')
+					actionType = 'EasyCallControl'
+					await jabraWebHidSdk.init('EasyCallControl')
+					break
+				case devicePairing:
+					console.log('get device pairing')
+					logAction('Device pairing')
+					await jabraWebHidSdk.webHidPairing()
+					break
+				case startCall:
+					logAction("Start outgoing call", "await");
+					await state.currentCallControl.startCall();
+					break;
+				case signalIncomingCall:
+					logAction("Signal incoming call", "await");
+					const response = await state.currentCallControl.signalIncomingCall();
+					const message = response ? "Call accepted" : "Call rejected";
+					logAction(message, "success");
+					break;
+				case acceptIncomingCall:
+					logAction("Accept incoming call");
+					await state.currentCallControl.acceptIncomingCall();
+					break;
+				case rejectIncomingCall:
+					logAction("Reject incoming call");
+					state.currentCallControl.rejectIncomingCall();
+					break;
+				case muteMicrophone:
+					logAction("Mute microphone");
+					state.currentCallControl.mute();
+					break;
+				case unmuteMicrophone:
+					logAction("Unmute microphone");
+					state.currentCallControl.unmute();
+					break;
+				case endCurrentCall:
+					logAction("End call");
+					await state.currentCallControl.endCall();
+					break;
+				case holdCall:
+					logAction("Hold call");
+					await state.currentCallControl.hold();
+					break;
+				case resumeCall:
+					logAction("Resume call");
+					await state.currentCallControl.resume();
+					break;
+			}
+		} catch (err) {
+			logError(err);
+		}
+
+	};
+});
