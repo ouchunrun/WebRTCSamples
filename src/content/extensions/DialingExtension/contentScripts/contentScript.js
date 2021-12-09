@@ -800,6 +800,24 @@ let company163MailAdaptation = {
 		let domInsert = function (trRows){
 			for(let i = 0; i<trRows.length; i++){
 				let colPhoneTr = trRows[i].getElementsByClassName('Corp-corpCnta-main-colPhone')[0]
+				let colJobTr = trRows[i].getElementsByClassName('Corp-corpCnta-main-colJob')[0]
+
+
+				/* start
+				 * ********************************************************************************************
+				 * TODO: 163 mail Content rendering misplaced when searching for contacts
+				 */
+				let phoneTrInnerText = colPhoneTr && colPhoneTr.children[0]?.innerText
+				let jobTrInnerText = colJobTr && colJobTr.children[0]?.innerText
+				if(phoneTrInnerText){
+					if(isNaN(phoneTrInnerText) && jobTrInnerText && !isNaN(jobTrInnerText)){
+						colPhoneTr = colJobTr
+					}
+				}else if(jobTrInnerText && !isNaN(jobTrInnerText)){
+					colPhoneTr = colJobTr
+				}
+				/*end********************************************************************************************/
+
 				let colPhone = colPhoneTr?.innerText
 				if(!colPhone){
 					let colEmail = trRows[i].getElementsByClassName('Corp-corpCnta-main-colEmail')[0]?.innerText
@@ -1008,7 +1026,7 @@ window.onload = function (){
 			console.info('[EXT] add new button if can do ')
 			slackAppExpand.checkForAWhile()
 		}, 2000)
-	}else if(window.location.href.indexOf('mail.qiye.163.com') >= 0){   // 163 网易企业邮箱
+	}else if(window.location.href.indexOf('mail.qiye.163.com') >= 0 || window.location.href.indexOf('mail.grandstream.cn') >= 0){   // 163 网易企业邮箱
 		company163MailAdaptation.mailLocationMatch()
 		window.onhashchange = company163MailAdaptation.mailLocationMatch
 	}

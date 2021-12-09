@@ -21,7 +21,8 @@
       "matches": [
         "https://im.dingtalk.com/*",
         "https://app.slack.com/*",
-        "https://mail.qiye.163.com/*"
+        "*://mail.qiye.163.com/*",
+        "*://mail.grandstream.cn/*"
       ],
       "js": [
         "contentScripts/injectScript.js",

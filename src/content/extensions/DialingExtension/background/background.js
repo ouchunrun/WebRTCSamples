@@ -2,6 +2,7 @@
 let XPopupPort
 let grpClick2Talk = {
 	isLogin: false,
+	permissionCheckRefuse: false,
 	gsApi: null,
 	loginData: {
 		selectedAccountId: 0,  // default
@@ -31,9 +32,6 @@ function createGsApiOrUpdateConfig(){
 		url: loginData.url,
 		username: loginData.username,
 		password: loginData.password,
-		// requestHeader: {
-		// 	'X-Request-Server-Type': 'X-GRP',
-		// }
 		onerror: onErrorCatchHandler
 	}
 	if (!grpClick2Talk.gsApi) {
@@ -82,6 +80,7 @@ function permissionCheck(serverURL, actionCallback){
 	httpRequest.onreadystatechange = function () {
 		if (httpRequest.readyState === 4 && httpRequest.status === 200) {
 			console.info('connection authorized already.')
+			grpClick2Talk.permissionCheckRefuse = false
 			actionCallback && actionCallback()
 		}
 	}
@@ -93,7 +92,8 @@ function permissionCheck(serverURL, actionCallback){
 			});
 			window.open(serverURL, '_blank');
 		}else{
-			alert("您已拒绝授权")
+			console.log('permission check refuse')
+			grpClick2Talk.permissionCheckRefuse = true
 		}
 	};
 	httpRequest.send()
@@ -690,6 +690,11 @@ function recvPopupMessage(request, port) {
 			// sendMessageToContentScript({cmd:'popupOpen'});
 
 			if(!grpClick2Talk.isLogin){
+				if(grpClick2Talk.permissionCheckRefuse){
+					console.log('[EXT] already refuse permission check, do not auto login when popup open')
+					return;
+				}
+
 				// server/username/password字段都有时，popup打开时自动登录
 				automaticLoginCheck()
 			}else {
