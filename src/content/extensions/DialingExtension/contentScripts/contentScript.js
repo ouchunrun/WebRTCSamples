@@ -636,12 +636,59 @@ let slackAppExpand = {
 						let newChild = document.createElement('button');
 						newChild.id = 'callOfficePhone'
 						newChild.style.textAlign = 'center'
-						// TODO: title 提示需要处理!!!
-						newChild.title = 'Call office phone'
 						newChild.className = 'c-button-unstyled c-icon_button c-icon_button--light c-icon_button--size_small c-wysiwyg_container__button'
 						newChild.ariaLabel = 'Call office phone'
 						newChild.innerHTML = '<i class="c-icon c-icon--phone" type="phone" aria-hidden="true"></i>';
 						newChild.onclick = slackAppExpand.makeCall
+
+						let node = document.createElement("div")
+						newChild.onmouseover = function (event){
+							// Todo: mouseover和mouseenter 冒泡处理（https://cxymm.net/article/cffh_/120227409）
+							let target = event.relatedTarget
+							while (target) {
+								if (this.isEqualNode(target)) {
+									return
+								}
+								target = target.parentNode
+							}
+
+							setTimeout(function (){
+								// 设置鼠标悬浮时tip提示样式
+								node.id = 'callOfficePhoneTip'
+								node.className = 'ReactModalPortal'
+								let newChildPos = newChild.getBoundingClientRect()
+								let tipPosition = {
+									left: newChildPos.left - newChildPos.height - 15,
+									top: newChildPos.top - newChildPos.height - 19
+								}
+								node.innerHTML = `
+							<div class="ReactModal__Overlay ReactModal__Overlay--after-open c-popover c-popover--no-pointer c-popover--z_above_fs c-popover--fade"
+						         style="animation-duration: 80ms;">
+						        <div class="ReactModal__Content ReactModal__Content--after-open popover c-popover__content" aria-hidden="true"
+						             style="position: absolute; left: `+ tipPosition.left +`px; top:`+ tipPosition.top +`px;outline: none; transition-duration: 80ms;">
+						            <div role="presentation">
+						                <div id="sk-tooltip-16" role="tooltip" class="c-tooltip__tip c-tooltip__tip--top c-tooltip__tip--small"
+						                     data-qa="tooltip-tip" data-sk="tooltip">Call office phone
+						                    <div class="c-tooltip__tip__arrow" style="left: 61.3438px; right: initial;"></div>
+						                </div>
+						            </div>
+						        </div>
+						    </div>`
+								document.body.classList.add('ReactModal__Body--open')
+								document.body.appendChild(node)
+							}, 500)
+						}
+						newChild.onmouseout = function (event){
+							let target = event.relatedTarget
+							while (target) {
+								if (this.isEqualNode(target)) {
+									return
+								}
+								target = target.parentNode
+							}
+							document.body.removeChild(node);
+							document.body.classList.remove('ReactModal__Body--open')
+						}
 						audioComposerButton.parentElement.appendChild(newChild)
 					}
 				}
@@ -832,7 +879,7 @@ let company163MailAdaptation = {
 				if(colPhone && !trRows[i].getElementsByClassName('make-grp-call')[0]){  // 避免重复添加按钮
 					let newItem = document.createElement('span')
 					newItem.className = 'make-grp-call'
-					newItem.style = 'display: inline-block;float: right;'
+					newItem.style = 'display: inline-block;float: right;width: 18px; height: 18px'
 					newItem.title = '点击拨号'
 					newItem.innerHTML = '<svg class="icon" style="width: 18px;height: 18px;vertical-align: middle;fill: #36c;overflow: hidden;" viewBox="0 0 1024 1024" p-id="1678"><path d="M732.6 683.6c2.2 0.9 50.8 21 90.5 49.3 14.9 10.8 40 28.8 44 54.3 2.6 17.6-3.9 36.8-20.2 58.9-3.9 5.8-40.3 55.1-109.9 68.3-19.1 3.6-39.2 4.3-60 1.9-21.7-2.5-44.4-8.1-67.3-17-90.1-33.1-164.2-83.9-240.4-164.3-130.9-138.4-158-272.9-162.1-298.5C186.3 319 275 254.3 285.1 247.4c14-9.9 26.6-15.9 38.9-18.2 3.4-0.7 7.1-1.1 11.2-1.1 2.1 0 4.2 0.1 6.2 0.3 11.1 1.2 27.4 6.9 41.2 26.9 19 27.1 39.3 67 56.1 109.9 17.6 44.3-5.6 62.1-28.1 79.4l-0.9 0.6s-40.4 26.7-47.6 31.4c-6.9 4.6-9.4 14-5.3 21.3 27.4 50.7 64.4 101.7 107 147.3 42 44.9 89.4 84.7 137.2 115.1 2.3 1.6 5.3 2.6 8.5 2.6 1 0 2-0.1 2.9-0.3l1.2-0.4c4.8-1.3 8.5-4.8 10.4-9.2 4.6-8.8 12.7-23.2 21.5-35.7 16.9-23.4 33.7-36.4 51.1-39.7 2.7-0.5 5.9-0.9 9.1-0.9 1.9 0 3.8 0.1 5.6 0.3 4.6 0.2 12.4 2.8 21.3 6.6z" p-id="1679"></path></svg>'
 					newItem.onclick = function (e){
@@ -930,12 +977,10 @@ let company163MailAdaptation = {
 		}
 
 		let buttonCheck = function (tbody){
-			console.log('个人通讯录检查呼叫按钮~')
 			let trRows = tbody.rows
 			if(trRows && trRows.length){
 				domInsert(trRows)
 			}else {
-				console.log('tbody 没有内容~')
 				let callback = function (mutationsList){
 					mutationsList.forEach(function(mutation) {
 						switch (mutation.type){
@@ -980,12 +1025,11 @@ let company163MailAdaptation = {
 			return
 		}
 		console.log('[EXT] do make call with phoneNumber:', phoneNumber)
-		console.log('[EXT] for test, no call!!!!')
 
-		// sendMessageToBackgroundJS({
-		// 	cmd: 'contentScriptMakeCall',
-		// 	data: { phonenumber: phoneNumber }
-		// })
+		sendMessageToBackgroundJS({
+			cmd: 'contentScriptMakeCall',
+			data: { phonenumber: phoneNumber }
+		})
 	}
 }
 
@@ -996,7 +1040,7 @@ let company163MailAdaptation = {
  * @returns {number}
  */
 function getNumberFromPhoneBook(data){
-	console.log('getNumberFromPhoneBook: ' + JSON.stringify(data, null, '    '))
+	// console.log('getNumberFromPhoneBook: ' + JSON.stringify(data, null, '    '))
 	return '359301' // 测试号
 }
 
