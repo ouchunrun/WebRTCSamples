@@ -581,7 +581,7 @@ let grpDialingApi = {
 	},
 
 	/**
-	 * 2.GRP本地通讯录
+	 * 2.获取GRP本地通讯录
 	 *    本地通讯录根据IP区分保存： EG.localAddressBook_192.168.131.4
 		  [{
 		    FirstName: "aaa"
@@ -593,7 +593,8 @@ let grpDialingApi = {
 		  }]
 	 */
 	getLocalPhoneBook: function (){
-		if(!grpDialingApi.gsApi){
+		console.log('getLocalPhoneBook ', grpDialingApi.isLogin)
+		if(!grpDialingApi.gsApi || !grpDialingApi.isLogin){
 			return
 		}
 
@@ -609,12 +610,19 @@ let grpDialingApi = {
 						responseData = grpDialingApi.xml2Json.xml_str2json(event.response)
 						if(responseData && responseData.AddressBook && responseData.AddressBook.Contact && responseData.AddressBook.Contact.length){
 							grpDialingApi.phoneBooks.localAddressBook = responseData.AddressBook.Contact
-							console.log('get AddressBook: ', grpDialingApi.phoneBooks.localAddressBook)
 							grpDialingApi.phoneBookDB.setItems([{
 								phoneBookName: phoneBookName,
 								content: grpDialingApi.phoneBooks.localAddressBook,
 								TS: (new Date()).getTime(),
 							}]);
+
+							sendMessageToContentScript({
+								cmd:'phoneBookUpdate',
+								data: {
+									phoneBooks: grpDialingApi.phoneBooks,
+									deviceId: grpDialingApi.loginData?.url
+								}
+							});
 						}
 					}
 				}else {
@@ -640,7 +648,7 @@ let grpDialingApi = {
 	    }]
 	 */
 	getLdap: function (){
-		if(!grpDialingApi.gsApi){
+		if(!grpDialingApi.gsApi || !grpDialingApi.isLogin){
 			return
 		}
 
@@ -666,6 +674,15 @@ let grpDialingApi = {
 							content: grpDialingApi.phoneBooks.ldap,
 							TS: (new Date()).getTime(),
 						}]);
+
+						// 重新获取联系人后更新联系人列表
+						sendMessageToContentScript({
+							cmd:'phoneBookUpdate',
+							data: {
+								phoneBooks: grpDialingApi.phoneBooks,
+								deviceId: grpDialingApi.loginData?.url
+							}
+						});
 					}
 				}else {
 					console.log('GET LDAP FAILED, ', event.status)
@@ -690,6 +707,10 @@ let grpDialingApi = {
 		})
 	},
 
+	/**
+	 * 获取所有通讯录信息
+	 * @param data
+	 */
 	getExtendedContacts: function (data = {}){
 		console.log('get extended contacts.')
 		if(!grpDialingApi.gsApi){
@@ -697,12 +718,33 @@ let grpDialingApi = {
 			return
 		}
 
+		let actionCallback = function (params){
+			if(params.isAddressBookNeedUpdated){
+				grpDialingApi.getLocalPhoneBook()
+			}else {
+				console.log('no need update local phone book')
+			}
+
+			if(params.isLdapNeedUpdated){
+				grpDialingApi.getLdap()
+			}else {
+				console.log('no need update ldap')
+			}
+		}
+
 		// 先获取当前数据，判断是否需要更新
+		grpDialingApi.getPhoneBookFromDB({callback: actionCallback})
+	},
+
+	getPhoneBookFromDB: function (data = {}){
+		if(!grpDialingApi.phoneBookDB){
+			return
+		}
+
 		grpDialingApi.phoneBookDB.getAllItems(function (storeInfos = []){
-			console.log('storeInfos:', storeInfos)
-			let isLocalPhoneBookNeedUpdated = true
+			let isAddressBookNeedUpdated = true
 			let isLdapNeedUpdated = true
-			let dayTimeStamp = 1000 * 60 * 60 * 24 * 7;
+			let dayTimeStamp = 1000 * 60 * 60 * 24 * 7;   // 每7天更新一次信息
 			let phoneBookName = 'localAddressBook_' + grpDialingApi.loginData.url.split('//')[1]
 
 			if(storeInfos.length){
@@ -712,25 +754,18 @@ let grpDialingApi = {
 					grpDialingApi.phoneBooks[name] = storeInfos[i].content
 					let diffValue = new Date().getTime() - storeInfos[i].TS; //时间差
 					if(name === phoneBookName && diffValue <= dayTimeStamp){
-						isLocalPhoneBookNeedUpdated = false
+						isAddressBookNeedUpdated = false
 					}else if(name === 'ldap' && diffValue <= dayTimeStamp){
 						isLdapNeedUpdated = false
 					}
 				}
 			}
 
-			if(isLocalPhoneBookNeedUpdated){
-				grpDialingApi.getLocalPhoneBook()
-			}else {
-				console.log('no need update local phone book')
-			}
-
-			if(isLdapNeedUpdated){
-				// 数据库中没有数据，重新获取
-				// 1.获取杭州分公司ldap 通讯录
-				grpDialingApi.getLdap()
-			}else {
-				console.log('no need update ldap')
+			if(data.callback){
+				data.callback({
+					isAddressBookNeedUpdated: isAddressBookNeedUpdated,
+					isLdapNeedUpdated: isLdapNeedUpdated,
+				})
 			}
 		})
 	},
@@ -774,6 +809,7 @@ function sendMessageToContentScript(message, callback) {
  */
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 	if(request && request.requestType === 'contentMessage2Background'){
+		console.log('get request: ' ,request)
 		chromeRuntimeOnMessage(request)
 		// send response
 		sendResponse({cmd: "backgroundMessage2ContentScript", status: "OK"});
@@ -794,8 +830,31 @@ function chromeRuntimeOnMessage(request){
 			grpDialingApi.updateCallCfg(request.data)
 			break
 		case "contentScriptMakeCall":
-			console.info(" call phonenumber:", request.data.phonenumber)
+			console.info("call phonenumber:", request.data.phonenumber)
 			grpDialingApi.extMakeCall(request.data)
+			break
+		case 'contentScriptGetPhoneBook':
+			console.log('content get phone book')
+			if(JSON.stringify(grpDialingApi.phoneBooks) !== "{}"){
+				sendMessageToContentScript({cmd:'phoneBookUpdate', data: {
+						phoneBooks: grpDialingApi.phoneBooks,
+						deviceId: grpDialingApi.loginData?.url
+					}
+				});
+			}else {
+				// search from indexeddb
+				grpDialingApi.getPhoneBookFromDB({
+					callback: function (){
+						if(JSON.stringify(grpDialingApi.phoneBooks) !== "{}"){
+							sendMessageToContentScript({cmd:'phoneBookUpdate', data: {
+									phoneBooks: grpDialingApi.phoneBooks,
+									deviceId: grpDialingApi.loginData?.url
+								}
+							});
+						}
+					}
+				})
+			}
 			break
 		default:
 			break

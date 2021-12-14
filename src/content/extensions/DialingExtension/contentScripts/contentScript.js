@@ -50,7 +50,7 @@ let dingTalkAdaptation = {
 		let avatar = document.getElementsByClassName('avatar user-avatar ng-scope ng-isolate-scope')
 		if(avatar && avatar.length) {
 			let calleeUID = avatar[0].getAttribute('uid')
-			console.log("get calleeUID:", calleeUID)
+			console.log("[EXT] get calleeUID:", calleeUID)
 			let inputEle = document.getElementById('remoteTarget')
 			inputEle.value = calleeUID
 			inputEle.click()
@@ -77,7 +77,7 @@ let dingTalkAdaptation = {
 							if(addedNodes.className === 'ding-modal fade ng-scope ng-isolate-scope'){
 								let selectorContainer = document.getElementsByClassName('selector-container')[0]
 								if(selectorContainer){
-									console.log("add call button")
+									console.log("[EXT] add call button")
 									let langInfo = localStorage.getItem('latest_lang_info')
 									let callBtn = document.createElement('button')
 									callBtn.id = 'xCallButton'
@@ -115,7 +115,7 @@ let dingTalkAdaptation = {
 		maskLayer.onclick = this.showConfigArea
 
 		let langInfo = localStorage.getItem('latest_lang_info')
-		console.log('langInfo:', langInfo)
+		console.log('[EXT] langInfo:', langInfo)
 		let configTips = {
 			title: langInfo === 'en_US' ? 'GRP call configuration' : 'GRP呼叫配置',
 			loginInnerText: langInfo === 'en_US' ? 'Login/Save changes' : '登录/保存修改',
@@ -215,7 +215,7 @@ let dingTalkAdaptation = {
 	checkToMakeCall: function (){
 		let phoneNumber = this.phoneNumberInput.value
 		if(!phoneNumber){
-			console.info('account && phoneNumber is require')
+			console.info('[EXT] account && phoneNumber is require')
 			return
 		}
 
@@ -259,14 +259,14 @@ let dingTalkAdaptation = {
 				password: pwd
 			}
 		}, function (res){
-			console.info("res: ", res)
+			console.info("[EXT] res: ", res)
 		})
 	},
 
 	makeCallWithRemoteNumber: function (){
 		let phoneNumber = document.getElementById('callRemoteNumber')?.value
 		if(!phoneNumber){
-			console.info("phoneNumber is empty!!")
+			console.info("[EXT] phoneNumber is empty!!")
 			alert('No callable number')
 			return
 		}
@@ -276,7 +276,7 @@ let dingTalkAdaptation = {
 				phonenumber: phoneNumber?.trim(),
 			}
 		}, function (res){
-			console.info("res: ", res)
+			console.info("[EXT] res: ", res)
 		})
 
 		// 点击呼叫后关闭弹框
@@ -485,7 +485,7 @@ let dingTalkAdaptation = {
 
 		// clear tip
 		setTimeout(function (){
-			console.log('clear tip')
+			console.log('[EXT] clear tip')
 			xMessageTip.innerText = ''
 			xMessageTip.style.background = ''
 		}, 2000)
@@ -564,28 +564,48 @@ let slackAppExpand = {
 
 	/**
 	 * 发起呼叫
+	 * memberInfo: {
+		display_name: "chrou",
+		email: "chrou@grandstream.cn",
+		id: "U02LWUBFLH4",
+		phone: "",
+		real_name: "orc",
+		team: "U9X6XLVEE",
+	 * }
 	 */
-	makeCall: function (){
+	slackMakeCall: function (phoneNumber){
+		if(!phoneNumber){
+			console.log('[EXT] The user does  not configured phone number')
+		}else {
+			console.log('[EXT] get phoneNumber, ', phoneNumber)
+			sendMessageToBackgroundJS({
+				cmd: 'contentScriptMakeCall',
+				data: {
+					phonenumber: phoneNumber?.trim(),
+				}
+			})
+		}
+	},
+
+	searchPhoneNumber: function (){
+		let phoneNumber
 		let memberNameHeader = document.getElementsByClassName('p-view_header__member_name')[0]
 		let memberName = memberNameHeader?.innerText
 		if(memberName){
-			console.log('[EXT] get member name ', memberName)
-			let phoneNumber = slackAppExpand.teamsMembers[memberName].phone
-			if(!phoneNumber){
-				console.log('[EXT] The user does  not configured phone number')
-				alert(memberName + ' does not configured phone number')
-			}else {
-				console.log('[EXT] get phoneNumber, ', phoneNumber)
-				sendMessageToBackgroundJS({
-					cmd: 'contentScriptMakeCall',
-					data: {
-						phonenumber: phoneNumber?.trim(),
-					}
+			console.log('[EXT] get member name, ', memberName)
+			let member = slackAppExpand.teamsMembers && slackAppExpand.teamsMembers[memberName]
+			phoneNumber = member?.phone
+
+			if(!phoneNumber && slackAppExpand.teamsMembers){
+				phoneNumber = getNumberFromPhoneBook({
+					email: member?.email,
+					calleeName: member?.real_name
 				})
 			}
-		}else {
-			console.info('[EXT] member name DOM is not found.')
 		}
+
+		console.log('[EXT] get phone number, ', phoneNumber)
+		return phoneNumber
 	},
 
 	/**
@@ -600,6 +620,16 @@ let slackAppExpand = {
 		if(headerActions && headerActions.children && headerActions.children[0]){
 			let child = headerActions.children[0]
 			if (child.dataset && child.dataset.qa === 'channel_header_calls_button' && child.ariaLabel && child.ariaLabel.indexOf('Call') >= 0) {
+				// 先检查是否能获取到号码，获取不到则不显示呼叫按钮
+				let phoneNumber = slackAppExpand.searchPhoneNumber()
+				if(!phoneNumber){
+					console.log('[EXT] phoneNumber not found')
+					if(callOfficeBtn){
+						callOfficeBtn.style.display = 'none'
+					}
+					return
+				}
+
 				if(callOfficeBtn){
 					callOfficeBtn.style.display = 'block'
 				}else {
@@ -612,7 +642,9 @@ let slackAppExpand = {
 						newChild.className = 'c-button-unstyled c-icon_button c-icon_button--light c-icon_button--size_small c-wysiwyg_container__button'
 						newChild.ariaLabel = 'Call office phone'
 						newChild.innerHTML = '<i class="c-icon c-icon--phone" type="phone" aria-hidden="true"></i>';
-						newChild.onclick = slackAppExpand.makeCall
+						newChild.onclick = function (){
+							slackAppExpand.slackMakeCall(phoneNumber)
+						}
 
 						let node = document.createElement("div")
 						newChild.onmouseover = function (event){
@@ -659,7 +691,7 @@ let slackAppExpand = {
 								}
 								target = target.parentNode
 							}
-							node.parentNode.removeChild(node)
+							node.parentNode?.removeChild(node)
 							document.body.classList.remove('ReactModal__Body--open')
 						}
 						audioComposerButton.parentElement.appendChild(newChild)
@@ -790,7 +822,10 @@ let company163MailAdaptation = {
 			if(!callBtn && (name !== '我' && name.toLocaleString() !== 'me')){
 				let addressItem = nodes.getElementsByClassName('nui-userLayer-address')[0]
 				let address = addressItem?.firstChild.innerText
-				let phoneNumber = getNumberFromPhoneBook({key: 'email', value: address})
+				let phoneNumber = getNumberFromPhoneBook({
+					email: address,
+					calleeName: name
+				})
 
 				if(phoneNumber){
 					let newItem = document.createElement('span')
@@ -800,7 +835,7 @@ let company163MailAdaptation = {
 					newItem.innerHTML = '<svg class="icon" style="width: 16px;height: 16px;vertical-align: middle;fill: #a1c9eb;position: relative;top: -2px;" viewBox="0 0 1024 1024" p-id="1678"><path d="M732.6 683.6c2.2 0.9 50.8 21 90.5 49.3 14.9 10.8 40 28.8 44 54.3 2.6 17.6-3.9 36.8-20.2 58.9-3.9 5.8-40.3 55.1-109.9 68.3-19.1 3.6-39.2 4.3-60 1.9-21.7-2.5-44.4-8.1-67.3-17-90.1-33.1-164.2-83.9-240.4-164.3-130.9-138.4-158-272.9-162.1-298.5C186.3 319 275 254.3 285.1 247.4c14-9.9 26.6-15.9 38.9-18.2 3.4-0.7 7.1-1.1 11.2-1.1 2.1 0 4.2 0.1 6.2 0.3 11.1 1.2 27.4 6.9 41.2 26.9 19 27.1 39.3 67 56.1 109.9 17.6 44.3-5.6 62.1-28.1 79.4l-0.9 0.6s-40.4 26.7-47.6 31.4c-6.9 4.6-9.4 14-5.3 21.3 27.4 50.7 64.4 101.7 107 147.3 42 44.9 89.4 84.7 137.2 115.1 2.3 1.6 5.3 2.6 8.5 2.6 1 0 2-0.1 2.9-0.3l1.2-0.4c4.8-1.3 8.5-4.8 10.4-9.2 4.6-8.8 12.7-23.2 21.5-35.7 16.9-23.4 33.7-36.4 51.1-39.7 2.7-0.5 5.9-0.9 9.1-0.9 1.9 0 3.8 0.1 5.6 0.3 4.6 0.2 12.4 2.8 21.3 6.6z" p-id="1679"></path></svg>' +
 						'<a class="nui-txt-cLink js-component-link " hidefocus="hidefocus">拨号</a>'
 					newItem.onclick = function (){
-						company163MailAdaptation.makeCall(phoneNumber)
+						company163MailAdaptation.mailMakeCall(phoneNumber)
 					}
 					userLayerItem.appendChild(newItem)
 				}else {
@@ -842,7 +877,10 @@ let company163MailAdaptation = {
 				if(!colPhone){
 					let colEmail = trRows[i].getElementsByClassName('Corp-corpCnta-main-colEmail')[0]?.innerText
 					if(colEmail){
-						colPhone = getNumberFromPhoneBook({key: 'email', value: colEmail})
+						colPhone = getNumberFromPhoneBook({
+							email: colEmail,
+							calleeName: '这里要获取姓名'
+						})
 						if(colPhone){
 							colPhoneTr.firstChild.innerText = colPhone
 						}
@@ -857,7 +895,7 @@ let company163MailAdaptation = {
 					newItem.innerHTML = '<svg class="icon" style="width: 18px;height: 18px;vertical-align: middle;fill: #36c;overflow: hidden;" viewBox="0 0 1024 1024" p-id="1678"><path d="M732.6 683.6c2.2 0.9 50.8 21 90.5 49.3 14.9 10.8 40 28.8 44 54.3 2.6 17.6-3.9 36.8-20.2 58.9-3.9 5.8-40.3 55.1-109.9 68.3-19.1 3.6-39.2 4.3-60 1.9-21.7-2.5-44.4-8.1-67.3-17-90.1-33.1-164.2-83.9-240.4-164.3-130.9-138.4-158-272.9-162.1-298.5C186.3 319 275 254.3 285.1 247.4c14-9.9 26.6-15.9 38.9-18.2 3.4-0.7 7.1-1.1 11.2-1.1 2.1 0 4.2 0.1 6.2 0.3 11.1 1.2 27.4 6.9 41.2 26.9 19 27.1 39.3 67 56.1 109.9 17.6 44.3-5.6 62.1-28.1 79.4l-0.9 0.6s-40.4 26.7-47.6 31.4c-6.9 4.6-9.4 14-5.3 21.3 27.4 50.7 64.4 101.7 107 147.3 42 44.9 89.4 84.7 137.2 115.1 2.3 1.6 5.3 2.6 8.5 2.6 1 0 2-0.1 2.9-0.3l1.2-0.4c4.8-1.3 8.5-4.8 10.4-9.2 4.6-8.8 12.7-23.2 21.5-35.7 16.9-23.4 33.7-36.4 51.1-39.7 2.7-0.5 5.9-0.9 9.1-0.9 1.9 0 3.8 0.1 5.6 0.3 4.6 0.2 12.4 2.8 21.3 6.6z" p-id="1679"></path></svg>'
 					newItem.onclick = function (e){
 						e.stopPropagation()
-						company163MailAdaptation.makeCall(colPhone)
+						company163MailAdaptation.mailMakeCall(colPhone)
 					}
 					colPhoneTr.appendChild(newItem)
 				}
@@ -926,7 +964,10 @@ let company163MailAdaptation = {
 				if(!colPhone){
 					let colEmail = trRows[i].getElementsByClassName('nui-table-cell iA0')[0]?.innerText
 					if(colEmail){
-						colPhone = getNumberFromPhoneBook({key: 'email', value: colEmail})
+						colPhone = getNumberFromPhoneBook({
+							email: colEmail,
+							calleeName: '这里要获取姓名'
+						})
 						if(colPhone){
 							colPhoneTr.firstChild.innerText = colPhone
 						}
@@ -941,7 +982,7 @@ let company163MailAdaptation = {
 					newItem.innerHTML = '<svg class="icon" style="width: 18px;height: 18px;vertical-align: middle;fill: #36c;overflow: hidden;" viewBox="0 0 1024 1024" p-id="1678"><path d="M732.6 683.6c2.2 0.9 50.8 21 90.5 49.3 14.9 10.8 40 28.8 44 54.3 2.6 17.6-3.9 36.8-20.2 58.9-3.9 5.8-40.3 55.1-109.9 68.3-19.1 3.6-39.2 4.3-60 1.9-21.7-2.5-44.4-8.1-67.3-17-90.1-33.1-164.2-83.9-240.4-164.3-130.9-138.4-158-272.9-162.1-298.5C186.3 319 275 254.3 285.1 247.4c14-9.9 26.6-15.9 38.9-18.2 3.4-0.7 7.1-1.1 11.2-1.1 2.1 0 4.2 0.1 6.2 0.3 11.1 1.2 27.4 6.9 41.2 26.9 19 27.1 39.3 67 56.1 109.9 17.6 44.3-5.6 62.1-28.1 79.4l-0.9 0.6s-40.4 26.7-47.6 31.4c-6.9 4.6-9.4 14-5.3 21.3 27.4 50.7 64.4 101.7 107 147.3 42 44.9 89.4 84.7 137.2 115.1 2.3 1.6 5.3 2.6 8.5 2.6 1 0 2-0.1 2.9-0.3l1.2-0.4c4.8-1.3 8.5-4.8 10.4-9.2 4.6-8.8 12.7-23.2 21.5-35.7 16.9-23.4 33.7-36.4 51.1-39.7 2.7-0.5 5.9-0.9 9.1-0.9 1.9 0 3.8 0.1 5.6 0.3 4.6 0.2 12.4 2.8 21.3 6.6z" p-id="1679"></path></svg>'
 					newItem.onclick = function (e){
 						e.stopPropagation()
-						company163MailAdaptation.makeCall(colPhone)
+						company163MailAdaptation.mailMakeCall(colPhone)
 					}
 					colPhoneTr.appendChild(newItem)
 				}
@@ -991,16 +1032,17 @@ let company163MailAdaptation = {
 		}
 	},
 
-	makeCall: function (phoneNumber){
+	mailMakeCall: function (phoneNumber){
 		if(!phoneNumber){
 			console.log('[EXT] not found available phone number')
 			return
 		}
 		console.log('[EXT] do make call with phoneNumber:', phoneNumber)
-
 		sendMessageToBackgroundJS({
 			cmd: 'contentScriptMakeCall',
-			data: { phonenumber: phoneNumber }
+			data: {
+				phonenumber: phoneNumber,
+			}
 		})
 	}
 }
@@ -1008,12 +1050,51 @@ let company163MailAdaptation = {
 
 /**
  * 使用邮箱根据本地通讯录查找号码
- * @param data
- * @returns {number}
+ * @param data: {
+ *     email: '被叫邮箱',
+ *     calleeName: '被叫姓名'
+ * }
  */
 function getNumberFromPhoneBook(data){
-	// console.log('getNumberFromPhoneBook: ' + JSON.stringify(data, null, '    '))
-	return '359301' // 测试号
+	if(!data || (!data.email && !data.calleeName)){
+		console.log('[EXT] There are no parameters to query')
+		return ''
+	}
+
+	let phoneNumber = ''
+	let phoneBooks = JSON.parse(localStorage.getItem('X-extendedContacts'))
+	if(phoneBooks){
+		if(data.email){
+			// 优先查询ldap
+			if(phoneBooks.ldap){
+				for (let i = 0; i<phoneBooks.ldap.length; i++){
+					if(phoneBooks.ldap[i].email === data.email){
+						phoneNumber = phoneBooks.ldap[i].AccountNumber
+						break
+					}
+				}
+			}
+
+			if(!phoneNumber){
+				// 然后再查询本地通讯录
+				let key = 'localAddressBook'
+				if(phoneBooks.deviceId){
+					key = key + '_' + phoneBooks.deviceId.indexOf('://') ? phoneBooks.deviceId.split('://')[1] : phoneBooks.deviceId
+				}
+
+				if(phoneBooks[key]){
+					let localAddressBook = phoneBooks[key]
+					for (let j = 0; j<localAddressBook.length; j++){
+						if(localAddressBook[j].email === data.email){
+							phoneNumber = localAddressBook[j].Phone?.phonenumber
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+	return phoneNumber
 }
 
 
@@ -1022,7 +1103,9 @@ function getNumberFromPhoneBook(data){
 /*******************************************************************************************************************/
 
 window.onload = function (){
+	let urlMatch = false
 	if(window.location.href.indexOf('im.dingtalk') >= 0){          // dingtalk
+		urlMatch = true
 		dingTalkAdaptation.insertConfigArea()
 
 		setTimeout(function (){
@@ -1036,6 +1119,7 @@ window.onload = function (){
 			dingTalkAdaptation.pageResize();
 		}
 	}else if(window.location.href.indexOf('app.slack.com') >= 0){   // slack
+		urlMatch = true
 		slackAppExpand.getTeamsInfoFromLocalStorage()
 
 		if(slackAppExpand.userTeams){
@@ -1047,8 +1131,14 @@ window.onload = function (){
 			slackAppExpand.checkForAWhile()
 		}, 2000)
 	}else if(window.location.href.indexOf('mail.qiye.163.com') >= 0 || window.location.href.indexOf('mail.grandstream.cn') >= 0){   // 163 网易企业邮箱
+		urlMatch = true
 		company163MailAdaptation.mailLocationMatch()
 		window.onhashchange = company163MailAdaptation.mailLocationMatch
+	}
+
+	if(urlMatch){
+		// 发送请求，获取通讯录信息
+		sendMessageToBackgroundJS({cmd: 'contentScriptGetPhoneBook'})
 	}
 }
 
@@ -1121,39 +1211,60 @@ if(chrome.runtime && chrome.runtime.onMessage){
 			switch (request.cmd){
 				case "autoLogin":  // 钉钉首次加载页面，获取信息后自动登录
 					if(request.data){
-						dingTalkAdaptation.updateInputValue(request.data)
+						if(window.location.href.indexOf('im.dingtalk') >= 0){
+							dingTalkAdaptation.updateInputValue(request.data)
+						}
 					}
 					break
 				case "loginStatus":
-					console.info('login return data: ', request.response)
+					console.info('[EXT] login return data: ', request.response)
 					if(request.response && request.response.response === "error"){
 						alert('请点击左上角配置页面进行登录')
 					}
-					showTipInPage(request.response)
+					if(window.location.href.indexOf('im.dingtalk') >= 0){
+						dingTalkAdaptation.showTipInPage(request.response)
+					}
 					break
 				case 'showTip':  // 显示tip提示
-					showTipInPage(request)
+					if(window.location.href.indexOf('im.dingtalk') >= 0){
+						dingTalkAdaptation.showTipInPage(request)
+					}
 					break
 				case "updateConfig":  // 通过background js更新和显示配置信息
 					if(request.data){
-						dingTalkAdaptation.updateInputValue(request.data)
+						if(window.location.href.indexOf('im.dingtalk') >= 0){
+							dingTalkAdaptation.updateInputValue(request.data)
+						}
 					}
 					break
 				case "setAccountLists":
-					dingTalkAdaptation.xConfigObj.accountLists = request.accountLists
+					if(window.location.href.indexOf('im.dingtalk') >= 0){
+						dingTalkAdaptation.xConfigObj.accountLists = request.accountLists
+					}
 					// accountSelectOptions()
 					break
 				case "showContentConfig":
-					console.log('login first, show config area')
-					dingTalkAdaptation.showConfigArea()
+					console.log('[EXT] login first, show config area')
+					if(window.location.href.indexOf('im.dingtalk') >= 0){
+						dingTalkAdaptation.showConfigArea()
+					}
 					break
 				case 'popupOpen':
-					dingTalkAdaptation.hiddenConfigArea()
+					if(window.location.href.indexOf('im.dingtalk') >= 0){
+						dingTalkAdaptation.hiddenConfigArea()
+					}
 					break
 				case "pageReload":
-					console.log('Reload the page after authorization')
+					console.log('[EXT] Reload the page after authorization')
 					if(confirm('完成授权后重新加载页面') === true){
 						window.location.reload(true)
+					}
+					break
+				case 'phoneBookUpdate':
+					if(request.data && request.data.phoneBooks && JSON.stringify(request.data.phoneBooks) !== '{}'){
+						let info = request.data.phoneBooks
+						info['deviceId'] = request.data.deviceId
+						localStorage.setItem('X-extendedContacts', JSON.stringify(info))
 					}
 					break
 				default:
