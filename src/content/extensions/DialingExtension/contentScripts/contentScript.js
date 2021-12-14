@@ -754,6 +754,9 @@ let company163MailAdaptation = {
 			// 检测个人通讯录
 			company163MailAdaptation.contactModuleAddCallButton()
 		}
+
+		// 外部联系人检测
+		company163MailAdaptation.selectedDomObserve()
 	},
 
 	// TODO: 收件箱 1.添加页面元素监听，tip提示出来后，添加呼叫连接， 需要根据通讯录查找号码，因为大部分人的邮箱配置里面是没有电话号码的
@@ -808,7 +811,10 @@ let company163MailAdaptation = {
 		}
 	},
 
-	// 邮件页面添加拨号按钮
+	/**
+	 * 邮件页面添加拨号按钮
+	 * @param nodes
+	 */
 	mailPageAddCallButton: function (nodes){
 		let userLayerItem = nodes.getElementsByClassName('nui-userLayer-name nui-userLayer-item')[0]
 		if(userLayerItem){
@@ -879,7 +885,7 @@ let company163MailAdaptation = {
 					if(colEmail){
 						colPhone = getNumberFromPhoneBook({
 							email: colEmail,
-							calleeName: '这里要获取姓名'
+							calleeName: trRows[i].getElementsByClassName('Corp-corpCnta-main-colName')[0]?.innerText
 						})
 						if(colPhone){
 							colPhoneTr.firstChild.innerText = colPhone
@@ -954,10 +960,12 @@ let company163MailAdaptation = {
 	},
 
 	/**
-	 * 个人通讯录界面
+	 * 页面插入呼叫按钮
+	 * @param tbody
 	 */
-	contactModuleAddCallButton: function (){
-		let domInsert = function (trRows){
+	callButtonInsert: function (tbody){
+		let trRows = tbody.rows
+		if(trRows.length){
 			for(let i = 0; i<trRows.length; i++){
 				let colPhoneTr = trRows[i].getElementsByClassName('nui-table-cell iB0')[0]
 				let colPhone = colPhoneTr?.innerText
@@ -966,7 +974,7 @@ let company163MailAdaptation = {
 					if(colEmail){
 						colPhone = getNumberFromPhoneBook({
 							email: colEmail,
-							calleeName: '这里要获取姓名'
+							calleeName: trRows[i].getElementsByClassName('nui-table-cell iV0')[0]?.innerText
 						})
 						if(colPhone){
 							colPhoneTr.firstChild.innerText = colPhone
@@ -988,47 +996,65 @@ let company163MailAdaptation = {
 				}
 			}
 		}
+	},
 
-		let buttonCheck = function (tbody){
-			let trRows = tbody.rows
-			if(trRows && trRows.length){
-				domInsert(trRows)
-			}else {
-				let callback = function (mutationsList){
-					mutationsList.forEach(function(mutation) {
-						switch (mutation.type){
-							case 'childList':
-								if(mutation.addedNodes && mutation.addedNodes.length){
-									domInsert(mutation.addedNodes)
-								}
-								break
-							default:
-								break
-						}
-					});
-				}
-				const observer = new MutationObserver(callback)
-				let options = {'childList': true, 'subtree': true }
-				observer.observe(tbody, options);
-			}
-		}
-
-		let mailListBody = document.getElementsByClassName('nui-table-body')[0]
-		if(!mailListBody){
+	/**
+	 * 个人通讯录界面
+	 */
+	contactModuleAddCallButton: function (){
+		let tbodyList = document.getElementsByClassName('nui-table-body')
+		if(!tbodyList.length){
 			let count = 0
 			let bodyInterval = setInterval(function (){
-				mailListBody = document.getElementsByClassName('nui-table-body')[0]
-				if(count > 15 || mailListBody){
+				tbodyList = document.getElementsByClassName('nui-table-body')
+				if(count > 15 || tbodyList.length){
 					clearInterval(bodyInterval)
 					bodyInterval = null
-					if(mailListBody){
-						buttonCheck(mailListBody)
+					if(tbodyList.length){
+						company163MailAdaptation.callButtonCheck()
 					}
 				}
 				count++
 			}, 200)
 		}else {
-			buttonCheck(mailListBody)
+			company163MailAdaptation.callButtonCheck()
+		}
+	},
+
+	/**
+	 * 查找当前可见nui-table-body元素
+	 */
+	callButtonCheck: function (){
+		let tbodyList = document.getElementsByClassName('nui-table-body')
+		if(tbodyList.length){
+			for(let i = 0; i<tbodyList.length; i++){
+				let tbody = tbodyList[i]
+				// TODO: 根据当前元素的父元素的offsetParent属性判断元素是否可见
+				if(tbody.offsetParent){
+					// 检查拨号按钮
+					console.log(tbody)
+					company163MailAdaptation.callButtonInsert(tbody)
+					break
+				}
+			}
+		}else {
+			console.log('tbodyList null')
+		}
+	},
+
+	/**
+	 * 个人通讯录界面检测
+	 */
+	selectedDomObserve: function (){
+		window.onclick = function (){
+			let selectedDom = document.getElementsByClassName('js-component-component nui-tree-item-label nui-tree-item-label-selected')[0]
+			let innerText = selectedDom?.innerText
+			if(innerText){
+				if(innerText.indexOf('未分组联系人') >= 0 || innerText.indexOf('Ungrouped Contact') >= 0
+					|| innerText.indexOf('所有联系人') >= 0 || innerText.indexOf('All contacts') >= 0){
+					company163MailAdaptation.callButtonCheck()
+				}
+			}
 		}
 	},
 
