@@ -10,6 +10,8 @@
   },
   "background": {
     "scripts": [
+      "background/indexedDB.js",
+      "background/xml2json.js",
       "background/background.js",
       "background/gs.sdk.min.js"
     ],
@@ -19,7 +21,7 @@
   [
     {
       "matches": [
-        "https://im.dingtalk.com/*",
+        "https://im.dingtalk.coms/*",
         "https://app.slack.com/*",
         "*://mail.qiye.163.com/*",
         "*://mail.grandstream.cn/*"

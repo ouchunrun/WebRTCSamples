@@ -589,27 +589,6 @@ let slackAppExpand = {
 	},
 
 	/**
-	 * 根据不同的请求接口添加请求参数
-	 * @param method
-	 * @param params
-	 */
-	getRequestURL: function (method, params){
-		if(!method){
-			return ''
-		}
-
-		let url = window.location.origin + '/api/' + method
-		switch (method){
-			case 'users.list':
-				url = url + '?include_locale=true&pretty=1&team_id=' + params.team
-				break
-			default:
-				break
-		}
-		return url
-	},
-
-	/**
 	 * step1:
 	 * document.getElementsByClassName('p-view_header__actions')[0].children[0].ariaLabel   // 'Call shyzhang'
 	 * document.getElementsByClassName('p-view_header__actions')[0].children[0].dataset.qa  // 'channel_header_calls_button'
@@ -680,7 +659,7 @@ let slackAppExpand = {
 								}
 								target = target.parentNode
 							}
-							document.body.removeChild(node);
+							node.parentNode.removeChild(node)
 							document.body.classList.remove('ReactModal__Body--open')
 						}
 						audioComposerButton.parentElement.appendChild(newChild)

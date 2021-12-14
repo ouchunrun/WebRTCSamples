@@ -19,6 +19,9 @@ let grpDialingApi = {
 	waitingCall: false,
 	getLineIntervalTime: 1000,
 	getPhoneIntervalTime: 5*1000,
+	xml2Json: new X2JS(),
+	phoneBooks: {},
+	phoneBookDB: new self.DBmanager('phoneBookDB', "phoneBook", null, ["phoneBookName", "TS"]),
 
 	/**
 	 * gsApi init
@@ -132,6 +135,7 @@ let grpDialingApi = {
 				if(event.status === 200 && response.response === 'success'){
 					grpDialingApi.sid = response.body.sid
 					grpDialingApi.isLogin = true
+					grpDialingApi.getExtendedContacts()
 
 					if(grpDialingApi.popupPort){
 						sendMessage2Popup({
@@ -575,6 +579,161 @@ let grpDialingApi = {
 
 		return copy(obj)
 	},
+
+	/**
+	 * 2.GRP本地通讯录
+	 *    本地通讯录根据IP区分保存： EG.localAddressBook_192.168.131.4
+		  [{
+		    FirstName: "aaa"
+			Frequent: "0"
+			LastName: "aaa"
+			Phone: {phonenumber: '11111', accountindex: '0', _type: 'Work'}
+			Primary: "0"
+			id: "122700"
+		  }]
+	 */
+	getLocalPhoneBook: function (){
+		if(!grpDialingApi.gsApi){
+			return
+		}
+
+		// 2.获取GRP本地联系人(兼容GRP261X)
+		console.log('获取GRP本地联系人(兼容GRP261X)')
+		let phoneBookName = 'localAddressBook_' + grpDialingApi.loginData.url.split('//')[1]
+		let getAddressBookCallback = function (event){
+			if(event.readyState === 4){
+				if(event.status === 200 && event.statusText === 'OK'){
+					let responseData
+					if(event.response && event.response.startsWith('<?xml')){
+						console.log('GET LOCAL ADDRESS BOOK SUCCESS')
+						responseData = grpDialingApi.xml2Json.xml_str2json(event.response)
+						if(responseData && responseData.AddressBook && responseData.AddressBook.Contact && responseData.AddressBook.Contact.length){
+							grpDialingApi.phoneBooks.localAddressBook = responseData.AddressBook.Contact
+							console.log('get AddressBook: ', grpDialingApi.phoneBooks.localAddressBook)
+							grpDialingApi.phoneBookDB.setItems([{
+								phoneBookName: phoneBookName,
+								content: grpDialingApi.phoneBooks.localAddressBook,
+								TS: (new Date()).getTime(),
+							}]);
+						}
+					}
+				}else {
+					console.log('GET AddressBook FAILED, ', event.status)
+				}
+			}
+		}
+
+		grpDialingApi.gsApi.phonebookDownload({
+			onreturn: getAddressBookCallback,
+			onerror: function (event){
+				console.log('errorCallback', event)
+			}
+		})
+	},
+
+	/**
+	 * * 获取LDAP扩展联系人
+	 * 1.杭州分公司通讯录
+	    [{
+	        dialAccount: 1,
+			ou=hz,dc=pbx,dc=com: {AccountNumber: "3593", CallerIDName: "chrou", email: "chrou@grandstream.cn"}
+	    }]
+	 */
+	getLdap: function (){
+		if(!grpDialingApi.gsApi){
+			return
+		}
+
+		console.log('获取杭州分公司ldap 通讯录')
+		let getLdapCallback = function (event){
+			if(event.readyState === 4){
+				if(event.status === 200 && event.statusText === 'OK'){
+					let responseData
+					console.log('GET LDAP SUCCESS')
+					let ldapList = []
+					responseData = JSON.parse(event.response)
+					Object.keys(responseData).forEach(function (key){
+						let accountList = responseData[key]
+						if(accountList && accountList.length){   // 可能存在多个电话本
+							ldapList = ldapList.concat(accountList)
+						}
+					})
+
+					if(ldapList.length){
+						grpDialingApi.phoneBooks.ldap = ldapList
+						grpDialingApi.phoneBookDB.setItems([{
+							phoneBookName: 'ldap',
+							content: grpDialingApi.phoneBooks.ldap,
+							TS: (new Date()).getTime(),
+						}]);
+					}
+				}else {
+					console.log('GET LDAP FAILED, ', event.status)
+				}
+			}
+		}
+
+		grpDialingApi.gsApi.ldapSearch({
+			body: {
+				ldapParam: {
+					searchWord: data.searchWord || "",
+					searchKey: "email,CallerIDName",
+					returnKey: "email,AccountNumber,CallerIDName",
+					returnLimit: data.limit || 0
+				}
+			},
+			contentType: 'application/json',
+			onreturn: getLdapCallback,
+			onerror: function (event){
+				console.log('errorCallback', event)
+			}
+		})
+	},
+
+	getExtendedContacts: function (data = {}){
+		console.log('get extended contacts.')
+		if(!grpDialingApi.gsApi){
+			console.log('no login, can not authorized')
+			return
+		}
+
+		// 先获取当前数据，判断是否需要更新
+		grpDialingApi.phoneBookDB.getAllItems(function (storeInfos = []){
+			console.log('storeInfos:', storeInfos)
+			let isLocalPhoneBookNeedUpdated = true
+			let isLdapNeedUpdated = true
+			let dayTimeStamp = 1000 * 60 * 60 * 24 * 7;
+			let phoneBookName = 'localAddressBook_' + grpDialingApi.loginData.url.split('//')[1]
+
+			if(storeInfos.length){
+				console.log('wave extended contacts')
+				for(let  i = 0; i<storeInfos.length; i++){
+					let name = storeInfos[i].phoneBookName
+					grpDialingApi.phoneBooks[name] = storeInfos[i].content
+					let diffValue = new Date().getTime() - storeInfos[i].TS; //时间差
+					if(name === phoneBookName && diffValue <= dayTimeStamp){
+						isLocalPhoneBookNeedUpdated = false
+					}else if(name === 'ldap' && diffValue <= dayTimeStamp){
+						isLdapNeedUpdated = false
+					}
+				}
+			}
+
+			if(isLocalPhoneBookNeedUpdated){
+				grpDialingApi.getLocalPhoneBook()
+			}else {
+				console.log('no need update local phone book')
+			}
+
+			if(isLdapNeedUpdated){
+				// 数据库中没有数据，重新获取
+				// 1.获取杭州分公司ldap 通讯录
+				grpDialingApi.getLdap()
+			}else {
+				console.log('no need update ldap')
+			}
+		})
+	},
 }
 
 /*******************************************************************************************************************/
@@ -777,6 +936,9 @@ window.onload = function (){
 		console.info('load storage save data')
 		grpDialingApi.loginData = JSON.parse(XNewestData)
 	}
+
+	console.log('open db!!')
+	grpDialingApi.phoneBookDB?.openDB();
 
 	/**
 	 * change request header
