@@ -852,83 +852,10 @@ let company163MailAdaptation = {
 			}
 		}
 	},
+
 	/*****************************************************************************************************************/
 	/*******************************************************通讯录*****************************************************/
 	/*****************************************************************************************************************/
-	moduleAddCallButton: async function (module, tbody){
-		if(!tbody){
-			return
-		}
-
-		let trRows = tbody.rows
-		for(let i = 0; i<trRows.length; i++){
-			let colPhoneTr
-			let colPhone
-			let colEmail
-
-			if(module === 'OutlinkModule'){
-				colPhoneTr = trRows[i].getElementsByClassName('Corp-corpCnta-main-colPhone')[0]
-				let colJobTr = trRows[i].getElementsByClassName('Corp-corpCnta-main-colJob')[0]
-				/* start
-				 * ********************************************************************************************
-				 * TODO: 163 mail Content rendering misplaced when searching for contacts
-				 */
-				let phoneTrInnerText = colPhoneTr && colPhoneTr.children[0]?.innerText
-				let jobTrInnerText = colJobTr && colJobTr.children[0]?.innerText
-				if(phoneTrInnerText){
-					if(isNaN(phoneTrInnerText) && jobTrInnerText && !isNaN(jobTrInnerText)){
-						colPhoneTr = colJobTr
-					}
-				}else if(jobTrInnerText && !isNaN(jobTrInnerText)){
-					colPhoneTr = colJobTr
-				}
-				/*end********************************************************************************************/
-
-				colPhone = colPhoneTr?.innerText
-				if(!colPhone){
-					colEmail = trRows[i].getElementsByClassName('Corp-corpCnta-main-colEmail')[0]?.innerText
-					if(colEmail){
-						colPhone = await getNumberFromPhoneBook({
-							email: colEmail,
-							calleeName: trRows[i].getElementsByClassName('Corp-corpCnta-main-colName')[0]?.innerText
-						})
-						if(colPhone){
-							colPhoneTr.firstChild.innerText = colPhone
-						}
-					}
-				}
-			}else if(module === 'ContactModule'){
-				colPhoneTr = trRows[i].getElementsByClassName('nui-table-cell iB0')[0]
-				colPhone = colPhoneTr?.innerText
-				if(!colPhone){
-					colEmail = trRows[i].getElementsByClassName('nui-table-cell iA0')[0]?.innerText
-					if(colEmail){
-						colPhone = await getNumberFromPhoneBook({
-							email: colEmail,
-							calleeName: trRows[i].getElementsByClassName('nui-table-cell iV0')[0]?.innerText
-						})
-						if(colPhone){
-							colPhoneTr.firstChild.innerText = colPhone
-						}
-					}
-				}
-			}
-
-			if(colPhone && !trRows[i].getElementsByClassName('make-grp-call')[0]){  // 避免重复添加按钮
-				let newItem = document.createElement('span')
-				newItem.className = 'make-grp-call'
-				newItem.style = 'display: inline-block;float: right;width: 18px; height: 18px'
-				newItem.title = '点击拨号'
-				newItem.innerHTML = '<svg class="icon" style="width: 18px;height: 18px;vertical-align: middle;fill: #36c;overflow: hidden;" viewBox="0 0 1024 1024" p-id="1678"><path d="M732.6 683.6c2.2 0.9 50.8 21 90.5 49.3 14.9 10.8 40 28.8 44 54.3 2.6 17.6-3.9 36.8-20.2 58.9-3.9 5.8-40.3 55.1-109.9 68.3-19.1 3.6-39.2 4.3-60 1.9-21.7-2.5-44.4-8.1-67.3-17-90.1-33.1-164.2-83.9-240.4-164.3-130.9-138.4-158-272.9-162.1-298.5C186.3 319 275 254.3 285.1 247.4c14-9.9 26.6-15.9 38.9-18.2 3.4-0.7 7.1-1.1 11.2-1.1 2.1 0 4.2 0.1 6.2 0.3 11.1 1.2 27.4 6.9 41.2 26.9 19 27.1 39.3 67 56.1 109.9 17.6 44.3-5.6 62.1-28.1 79.4l-0.9 0.6s-40.4 26.7-47.6 31.4c-6.9 4.6-9.4 14-5.3 21.3 27.4 50.7 64.4 101.7 107 147.3 42 44.9 89.4 84.7 137.2 115.1 2.3 1.6 5.3 2.6 8.5 2.6 1 0 2-0.1 2.9-0.3l1.2-0.4c4.8-1.3 8.5-4.8 10.4-9.2 4.6-8.8 12.7-23.2 21.5-35.7 16.9-23.4 33.7-36.4 51.1-39.7 2.7-0.5 5.9-0.9 9.1-0.9 1.9 0 3.8 0.1 5.6 0.3 4.6 0.2 12.4 2.8 21.3 6.6z" p-id="1679"></path></svg>'
-				newItem.onclick = function (e){
-					e.stopPropagation()
-					company163MailAdaptation.mailMakeCall(colPhone)
-				}
-				colPhoneTr.appendChild(newItem)
-			}
-		}
-	},
-
 	moduleCallButtonCheck: function (module){
 		let setBodyObserveEvent = function (targetBody){
 			let trRows = targetBody.rows
@@ -974,6 +901,74 @@ let company163MailAdaptation = {
 	},
 
 	/**
+	 * 添加拨号按钮
+	 * @param module
+	 * @param tbody
+	 */
+	moduleAddCallButton: async function (module, tbody){
+		if(!tbody){
+			return
+		}
+
+		// TODO: 搜索通讯录联系人时，163界面字段渲染存在bug，会错位。所以使用table的th分辨td内容
+		let tableHeadMapping = {colName: '', colEmail: '', colPhone: '', colJob: '', colGroup: ''}
+		let thead = tbody.parentNode.getElementsByTagName('thead')[0]?.children[0]
+		if(thead){
+			for(let i = 0; i<thead.childNodes.length; i++){
+				let className = thead.childNodes[i].className
+				if(module === 'ContactModule'){  // 注：企业通讯录和个人通讯录表头的class不同
+					let key = ''
+					if(className.indexOf('nui-table-cell iV0') >= 0){        // 姓名
+						key = 'colName'
+					}else if(className.indexOf('nui-table-cell iA0') >= 0){  // 邮箱
+						key = 'colEmail'
+					}else if(className.indexOf('nui-table-cell iB0') >= 0){  // 号码
+						key = 'colPhone'
+					}
+					if(key){
+						tableHeadMapping[key] = i
+					}
+				}else {
+					Object.keys(tableHeadMapping).forEach(function (key){
+						if(className && className.indexOf(key) >= 0){
+							tableHeadMapping[key] = i
+						}
+					})
+				}
+			}
+		}
+
+		let trRows = tbody.rows
+		let mapping = tableHeadMapping
+		for(let i = 0; i<trRows.length; i++){
+			let tr = trRows[i]
+			let colName = tr.childNodes[mapping.colName]?.innerText
+			let colPhone = tr.childNodes[mapping.colPhone]?.innerText
+			let colEmail = tr.childNodes[mapping.colEmail]?.innerText
+			let hasCallBtn = tr.getElementsByClassName('make-grp-call')[0]
+			if(!colPhone && colEmail){
+				colPhone = await getNumberFromPhoneBook({email: colEmail, calleeName: colName})
+				if(colPhone){
+					tr.childNodes[mapping.colPhone].innerText = colPhone
+				}
+			}
+
+			if(colPhone && !hasCallBtn){  // 避免重复添加按钮
+				let newItem = document.createElement('span')
+				newItem.className = 'make-grp-call'
+				newItem.style = 'display: inline-block;float: right;width: 18px; height: 18px'
+				newItem.title = '点击拨号'
+				newItem.innerHTML = '<svg class="icon" style="width: 18px;height: 18px;vertical-align: middle;fill: #36c;overflow: hidden;" viewBox="0 0 1024 1024" p-id="1678"><path d="M732.6 683.6c2.2 0.9 50.8 21 90.5 49.3 14.9 10.8 40 28.8 44 54.3 2.6 17.6-3.9 36.8-20.2 58.9-3.9 5.8-40.3 55.1-109.9 68.3-19.1 3.6-39.2 4.3-60 1.9-21.7-2.5-44.4-8.1-67.3-17-90.1-33.1-164.2-83.9-240.4-164.3-130.9-138.4-158-272.9-162.1-298.5C186.3 319 275 254.3 285.1 247.4c14-9.9 26.6-15.9 38.9-18.2 3.4-0.7 7.1-1.1 11.2-1.1 2.1 0 4.2 0.1 6.2 0.3 11.1 1.2 27.4 6.9 41.2 26.9 19 27.1 39.3 67 56.1 109.9 17.6 44.3-5.6 62.1-28.1 79.4l-0.9 0.6s-40.4 26.7-47.6 31.4c-6.9 4.6-9.4 14-5.3 21.3 27.4 50.7 64.4 101.7 107 147.3 42 44.9 89.4 84.7 137.2 115.1 2.3 1.6 5.3 2.6 8.5 2.6 1 0 2-0.1 2.9-0.3l1.2-0.4c4.8-1.3 8.5-4.8 10.4-9.2 4.6-8.8 12.7-23.2 21.5-35.7 16.9-23.4 33.7-36.4 51.1-39.7 2.7-0.5 5.9-0.9 9.1-0.9 1.9 0 3.8 0.1 5.6 0.3 4.6 0.2 12.4 2.8 21.3 6.6z" p-id="1679"></path></svg>'
+				newItem.onclick = function (e){
+					e.stopPropagation()
+					company163MailAdaptation.mailMakeCall(colPhone)
+				}
+				tr.childNodes[mapping.colPhone].appendChild(newItem)
+			}
+		}
+	},
+
+	/**
 	 * 查找当前可见nui-table-body元素
 	 * @param module
 	 * @returns {null}
@@ -1014,40 +1009,50 @@ let company163MailAdaptation = {
 		return accountBody
 	},
 
-	/**
-	 * 个人通讯录页面插入呼叫按钮
-	 * @param tbody
-	 */
-	contactModuleAddCallButton: function (tbody){
-		let trRows = tbody.rows
-		if(trRows.length){
-			for(let i = 0; i<trRows.length; i++){
-				let colPhoneTr = trRows[i].getElementsByClassName('nui-table-cell iB0')[0]
-				let colPhone = colPhoneTr?.innerText
-				if(!colPhone){
-					let colEmail = trRows[i].getElementsByClassName('nui-table-cell iA0')[0]?.innerText
-					if(colEmail){
-						colPhone = getNumberFromPhoneBook({
-							email: colEmail,
-							calleeName: trRows[i].getElementsByClassName('nui-table-cell iV0')[0]?.innerText
-						})
-						if(colPhone){
-							colPhoneTr.firstChild.innerText = colPhone
-						}
-					}
-				}
 
-				if(colPhone && !trRows[i].getElementsByClassName('make-grp-call')[0]){ // 避免重复添加按钮
-					let newItem = document.createElement('span')
-					newItem.className = 'make-grp-call'
-					newItem.style = 'display: inline-block;float: right;'
-					newItem.title = '点击拨号'
-					newItem.innerHTML = '<svg class="icon" style="width: 18px;height: 18px;vertical-align: middle;fill: #36c;overflow: hidden;" viewBox="0 0 1024 1024" p-id="1678"><path d="M732.6 683.6c2.2 0.9 50.8 21 90.5 49.3 14.9 10.8 40 28.8 44 54.3 2.6 17.6-3.9 36.8-20.2 58.9-3.9 5.8-40.3 55.1-109.9 68.3-19.1 3.6-39.2 4.3-60 1.9-21.7-2.5-44.4-8.1-67.3-17-90.1-33.1-164.2-83.9-240.4-164.3-130.9-138.4-158-272.9-162.1-298.5C186.3 319 275 254.3 285.1 247.4c14-9.9 26.6-15.9 38.9-18.2 3.4-0.7 7.1-1.1 11.2-1.1 2.1 0 4.2 0.1 6.2 0.3 11.1 1.2 27.4 6.9 41.2 26.9 19 27.1 39.3 67 56.1 109.9 17.6 44.3-5.6 62.1-28.1 79.4l-0.9 0.6s-40.4 26.7-47.6 31.4c-6.9 4.6-9.4 14-5.3 21.3 27.4 50.7 64.4 101.7 107 147.3 42 44.9 89.4 84.7 137.2 115.1 2.3 1.6 5.3 2.6 8.5 2.6 1 0 2-0.1 2.9-0.3l1.2-0.4c4.8-1.3 8.5-4.8 10.4-9.2 4.6-8.8 12.7-23.2 21.5-35.7 16.9-23.4 33.7-36.4 51.1-39.7 2.7-0.5 5.9-0.9 9.1-0.9 1.9 0 3.8 0.1 5.6 0.3 4.6 0.2 12.4 2.8 21.3 6.6z" p-id="1679"></path></svg>'
-					newItem.onclick = function (e){
-						e.stopPropagation()
-						company163MailAdaptation.mailMakeCall(colPhone)
-					}
-					colPhoneTr.appendChild(newItem)
+	/**
+	 * 监听个人通讯录界面的搜索事件
+	 */
+	moduleSearchInputListen: function (){
+		// TODO: 个人通讯录搜索时，由于table是重新创建的，所以无法监听到（企业通讯录未重新创建table，搜索时只是替换了tbody内容）
+		let mainContheads = null
+		if(window.location.href.indexOf('module=outlink.OutlinkModule') >= 0){
+			mainContheads = document.getElementsByClassName('Corp-corpCnta-hd')
+		}else if(window.location.href.indexOf('module=contact.ContactModule') >= 0){
+			mainContheads = document.getElementsByClassName('frame-main-cont-head')
+		}
+		if(!mainContheads){
+			return
+		}
+
+		let timer = null
+		let tbodyUpdate = function (){
+			if(timer){
+				clearTimeout(timer)
+				timer = null
+			}
+
+			timer = setTimeout(function (){
+				let tbody = company163MailAdaptation.getAccountListTbody('ContactModule')
+				if(tbody){
+					company163MailAdaptation.moduleAddCallButton('ContactModule', tbody)
+				}
+			}, 1000)
+		}
+
+		if(mainContheads){
+			for(let j = 0; j<mainContheads.length; j++){
+				if(mainContheads[j].offsetParent){
+					let searchInput = mainContheads[j].getElementsByTagName('input')[0]
+					searchInput.oninput = tbodyUpdate
+					document.onkeyup = function(e) {
+						// Compatible with FF, IE and Opera
+						let event = e || window.event;
+						let key = event.which || event.keyCode || event.charCode;
+						if (key === 8 || key === 13) {
+							tbodyUpdate()
+						}
+					};
 				}
 			}
 		}
@@ -1057,7 +1062,7 @@ let company163MailAdaptation = {
 	 * 个人通讯录界面 所有联系人//未分组联系人
 	 */
 	selectedDomObserve: function (){
-		window.onclick = function (){
+		window.onclick = function (event){
 			let selectedDom = document.getElementsByClassName('js-component-component nui-tree-item-label nui-tree-item-label-selected')[0]
 			let innerText = selectedDom?.innerText
 			if(innerText){
@@ -1065,9 +1070,13 @@ let company163MailAdaptation = {
 					|| innerText.indexOf('所有联系人') >= 0 || innerText.indexOf('All contacts') >= 0){
 					let tbody = company163MailAdaptation.getAccountListTbody('ContactModule')
 					if(tbody){
-						company163MailAdaptation.contactModuleAddCallButton(tbody)
+						company163MailAdaptation.moduleAddCallButton('ContactModule', tbody)
 					}
 				}
+			}
+
+			if(event.target.id && event.target.id.indexOf('searchInput') >= 0){
+				company163MailAdaptation.moduleSearchInputListen()
 			}
 		}
 	},
