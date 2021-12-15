@@ -647,6 +647,7 @@ let slackAppExpand = {
 						}
 
 						let node = document.createElement("div")
+						let focus = false
 						newChild.onmouseover = function (event){
 							// Todo: mouseover和mouseenter 冒泡处理（https://cxymm.net/article/cffh_/120227409）
 							let target = event.relatedTarget
@@ -657,7 +658,12 @@ let slackAppExpand = {
 								target = target.parentNode
 							}
 
+							focus = true
 							setTimeout(function (){
+								if(!focus){
+									// TODO：tip设置存在延时，超时时间内触发onmouseout，添加的提示会一直显示
+									return
+								}
 								// 设置鼠标悬浮时tip提示样式
 								node.id = 'callOfficePhoneTip'
 								node.className = 'ReactModalPortal'
@@ -667,18 +673,18 @@ let slackAppExpand = {
 									top: newChildPos.top - newChildPos.height - 19
 								}
 								node.innerHTML = `
-							<div class="ReactModal__Overlay ReactModal__Overlay--after-open c-popover c-popover--no-pointer c-popover--z_above_fs c-popover--fade"
-						         style="animation-duration: 80ms;">
-						        <div class="ReactModal__Content ReactModal__Content--after-open popover c-popover__content" aria-hidden="true"
-						             style="position: absolute; left: `+ tipPosition.left +`px; top:`+ tipPosition.top +`px;outline: none; transition-duration: 80ms;">
-						            <div role="presentation">
-						                <div id="sk-tooltip-16" role="tooltip" class="c-tooltip__tip c-tooltip__tip--top c-tooltip__tip--small"
-						                     data-qa="tooltip-tip" data-sk="tooltip">Call office phone
-						                    <div class="c-tooltip__tip__arrow" style="left: 61.3438px; right: initial;"></div>
-						                </div>
-						            </div>
-						        </div>
-						    </div>`
+								<div class="ReactModal__Overlay ReactModal__Overlay--after-open c-popover c-popover--no-pointer c-popover--z_above_fs c-popover--fade"
+							         style="animation-duration: 80ms;">
+							        <div class="ReactModal__Content ReactModal__Content--after-open popover c-popover__content" aria-hidden="true"
+							             style="position: absolute; left: `+ tipPosition.left +`px; top:`+ tipPosition.top +`px;outline: none; transition-duration: 80ms;">
+							            <div role="presentation">
+							                <div id="sk-tooltip-16" role="tooltip" class="c-tooltip__tip c-tooltip__tip--top c-tooltip__tip--small"
+							                     data-qa="tooltip-tip" data-sk="tooltip">Call office phone
+							                    <div class="c-tooltip__tip__arrow" style="left: 61.3438px; right: initial;"></div>
+							                </div>
+							            </div>
+							        </div>
+							    </div>`
 								document.body.classList.add('ReactModal__Body--open')
 								document.body.appendChild(node)
 							}, 500)
@@ -691,6 +697,7 @@ let slackAppExpand = {
 								}
 								target = target.parentNode
 							}
+							focus = false
 							node.parentNode?.removeChild(node)
 							document.body.classList.remove('ReactModal__Body--open')
 						}
