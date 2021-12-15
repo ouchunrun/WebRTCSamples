@@ -21,7 +21,7 @@
   [
     {
       "matches": [
-        "https://im.dingtalk.coms/*",
+        "https://im.dingtalk.com/*",
         "https://app.slack.com/*",
         "*://mail.qiye.163.com/*",
         "*://mail.grandstream.cn/*"
