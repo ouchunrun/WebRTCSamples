@@ -1,6 +1,6 @@
 {
   "name": "GRP Cross-platform Dialing",
-  "version": "2.0.7",
+  "version": "1.0.0.9",
   "description": "GRP cross-platform office account Dialing and DingTalk webpage auto full screen",
   "browser_action":
   {
@@ -24,7 +24,8 @@
         "https://im.dingtalk.com/*",
         "https://app.slack.com/*",
         "*://mail.qiye.163.com/*",
-        "*://mail.grandstream.cn/*"
+        "*://mail.grandstream.cn/*",
+        "*://outlook.live.com/*"
       ],
       "js": [
         "contentScripts/injectScript.js",

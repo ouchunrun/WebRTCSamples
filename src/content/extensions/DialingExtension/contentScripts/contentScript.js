@@ -1103,6 +1103,198 @@ let company163MailAdaptation = {
 	}
 }
 
+
+/*******************************************************************************************************************/
+/********************************************** web outlook adaptation *********************************************/
+/*******************************************************************************************************************/
+
+let outlookAdaptation = {
+	outlookLocationMatch: function (){
+		if(window.location.pathname.indexOf('/mail') >= 0){  // 邮件页面
+
+		}else if(window.location.pathname.indexOf('/people') >= 0){  // 联系人详情页面
+			outlookAdaptation.checkContacts()
+		}
+	},
+
+	setMutationObserver: function (node, callback){
+		let options = {'childList': true}
+		const observer = new MutationObserver(function (mutationsList){
+			mutationsList.forEach(function(mutation) {
+				switch (mutation.type){
+					case 'childList':
+						if(mutation.addedNodes && mutation.addedNodes.length){
+							console.log('[EXT] mutation addedNodes')
+							if(callback){
+								callback(mutation.addedNodes)
+							}
+							observer.disconnect()
+						}
+						break
+					default:
+						break
+				}
+			});
+		})
+		observer.observe(node, options);
+	},
+
+	/**
+	 * 联系人列表
+	 */
+	checkContacts: function (){
+		let isDOMReady = function (){
+			let detailsViewDiv = document.getElementsByClassName('H5CnmZDt__6UM-OVgdVl-')[0]
+			let contactInforArea = document.getElementById('a5nS-')
+			if(!detailsViewDiv || !contactInforArea){
+				let DOMReadyInterval = setInterval(function (){
+					detailsViewDiv = document.getElementsByClassName('H5CnmZDt__6UM-OVgdVl-')[0]
+					contactInforArea = document.getElementById('a5nS-')
+					if(detailsViewDiv && contactInforArea){
+						clearInterval(DOMReadyInterval)
+						outlookAdaptation.contactsCallButtonCheck(false)
+					}
+				}, 1000)
+			}else {
+				outlookAdaptation.contactsCallButtonCheck(false)
+			}
+		}
+
+		let setOnclickEvent = function (container){
+			for(let i = 0; i<container.childNodes.length; i++){
+				container.childNodes[i].onclick = function (){
+					setTimeout(function (){
+						outlookAdaptation.contactsCallButtonCheck(true)
+					}, 1000)
+				}
+			}
+		}
+
+		let scrollContainer = document.getElementsByClassName('ReactVirtualized__Grid__innerScrollContainer')[0]
+		if(!scrollContainer){
+			let containerInterval = setInterval(function (){
+				scrollContainer = document.getElementsByClassName('ReactVirtualized__Grid__innerScrollContainer')[0]
+				if(scrollContainer){
+					clearInterval(containerInterval)
+					containerInterval = null
+
+					if(scrollContainer.childNodes.length){
+						isDOMReady()
+						setOnclickEvent(scrollContainer)  // 添加onclick监听
+					}
+				}
+			}, 1000)
+		}else {
+			if(scrollContainer.childNodes.length){
+				isDOMReady()
+				setOnclickEvent(scrollContainer)  // 添加onclick监听
+			}
+		}
+	},
+
+	/**
+	 * 检查呼叫按钮
+	 */
+	contactsCallButtonCheck: function (isClick){
+		let target = document.getElementById('a5nS-')
+		let contactSection = target?.getElementsByClassName('_3jaET')[0]
+		if(!contactSection){
+			return
+		}
+
+		let addCallButton = function (phone){
+			let parentNode = document.getElementsByClassName('_3z4ph')[0]
+			let callbutton = parentNode.getElementsByClassName('make-grp-call')[0]
+			if(!callbutton){
+				callbutton = document.createElement('button')
+				if(parentNode.childNodes.length){
+					callbutton.className = parentNode.childNodes[0].className
+				}
+				callbutton.classList.add('make-grp-call')
+				// <i data-icon-name="Edit" aria-hidden="true"  style="font-family: 'controlIcons';  font-size: 16px;  margin: 0px 6px;  color: var(--themePrimary);  font-style: normal;"></i>
+				callbutton.innerHTML = `<span style="display: flex;  height: 100%;  flex-wrap: nowrap;  justify-content: flex-start;  align-items: center;">
+					<svg class="icon" style="width: 18px;height: 18px;fill: #69afe5;margin: 0 2px;" viewBox="0 0 1024 1024" p-id="1678"><path d="M732.6 683.6c2.2 0.9 50.8 21 90.5 49.3 14.9 10.8 40 28.8 44 54.3 2.6 17.6-3.9 36.8-20.2 58.9-3.9 5.8-40.3 55.1-109.9 68.3-19.1 3.6-39.2 4.3-60 1.9-21.7-2.5-44.4-8.1-67.3-17-90.1-33.1-164.2-83.9-240.4-164.3-130.9-138.4-158-272.9-162.1-298.5C186.3 319 275 254.3 285.1 247.4c14-9.9 26.6-15.9 38.9-18.2 3.4-0.7 7.1-1.1 11.2-1.1 2.1 0 4.2 0.1 6.2 0.3 11.1 1.2 27.4 6.9 41.2 26.9 19 27.1 39.3 67 56.1 109.9 17.6 44.3-5.6 62.1-28.1 79.4l-0.9 0.6s-40.4 26.7-47.6 31.4c-6.9 4.6-9.4 14-5.3 21.3 27.4 50.7 64.4 101.7 107 147.3 42 44.9 89.4 84.7 137.2 115.1 2.3 1.6 5.3 2.6 8.5 2.6 1 0 2-0.1 2.9-0.3l1.2-0.4c4.8-1.3 8.5-4.8 10.4-9.2 4.6-8.8 12.7-23.2 21.5-35.7 16.9-23.4 33.7-36.4 51.1-39.7 2.7-0.5 5.9-0.9 9.1-0.9 1.9 0 3.8 0.1 5.6 0.3 4.6 0.2 12.4 2.8 21.3 6.6z" p-id="1679"></path></svg>
+		            <span class="ms-Button-textContainer-409 textContainer-411">
+		                <span class="ms-Button-label-405 label-413" id="id__199">呼叫办公账号</span>
+		            </span>
+		        </span>`
+				parentNode.appendChild(callbutton)
+			}
+
+			callbutton.title = '拨打联系人号码 ' + phone
+			callbutton.onclick = function (e){
+				e.stopPropagation()
+				outlookAdaptation.outlookMakeCall(phone)
+			}
+		}
+
+		let buttonCheck = async function (){
+			if(contactSection && contactSection.childNodes.length){
+				let contactInfo = {
+					email: null,
+					officeNumber: null,
+					mobilePhone: null
+				}
+
+				for(let i = 0; i<contactSection.childNodes.length; i++){
+					let containerDiv = contactSection.childNodes[i]
+					for(let j = 0; j<containerDiv.childNodes.length; j++){
+						let childDom = containerDiv.childNodes[j]
+						let button = childDom?.getElementsByTagName('button')[0]
+						if(button){
+							let title = button.getElementsByTagName('h4')[0]
+							let span = button.getElementsByTagName('span')[0]
+							switch (title.innerText){
+								case '电子邮件':
+									contactInfo.email = span.innerText
+									break
+								case '工作电话':
+									contactInfo.officeNumber = span.innerText
+									break
+								case '移动电话':
+									contactInfo.mobilePhone = span.innerText
+									break
+								default:
+									break
+							}
+						}
+					}
+				}
+
+				if(!contactInfo.officeNumber && contactInfo.email){
+					let name = document.getElementsByClassName('_3amnw')[0]?.innerText
+					let phoneNumber = await getNumberFromPhoneBook({email: contactInfo.email, calleeName: name})
+					console.log('get phoneNumber:', phoneNumber)
+					contactInfo.officeNumber = phoneNumber
+				}
+
+				if(contactInfo.officeNumber){
+					addCallButton(contactInfo.officeNumber)
+				}
+			}
+		}
+
+		buttonCheck()
+		if(!isClick){
+			outlookAdaptation.setMutationObserver(contactSection, buttonCheck)
+		}
+	},
+
+	outlookMakeCall: function (phoneNumber){
+		if(!phoneNumber){
+			console.log('[EXT] not found available phone number')
+			return
+		}
+		console.log('[EXT] make call with phone number:', phoneNumber)
+		sendMessageToBackgroundJS({
+			cmd: 'contentScriptMakeCall',
+			data: {
+				phonenumber: phoneNumber,
+			}
+		})
+	}
+}
+
 /*******************************************************************************************************************/
 /******************************************* 查找通讯录联系人 *********************************************************/
 /*******************************************************************************************************************/
@@ -1191,6 +1383,10 @@ window.onload = function (){
 		urlMatch = true
 		company163MailAdaptation.mailLocationMatch()
 		window.onhashchange = company163MailAdaptation.mailLocationMatch
+	}else if(window.location.href.indexOf('outlook.live.com') >= 0){   // Web Outlook
+		urlMatch = true
+		outlookAdaptation.outlookLocationMatch()
+		window.onhashchange = outlookAdaptation.outlookLocationMatch
 	}
 
 	if(urlMatch){
