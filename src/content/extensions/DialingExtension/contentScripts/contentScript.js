@@ -1192,6 +1192,52 @@ let outlookAdaptation = {
 		}
 	},
 
+	getContactPhoneNumber: async function (contactSection){
+		if(!contactSection){
+			return
+		}
+		let contactInfo = {
+			email: null,
+			officeNumber: null,
+			mobilePhone: null
+		}
+
+		for(let i = 0; i<contactSection.childNodes.length; i++){
+			let containerDiv = contactSection.childNodes[i]
+			for(let j = 0; j<containerDiv.childNodes.length; j++){
+				let childDom = containerDiv.childNodes[j]
+				let button = childDom?.getElementsByTagName('button')[0]
+				if(button){
+					let title = button.getElementsByTagName('h4')[0]
+					let span = button.getElementsByTagName('span')[0]
+					switch (title.innerText){
+						case '电子邮件':
+							contactInfo.email = span.innerText
+							break
+						case '工作电话':
+							contactInfo.officeNumber = span.innerText
+							break
+						case '移动电话':
+							contactInfo.mobilePhone = span.innerText
+							break
+						default:
+							break
+					}
+				}
+			}
+		}
+
+		if(!contactInfo.officeNumber && contactInfo.email){
+			let name = document.getElementsByClassName('_3amnw')[0]?.innerText
+			let phoneNumber = await getNumberFromPhoneBook({email: contactInfo.email, calleeName: name})
+			console.log('get phoneNumber:', phoneNumber)
+			contactInfo.officeNumber = phoneNumber
+		}
+
+		console.log(contactInfo)
+		return contactInfo.officeNumber
+	},
+
 	/**
 	 * 检查呼叫按钮
 	 */
@@ -1230,46 +1276,9 @@ let outlookAdaptation = {
 
 		let buttonCheck = async function (){
 			if(contactSection && contactSection.childNodes.length){
-				let contactInfo = {
-					email: null,
-					officeNumber: null,
-					mobilePhone: null
-				}
-
-				for(let i = 0; i<contactSection.childNodes.length; i++){
-					let containerDiv = contactSection.childNodes[i]
-					for(let j = 0; j<containerDiv.childNodes.length; j++){
-						let childDom = containerDiv.childNodes[j]
-						let button = childDom?.getElementsByTagName('button')[0]
-						if(button){
-							let title = button.getElementsByTagName('h4')[0]
-							let span = button.getElementsByTagName('span')[0]
-							switch (title.innerText){
-								case '电子邮件':
-									contactInfo.email = span.innerText
-									break
-								case '工作电话':
-									contactInfo.officeNumber = span.innerText
-									break
-								case '移动电话':
-									contactInfo.mobilePhone = span.innerText
-									break
-								default:
-									break
-							}
-						}
-					}
-				}
-
-				if(!contactInfo.officeNumber && contactInfo.email){
-					let name = document.getElementsByClassName('_3amnw')[0]?.innerText
-					let phoneNumber = await getNumberFromPhoneBook({email: contactInfo.email, calleeName: name})
-					console.log('get phoneNumber:', phoneNumber)
-					contactInfo.officeNumber = phoneNumber
-				}
-
-				if(contactInfo.officeNumber){
-					addCallButton(contactInfo.officeNumber)
+				let phoneNumber = await outlookAdaptation.getContactPhoneNumber(contactSection)
+				if(phoneNumber){
+					addCallButton(phoneNumber)
 				}
 			}
 		}
