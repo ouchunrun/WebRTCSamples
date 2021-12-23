@@ -1110,11 +1110,26 @@ let company163MailAdaptation = {
 
 let outlookAdaptation = {
 	outlookLocationMatch: function (){
-		if(window.location.pathname.indexOf('/mail') >= 0){  // 邮件页面
-
-		}else if(window.location.pathname.indexOf('/people') >= 0){  // 联系人详情页面
+		let locationPathname = window.location.pathname
+		if(locationPathname.indexOf('/mail') >= 0){  // 邮件页面
+			if(locationPathname.indexOf('/sentitems') >= 0){
+				// 已发送邮件
+				outlookAdaptation.dealWithSentItemsPage()
+			}else {
+				// 默认收件箱
+				outlookAdaptation.dealWithSentItemsPage()
+			}
+		}else if(locationPathname.indexOf('/people') >= 0){  // 联系人详情页面
 			outlookAdaptation.checkContacts()
 		}
+	},
+
+	dealWithSentItemsPage: function (){
+
+	},
+
+	dealWithInBoxPage: function (){
+
 	},
 
 	setMutationObserver: function (node, callback){
@@ -1257,9 +1272,8 @@ let outlookAdaptation = {
 					callbutton.className = parentNode.childNodes[0].className
 				}
 				callbutton.classList.add('make-grp-call')
-				// <i data-icon-name="Edit" aria-hidden="true"  style="font-family: 'controlIcons';  font-size: 16px;  margin: 0px 6px;  color: var(--themePrimary);  font-style: normal;"></i>
 				callbutton.innerHTML = `<span style="display: flex;  height: 100%;  flex-wrap: nowrap;  justify-content: flex-start;  align-items: center;">
-					<svg class="icon" style="width: 18px;height: 18px;fill: #69afe5;margin: 0 2px;" viewBox="0 0 1024 1024" p-id="1678"><path d="M732.6 683.6c2.2 0.9 50.8 21 90.5 49.3 14.9 10.8 40 28.8 44 54.3 2.6 17.6-3.9 36.8-20.2 58.9-3.9 5.8-40.3 55.1-109.9 68.3-19.1 3.6-39.2 4.3-60 1.9-21.7-2.5-44.4-8.1-67.3-17-90.1-33.1-164.2-83.9-240.4-164.3-130.9-138.4-158-272.9-162.1-298.5C186.3 319 275 254.3 285.1 247.4c14-9.9 26.6-15.9 38.9-18.2 3.4-0.7 7.1-1.1 11.2-1.1 2.1 0 4.2 0.1 6.2 0.3 11.1 1.2 27.4 6.9 41.2 26.9 19 27.1 39.3 67 56.1 109.9 17.6 44.3-5.6 62.1-28.1 79.4l-0.9 0.6s-40.4 26.7-47.6 31.4c-6.9 4.6-9.4 14-5.3 21.3 27.4 50.7 64.4 101.7 107 147.3 42 44.9 89.4 84.7 137.2 115.1 2.3 1.6 5.3 2.6 8.5 2.6 1 0 2-0.1 2.9-0.3l1.2-0.4c4.8-1.3 8.5-4.8 10.4-9.2 4.6-8.8 12.7-23.2 21.5-35.7 16.9-23.4 33.7-36.4 51.1-39.7 2.7-0.5 5.9-0.9 9.1-0.9 1.9 0 3.8 0.1 5.6 0.3 4.6 0.2 12.4 2.8 21.3 6.6z" p-id="1679"></path></svg>
+					<i data-icon-name="Phone" aria-hidden="true" style="font-style: normal;font-weight: normal;speak: none;color: var(--themePrimary); font-family: controlIcons; vertical-align: middle; margin: 0 4px;font-size: 16px;"></i>
 		            <span class="ms-Button-textContainer-409 textContainer-411">
 		                <span class="ms-Button-label-405 label-413" id="id__199">呼叫办公账号</span>
 		            </span>
