@@ -740,11 +740,11 @@ let grpDialingApi = {
 				console.log('no need update local phone book')
 			}
 
-			// if(params.isLdapNeedUpdated){
+			if(params.isLdapNeedUpdated){
 				grpDialingApi.getLdap()
-			// }else {
-			// 	console.log('no need update ldap')
-			// }
+			}else {
+				console.log('no need update ldap')
+			}
 		}
 
 		// 先获取当前数据，判断是否需要更新
