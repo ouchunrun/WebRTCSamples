@@ -28,21 +28,19 @@ thead>tr{
     font-weight: bold;
 }
 #x-account{
-    width: 178px;
+    width: 208px;
     height: 30px;
     font-family: cursive;
 }
 #xConfigTable input{
     height: 25px;
-    width: 170px;
+    width: 200px;
     font-family: cursive;
 }
 button{
     color: #fff;
-    width: 178px;
+    width: 208px;
     height: 30px;
-    /*background-color: #008cee;*/
-    /*border: 1px solid #008cee;*/
     background-color: #38bb48;;
     border: 1px solid #38bb48;
     border-radius: 3px;
@@ -52,15 +50,14 @@ button:hover{
     opacity: 0.9;
 }
 #x-makeCall{
-    width: 60px;
+    width: 70px;
     margin-left: 5px;
 }
 .xLabelTip{
-    width: 80px;
+    width: 185px;
     display: inline-block;
     line-height: 25px;
-    margin-right: 20px;
-    text-align: right;
+    text-align: left;
 }
 #xMessageTip{
     color: red;
@@ -113,7 +110,7 @@ hr{
     width: 80px;
     display: inline-block;
     line-height: 30px;
-    text-align: right;
+    text-align: left;
     margin-right: 23px;
 }
 .lineState{
@@ -143,4 +140,13 @@ hr{
 }
 #linesTable button:hover{
     opacity: 0.9;
+}
+
+.required{
+    margin-left: 6px;
+    width: 6px;
+    height: 6px;
+    display: inline-block;
+    background-repeat: no-repeat;
+    background-position: center;
 }

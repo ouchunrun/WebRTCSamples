@@ -1466,7 +1466,6 @@ window.onmousedown = function (event){
 function sendMessageToBackgroundJS(message, callback){
 	if(chrome.runtime && chrome.runtime.sendMessage){
 		// todo: add lang info
-		message.latestLangInfo = localStorage.getItem('latest_lang_info')
 		message.requestType = 'contentMessage2Background'
 
 		chrome.runtime.sendMessage(message, function(response) {

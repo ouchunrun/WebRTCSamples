@@ -16,20 +16,33 @@
         <table id="xConfigTable">
             <tbody>
             <tr>
-                <td class="xLabelTip"><label>Address</label></td>
-                <td><input type="text" id="x-serverAddress" value=""></td>
+                <td class="xLabelTip"><label>Address<img class="required" src="requiredIcon.png" aria-hidden="true"></label></td>
+                <td><input type="text" id="x-serverAddress" value="" placeholder="Device ip"></td>
                 <td></td>
             </tr>
             <tr>
-                <td class="xLabelTip"><label>Username</label></td>
-                <td><input type="text" id="x-userName" value="" ></td>
+                <td class="xLabelTip"><label>Username<img class="required" src="requiredIcon.png" aria-hidden="true"></label></td>
+                <td><input type="text" id="x-userName" value="" placeholder="Device login account"></td>
                 <td></td>
             </tr>
             <tr>
-                <td class="xLabelTip"><label>Password</label></td>
-                <td><input type="text" id="x-password" value=""></td>
+                <td class="xLabelTip"><label>Password<img class="required" src="requiredIcon.png" aria-hidden="true"></label></td>
+                <td><input type="text" id="x-password" value="" placeholder="Device login password"></td>
                 <td></td>
             </tr>
+
+            <tr>
+                <td class="xLabelTip"><label>LDAP Email Attributes</label></td>
+                <td><input type="text" id="LDAPEmail" value="email" placeholder="邮箱属性" disabled/></td>
+                <td></td>
+            </tr>
+
+            <tr>
+                <td class="xLabelTip"><label>LDAP Name Attributes</label></td>
+                <td><input type="text" id="LDAPName" value="CallerIDName" placeholder="名字属性" disabled /></td>
+                <td></td>
+            </tr>
+
             <tr>
                 <td></td>
                 <td><button id="submitConfig"></button></td>

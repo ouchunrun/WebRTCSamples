@@ -48,11 +48,10 @@ function getSelectOptions(){
  * 设置popup界面值
  */
 function setPopupContent(){
-	let langInfo = grpClick2Talk.latestLangInfo
 	let configTips = {
-		popTitle: langInfo === 'en_US' ? 'Click to Dial' : '点击拨打',
-		loginBtnText: langInfo === 'en_US' ? 'Login/Save' : '登录/保存',
-		callBtnText: langInfo === 'en_US' ? 'Call' : '呼叫',
+		popTitle: '点击拨打',
+		loginBtnText: '登录/保存',
+		callBtnText: '呼叫',
 		// login status
 		username: grpClick2Talk.loginData?.username || '',
 		loginTitle: grpClick2Talk.isLogin ? '已登录' : '未登录',
@@ -122,13 +121,23 @@ function updateLoginInformation(){
 	if(pwd.trim){
 		pwd = pwd.trim()
 	}
+	let emailAttributes = document.getElementById('LDAPEmail').value
+	let nameAttributes = document.getElementById('LDAPName').value
+	if(emailAttributes.trim){
+		emailAttributes = emailAttributes.trim()
+	}
+	if(nameAttributes.trim){
+		nameAttributes = nameAttributes.trim()
+	}
 
 	popupSendMessage2Background({
 		cmd: 'popupUpdateLoginInfo',
 		data: {
 			url: server,
 			username: username,
-			password: pwd
+			password: pwd,
+			emailAttributes: emailAttributes,
+			nameAttributes: nameAttributes
 		}
 	})
 }

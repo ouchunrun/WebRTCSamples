@@ -9,10 +9,12 @@ let grpDialingApi = {
 		accountLists: [],
 		password: "",
 		url: "",
-		username: ""
+		username: "",
+		// ldapConfig
+		emailAttributes: 'email',
+		nameAttributes: 'CallerIDName'
 	},
 	sid: '',
-	latestLangInfo: '',
 	call401Authentication: false,
 	getLineStatusInterval: null,
 	getPhoneStatusInterval: null,
@@ -647,7 +649,7 @@ let grpDialingApi = {
 			ou=hz,dc=pbx,dc=com: {AccountNumber: "3593", CallerIDName: "chrou", email: "chrou@grandstream.cn"}
 	    }]
 	 */
-	getLdap: function (){
+	getLdap: function (requestData){
 		if(!grpDialingApi.gsApi || !grpDialingApi.isLogin){
 			return
 		}
@@ -690,13 +692,26 @@ let grpDialingApi = {
 			}
 		}
 
+		let keys = ['emailAttributes', 'nameAttributes']
+		let returnKey = ''
+		Object.keys(grpDialingApi.loginData).forEach(function (key){
+			if(keys.includes(key)){
+				if(!returnKey){
+					returnKey = grpDialingApi.loginData[key]
+				}else {
+					returnKey = returnKey + ',' + grpDialingApi.loginData[key]
+				}
+			}
+		})
+		console.log('returnKey：', returnKey)
+
 		grpDialingApi.gsApi.ldapSearch({
 			body: {
 				ldapParam: {
-					searchWord: data.searchWord || "",
-					searchKey: "email,CallerIDName",
-					returnKey: "email,AccountNumber,CallerIDName",
-					returnLimit: data.limit || 0
+					searchWord: requestData?.searchWord || "",
+					searchKey: requestData?.searchKey || "",
+					returnKey: returnKey || "email,AccountNumber,CallerIDName",
+					returnLimit: requestData?.limit || 0
 				}
 			},
 			contentType: 'application/json',
@@ -725,11 +740,11 @@ let grpDialingApi = {
 				console.log('no need update local phone book')
 			}
 
-			if(params.isLdapNeedUpdated){
+			// if(params.isLdapNeedUpdated){
 				grpDialingApi.getLdap()
-			}else {
-				console.log('no need update ldap')
-			}
+			// }else {
+			// 	console.log('no need update ldap')
+			// }
 		}
 
 		// 先获取当前数据，判断是否需要更新

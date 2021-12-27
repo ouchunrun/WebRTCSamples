@@ -1,3 +1,7 @@
+# 2021-12-27
+
+- 1.popup页面添加LDAP Email Attributes和LDAP Name Attributes配置
+
 # 2021-12-22
 
 - 1.outlook 联系人详情页面添加拨号按键
