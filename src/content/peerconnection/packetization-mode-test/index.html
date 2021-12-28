@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <base target="_blank">
+    <title>packetization mode </title>
+    <link rel="icon" href="#"/>
+
+    <link href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="css/main.css"/>
+    <link rel="stylesheet" href="css/index.css"/>
+    <style>
+        .video span{
+            color: cyan;
+            position: absolute;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.48);
+            z-index: 999;
+        }
+        .video{
+            width: 50%;
+            float: left;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="container">
+    <h1><span>WebRTC packetization mode sample </span></h1>
+
+    <p>This sample is used to test the set of packetization-mode in different media lines</p>
+
+    <div class="video">
+        <span>local video</span>
+        <video id="localVideo" playsinline autoplay muted controls></video>
+    </div>
+
+    <div class="video">
+        <span>remote video</span>
+        <video id="remoteVideo" playsinline autoplay controls></video>
+    </div>
+
+    <div class="box">
+<!--        <button onclick="start(false)">Start (without packetization-mode set)</button>-->
+        <button onclick="start(true)">Start (with packetization-mode=0 set)</button>
+        <button id="videoOff" onclick="videoOff()" disabled>Remote Video Off</button>
+    </div>
+
+    <hr>
+    <p>Step1: click <b>Start (with packetization-mode=0 set)</b> button</p>
+    <p>Step2: click <b>Remote Video Off</b> button</p>
+    <p>View the console to see logging. </p>
+</div>
+
+<script src="js/sdp_tools.js"></script>
+<script src="js/sdp.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

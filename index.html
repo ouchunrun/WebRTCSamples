@@ -16,33 +16,41 @@
     </section>
 
     <section>
-        <h2 id="getusermedia"><a href="https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia">getUserMedia()</a></h2>
+        <h2 id="gum">getUserMedia</h2>
         <ul>
-            <li>Basic getUserMedia demo</li>
+            <li><a href="src/content/getusermedia/resolution/WebRTC-Camera-Resolution/">WebRTC Camera Resolution Scan</a></li>
+            <li><a href="src/content/getusermedia/gum/facingMode/">Mobile facingMode test</a></li>
+        </ul>
+
+        <h2>enumerateDevices</h2>
+        <ul>
+            <li><a href="src/content/devices/mediaDevice/">enumerateDevices 获取设备列表</a></li>
+        </ul>
+
+        <h2>RTCPeerConnection</h2>
+        <ul>
+            <li><a href="src/content/peerconnection/answer-ice-restart/">测试answer ice restart时是否会触发offer ice restart</a></li>
+            <li><a href="src/content/peerconnection/packetization-mode-test/">packetization-mode=0时RE-IVNITE createOffer创建出错误的SDP</a></li>
+            <li><a href="src/content/peerconnection/webrtc-media-bundle/">media bundle</a></li>
+            <li><a href="src/content/peerconnection/externalDecode-enable-test/">Chrome 硬件编解码测试</a></li>
         </ul>
 
         <h2 id="bandwidth">Bandwidth:</h2>
         <ul>
-            <li><a href="src/content/bandwidth/chromePacketLoss/">Chrome浏览器x-google参数提高码率后丢包问题测试</a></li>
-            <li><a href="src/content/bandwidth/WebRTC-bandwidth-limit/">测试通过修改SDP来限制WebRTC的带宽</a></li>
-        </ul>
-
-        <h2 id="gum">GUM</h2>
-        <ul>
-            <li><a href="src/content/getusermedia/resolution/WebRTC-Camera-Resolution/">WebRTC Camera Resolution Scan</a></li>
-            <li><a href="src/content/getusermedia/gum/facingMode/">Mobile facingMode test</a></li>
+            <li><a href="src/content/bandwidth/chromePacketLoss/">Chrome 95版本x-google参数提高码率后视频存在明显丢包</a></li>
+            <li><a href="src/content/bandwidth/WebRTC-bandwidth-limit/">通过修改SDP来限制WebRTC的带宽</a></li>
         </ul>
 
         <h2 id="streamEffects">Stream Effects</a></h2>
         <ul>
             <li><a href="src/content/streamEffects/rnnoiseDetection/">VAD Noise 噪音检测</a></li>
             <li><a href="src/content/streamEffects/virtual-background/">Virtual Background</a></li>
-            <li><a href="src/content/streamEffects/noiseSuppressionTest/">noiseSuppression 降噪效果测试</a></li>
+            <li><a href="src/content/streamEffects/noiseSuppressionTest/">noiseSuppression 降噪参数效果测试</a></li>
+            <li><a href="src/content/streamEffects/volumeDetection/">audioContext 实时检测MIC音量</a></li>
         </ul>
 
         <h2 id="extensions"><a href="https://open.chrome.360.cn/extension_dev/tabs.html">Browser Extension</a></h2>
         <ul>
-
         </ul>
     </section>
 </div>

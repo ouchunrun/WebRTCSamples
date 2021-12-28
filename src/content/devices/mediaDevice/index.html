@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="src/jquery-3.1.1.min.js"></script>
+    <script src="src/debug.js"></script>
+    <script type="text/javascript" src="src/mediaDevice.js"></script>
+    <title>可用设备检查</title>
+    <style>
+        .btn button{
+            display: list-item;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="select">
+    <div class="col-sm">
+        <div class="input-group input-group-sm mb-3">
+            <div class="input-group-prepend">
+                <label class="input-group-text" for="audioList"><strong class="text-gray-dark">音频设备</strong></label>
+            </div>
+            <select class="custom-select" id="audioList" style="width: 300px">
+            </select>
+        </div>
+    </div>
+
+    <div class="col-sm">
+        <div class="input-group input-group-sm mb-3">
+            <div class="input-group-prepend">
+                <label class="input-group-text" for="videoList"><strong class="text-gray-dark">视频设备</strong></label>
+            </div>
+            <select class="custom-select" id="videoList" style="width: 300px">
+            </select>
+        </div>
+    </div>
+</div>
+
+<div class="btn">
+    <button id="btn1" onclick="getEnumDevices()">1 扫描设备列表</button>
+    <button id="btn2" onclick="checkAvailableDevTest()" disabled>2 获取设备支持能力列表</button>
+    <button id="btn3" onclick="getResolution()" disabled>3 根据设备能力获取最接近的分辨率</button>
+</div>
+
+<div id="output"></div>
+
+<script>
+  /******************************************************************************************************/
+  /** 日志 **/
+  /******************************************************************************************************/
+  /*Log Debug Start*/
+  if( localStorage.debug === undefined ) {
+    localStorage.debug = "*:INFO,*:WARN,*:ERROR";
+  }
+  window.debug = debug;
+  /*Log Debug End*/
+
+  /*Log Debug Start*/
+  var log = { };
+  log.debug = window.debug("ConfMQ:DEBUG");
+  log.info   = window.debug("ConfMQ:LOG");
+  log.info  = window.debug("ConfMQ:INFO");
+  log.warn  = window.debug("ConfMQ:WARN");
+  log.error = window.debug("ConfMQ:ERROR");
+  /*Log Debug End*/
+
+  /******************************************************************************************************/
+  /** 设备能力管理 **/
+  /******************************************************************************************************/
+  /***
+   * 获取设备
+   */
+  var mediaDevice = new MediaDevice()
+  function getEnumDevices() {
+    var audioInputList = []
+    var videoInputList = []
+    mediaDevice.enumDevices(deviceInfo => {
+      log.info('enumDevices' + JSON.stringify(deviceInfo))
+      if (deviceInfo.microphones) {
+        for (var i = 0; i < deviceInfo.microphones.length; i++) {
+          if (!deviceInfo.microphones[i].label) {
+            deviceInfo.microphones[i].label = 'microphone' + i
+          }
+          audioInputList.push(' <option value="' + deviceInfo.microphones[i].deviceId + '">' + deviceInfo.microphones[i].label + '</option>')
+          log.info('microphone: ' + deviceInfo.microphones[i].label)
+        }
+      }
+
+      if (deviceInfo.cameras) {
+        for (var j = 0; j < deviceInfo.cameras.length; j++) {
+          if (!deviceInfo.cameras[j].label) {
+            deviceInfo.cameras[j].label = 'camera' + j
+          }
+          videoInputList.push('<option value="' + deviceInfo.cameras[j].deviceId + '">' + deviceInfo.cameras[j].label + '</option>')
+          log.info('camera: ' + deviceInfo.cameras[j].label)
+        }
+      }
+
+      audioInputList.push(' <option value="0">禁止</option>')
+      videoInputList.push('<option value="0">禁止</option>')
+      $('#audioList').html(audioInputList.join(''));
+      $('#videoList').html(videoInputList.join(''));
+
+      $('#btn2').attr('disabled', false)
+      mediaDevice.checkAvailableDev()
+    }, function (error) {
+      log.error('enum device error: ' + error)
+    })
+  }
+  // getEnumDevices()
+  function checkAvailableDevTest () {
+    mediaDevice.setDeviceCapability()
+    setTimeout(function () {
+      $('#btn3').attr('disabled', false)
+    }, 1000)
+  }
+
+  /******************************************************************************************************/
+  /** 获取分辨率 **/
+  /******************************************************************************************************/
+  /***
+   * 页面信息打印
+   * @param message
+   */
+  function writeToScreen(message) {
+    var parent = document.getElementById('output');
+    var newChild = document.createElement("div");
+    newChild.innerHTML = message;
+    parent.appendChild(newChild);
+  }
+
+  var expectRes = {
+    deviceId: 'ef79ef8cf12adca2054420b27d4606a8132d2c52fdb803582c76fb8b131b7660',
+    width: 1280,
+    height: 720,
+    frameRate: 15,
+  }
+
+  function getResolution(){
+    var resolution = mediaDevice.getSuitableResolution(expectRes)
+    console.warn(resolution)
+    writeToScreen('<span style="color:red">获取到的分辨率为：&nbsp;' + resolution.width + '*' + resolution.height);
+  }
+</script>
+</body>
+</html>

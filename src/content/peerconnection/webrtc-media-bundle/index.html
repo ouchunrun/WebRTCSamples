@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<!--
+ *  Copyright (c) 2015 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree.
+-->
+<html>
+<head>
+
+    <meta charset="utf-8">
+    <meta name="description" content="WebRTC code samples">
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+    <meta itemprop="description" content="Client-side WebRTC code samples">
+    <meta itemprop="image" content="../../../images/webrtc-icon-192x192.png">
+    <meta itemprop="name" content="WebRTC code samples">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta id="theme-color" name="theme-color" content="#ffffff">
+    <script src="js/lib/mediaDevice.js"></script>
+    <base target="_blank">
+    <title>bundle Demo</title>
+
+    <link href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="css/main.css"/>
+    <link rel="stylesheet" href="css/index.css"/>
+    <script src="js/lib/sdp_tools.js"></script>
+    <script src="js/lib/debug.js"></script>
+    <script>
+        /******************************************************************************************************/
+        /** 日志 **/
+        /******************************************************************************************************/
+        /*Log Debug Start*/
+        if( localStorage.debug === undefined ) {
+            localStorage.debug = "*:INFO,*:WARN,*:ERROR";
+        }
+
+        var log = { };
+        log.debug = window.debug("JSEP:DEBUG");
+        log.log   = window.debug("JSEP:LOG");
+        log.info  = window.debug("JSEP:INFO");
+        log.warn  = window.debug("JSEP:WARN");
+        log.error = window.debug("JSEP:ERROR");
+        /*Log Debug End*/
+    </script>
+</head>
+
+<body>
+
+<div id="container">
+
+    <h2>getUserMedia Test</h2>
+
+    <section id="constraints">
+        <!--取流预览框-->
+        <div class="dialogBox cameraPreview-box undis" id="cameraPreview-box" >
+            <span class="bg-pic bg-cameraAlpha undis"></span>
+            <div class="camera-tip-error undis"></div>
+            <div class="alert-title-white">
+                <p class="color33">摄像头取流预览</p>
+            </div>
+            <div class="alertForm tcenter" style="width:420px;">
+                <div class="cam-state-img" style="display: none;">
+                    <span class="bg-pic bg-noPreview"></span>
+                </div>
+                <div class="camera-select">
+                    <select class="cameraSelect" id="videoList" onchange = selectDeviceAndGum()></select>
+                </div>
+                <video id="cameraPrev" src="" autoplay="autoplay"></video>
+                <div style="height: 40px;text-align: left;font-size: 14px;margin-left: 30px;" id="cameraPrevRes"></div>
+            </div>
+        </div>
+
+        <!--分辨率设置-->
+        <div id="getUserMedia" style="margin-left: 30px;">
+<!--            <span>设置要求的帧率、分辨率和比例：</span>-->
+            <textarea name="getUserMediaConstraints" id="getUserMediaConstraints" type="text"></textarea>
+        </div>
+    </section>
+
+
+    <section id="video">
+        <h4>可以在 chrome://webrtc-internals/ 界面查看视频帧率、分辨率</h4>
+        <h1>localPeerConnection ontrack get stream: </h1>
+        <div id="localPeerStreams"></div>
+
+        <h1>remotePeerConnection ontrack get stream: </h1>
+        <div id="remotePeerStreams"></div>
+
+        <br>
+        <button class="btn-normal video-cancel"  id="connect" onclick=createPeerConnection()>Connect</button>
+        <button class="btn-normal video-cancel"  id="closeLocalVideo" onclick=closeLocalVideo()>closeLocalVideo</button>
+        <button class="btn-normal video-cancel"  id="addNewStream" onclick=remoteAddStream()>remoteAddStream</button>
+        <button class="btn-normal video-cancel"  id="hangup" onclick=hangup()>Hang Up</button>
+    </section>
+
+    <section id="statistics">
+        <div id="senderStats"></div>
+        <div id="receiverStats"></div>
+    </section>
+</div>
+<script src="./js/lib/sdp.js"></script>
+<script src="main.js"></script>
+<script src="index.js"></script>
+</body>
+</html>

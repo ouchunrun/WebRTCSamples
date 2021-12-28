@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <base target="_blank">
+    <title>externalDecoderDemo</title>
+    <link rel="shortcut icon" href="#"/>
+    <link href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="css/main.css"/>
+    <link rel="stylesheet" href="css/index.css"/>
+    <style>
+        textarea{
+            width:100%;
+            height:225px;
+        }
+        .inputArea input{
+            margin: 10px 0;
+            height: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="container">
+    <div>
+        <button id="getMedia" onclick="getDisplayMediaStream()">桌面共享</button>
+        <button id="gumFromCamera" onclick="getUserMediaStream()">共享摄像头</button>
+        <button id="connect" disabled onclick="createPeerConnection()">建立连接</button>
+        <button id="addNewP2p" onclick="addNewP2pConnection()">添加新的P2P连接</button>
+        <button id="hangup" disabled onclick="hangup()">挂断</button>
+    </div>
+    <hr>
+    <div class="inputArea">
+        <label>设置 profile_idc： <input type="text" value="42" id="profileIdc"></label> <br>
+        <label>设置 profile_iop： <input type="text" value="e0" id="profileIop"></label> <br>
+        <label>packetization-mode:<input type="text" value="1" id="packetizationMode"></label> <br>
+    </div>
+
+    <hr>
+    <div>配置说明：
+        <p>1、maxBitrate设置1.5M</p>
+        <p>2、maintain-framerate 帧率优先</p>
+        <p>3、使用OpenH264编码</p>
+        <p>4、取流：1920*1080*15fps</p>
+    </div>
+    <hr>
+    <section id="video">
+        <h2>P2P</h2>
+        <div id="localVideo">
+            <video playsinline autoplay muted controls></video>
+            <div></div>
+            <div id="localVideo_bitrate"></div>
+            <div id="encoderImplementation"></div>
+            <div id="local_googCodecName"></div>
+            <div id="localVideo_peer"></div>
+            <div id="local_bytesSent"></div>
+        </div>
+        <div id="remoteVideo">
+            <video playsinline autoplay muted controls></video>
+            <div></div>
+            <div id="decoderImplementation"></div>
+            <div id="remote_googCodecName"></div>
+            <div id="remote_bytesReceived"></div>
+        </div>
+    </section>
+
+    <hr>
+    <!-- new p2p demo -->
+    <section id="video">
+        <h2>New p2p</h2>
+        <div>
+            <video playsinline autoplay muted controls id="p2p_localVideo"></video>
+            <div id="p2pLocalVideoStats"></div>
+            <div id="p2p_encoderImplementation"></div>
+            <div id="p2p_local_googCodecName"></div>
+            <div id="p2p_local_bytesSent"></div>
+        </div>
+        <div>
+            <video playsinline autoplay muted controls id="p2p_remoteVideo"></video>
+            <div id="p2pRemoteVideoStats"></div>
+            <div id="p2p_decoderImplementation"></div>
+            <div id="p2p_remote_googCodecName"></div>
+            <div id="p2p_remote_bytesReceived"></div>
+        </div>
+    </section>
+</div>
+
+<script src="js/bitrate.js"></script>
+<script src="js/index.js"></script>
+<script src="js/newP2p.js"></script>
+</body>
+</html>
