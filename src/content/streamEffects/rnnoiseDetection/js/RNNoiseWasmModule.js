@@ -272,7 +272,7 @@ let RNNoiseWasmModule = (function () {
 				return hasPrefix(filename, dataURIPrefix)
 			}
 
-			var wasmBinaryFile = "rnnoise.wasm";
+			var wasmBinaryFile = "rnnoiseDetection.wasm";
 			if (!isDataURI(wasmBinaryFile)) {
 				wasmBinaryFile = locateFile(wasmBinaryFile)
 			}

@@ -15,8 +15,8 @@ const RNNOISE_BUFFER_SIZE = RNNOISE_SAMPLE_LENGTH * 4;
 const PCM_FREQUENCY = 44100;
 
 /**
- * Represents an adaptor for the rnnoise library compiled to webassembly. The class takes care of webassembly
- * memory management and exposes rnnoise functionality such as PCM audio denoising and VAD (voice activity
+ * Represents an adaptor for the rnnoiseDetection library compiled to webassembly. The class takes care of webassembly
+ * memory management and exposes rnnoiseDetection functionality such as PCM audio denoising and VAD (voice activity
  * detection) scores.
  */
 class RnnoiseProcessor {
@@ -31,12 +31,12 @@ class RnnoiseProcessor {
     _destroyed = false;
 
     /**
-     * WASM interface through which calls to rnnoise are made.
+     * WASM interface through which calls to rnnoiseDetection are made.
      */
     _wasmInterface;
 
     /**
-     * WASM dynamic memory buffer used as input for rnnoise processing method.
+     * WASM dynamic memory buffer used as input for rnnoiseDetection processing method.
      */
     _wasmPcmInput;
 
@@ -46,7 +46,7 @@ class RnnoiseProcessor {
     _wasmPcmInputF32Index;
 
     /**
-     * WASM dynamic memory buffer used as output for rnnoise processing method.
+     * WASM dynamic memory buffer used as output for rnnoiseDetection processing method.
      */
     _wasmPcmOutput;
 
@@ -54,7 +54,7 @@ class RnnoiseProcessor {
      * Constructor.
      *
      * @class
-     * @param {Object} wasmInterface - WebAssembly module interface that exposes rnnoise functionality.
+     * @param {Object} wasmInterface - WebAssembly module interface that exposes rnnoiseDetection functionality.
      */
     constructor(wasmInterface) {
         // Considering that we deal with dynamic allocated memory employ exception safety strong guarantee
@@ -138,7 +138,7 @@ class RnnoiseProcessor {
     /**
      * Rnnoise can only operate on a certain PCM array size.
      *
-     * @returns {number} - The PCM sample array size as required by rnnoise.
+     * @returns {number} - The PCM sample array size as required by rnnoiseDetection.
      */
     getSampleLength() {
         return RNNOISE_SAMPLE_LENGTH;
@@ -147,14 +147,14 @@ class RnnoiseProcessor {
     /**
      * Rnnoise can only operate on a certain format of PCM sample namely float 32 44.1Kz.
      *
-     * @returns {number} - PCM sample frequency as required by rnnoise.
+     * @returns {number} - PCM sample frequency as required by rnnoiseDetection.
      */
     getRequiredPCMFrequency() {
         return PCM_FREQUENCY;
     }
 
     /**
-     * Release any resources required by the rnnoise context this needs to be called
+     * Release any resources required by the rnnoiseDetection context this needs to be called
      * before destroying any context that uses the processor.
      *
      * @returns {void}
@@ -172,7 +172,7 @@ class RnnoiseProcessor {
 
     /**
      * Calculate the Voice Activity Detection for a raw Float32 PCM sample Array.
-     * The size of the array must be of exactly 480 samples, this constraint comes from the rnnoise library.
+     * The size of the array must be of exactly 480 samples, this constraint comes from the rnnoiseDetection library.
      *
      * @param {Float32Array} pcmFrame - Array containing 32 bit PCM samples.
      * @returns {Float} Contains VAD score in the interval 0 - 1 i.e. 0.90 .

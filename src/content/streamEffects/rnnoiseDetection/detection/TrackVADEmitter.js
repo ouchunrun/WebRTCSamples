@@ -109,7 +109,7 @@ class TrackVADEmitter extends EventEmitter {
     }
 
     /**
-     * ScriptProcessorNode callback, the input parameters contains the PCM audio that is then sent to rnnoise.
+     * ScriptProcessorNode callback, the input parameters contains the PCM audio that is then sent to rnnoiseDetection.
      * Rnnoise only accepts PCM samples of 480 bytes whereas the webaudio processor node can't sample at a multiple
      * of 480 thus after each _onAudioProcess callback there will remain and PCM buffer residue equal
      * to _procNodeSampleRate / 480 which will be added to the next sample buffer and so on.\
