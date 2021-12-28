@@ -1,3 +1,7 @@
+# 2021-12-28
+
+- 1.解决popup页面添加邮箱和姓名属性时returnKey没有添加AccountNumber，导致163邮箱没有添加呼叫按钮问题
+
 # 2021-12-27
 
 - 1.popup页面添加LDAP Email Attributes和LDAP Name Attributes配置

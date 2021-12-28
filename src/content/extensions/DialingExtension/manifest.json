@@ -1,10 +1,10 @@
 {
-  "name": "Quick call",
+  "name": "Quicall",
   "version": "1.0.0.9",
   "description": "GRP cross-platform office account Dialing and DingTalk webpage auto full screen",
   "browser_action":
   {
-    "default_title": "Quick call",
+    "default_title": "Quicall",
     "default_icon": "popup/logo.png",
     "default_popup": "popup/popup.html"
   },
