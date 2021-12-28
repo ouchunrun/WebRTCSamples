@@ -1,10 +1,10 @@
 {
-  "name": "GRP Cross-platform Dialing",
+  "name": "Quick call",
   "version": "1.0.0.9",
   "description": "GRP cross-platform office account Dialing and DingTalk webpage auto full screen",
   "browser_action":
   {
-    "default_title": "GRP Cross-platform Dialing",
+    "default_title": "Quick call",
     "default_icon": "popup/logo.png",
     "default_popup": "popup/popup.html"
   },
@@ -21,11 +21,7 @@
   [
     {
       "matches": [
-        "https://im.dingtalk.com/*",
-        "https://app.slack.com/*",
-        "*://mail.qiye.163.com/*",
-        "*://mail.grandstream.cn/*",
-        "*://outlook.live.com/*"
+        "<all_urls>"
       ],
       "js": [
         "contentScripts/injectScript.js",
