@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta itemprop="name" content="WebRTC code samples">
+    <meta id="theme-color" name="theme-color" content="#ffffff">
+    <base target="_blank">
+    <title>Client bitrate control</title>
+    <link rel="shortcut icon" href="#"/>
+    <link rel="stylesheet" href="./css/main.css"/>
+    <link rel="stylesheet" href="./css/index.css"/>
+
+    <script src="./js/debug.js"></script>
+    <script src="./js/vconsole.min.js"></script>
+    <script src="./js/sdp_tools.js"></script>
+    <script>
+       <!--init vConsole-->
+        var vConsole = new VConsole();
+        console.log('Hello world');
+
+       var log = { };
+       log.debug = window.debug("sipWebRTC:DEBUG");
+       log.log   = window.debug("sipWebRTC:LOG");
+       log.info  = window.debug("sipWebRTC:INFO");
+       log.warn  = window.debug("sipWebRTC:WARN");
+       log.error = window.debug("sipWebRTC:ERROR");
+    </script>
+</head>
+
+<body>
+
+<div id="container">
+
+    <h1><a href="https://github.com/ouchunrun/WebRTC-bandwidth-limit">Bitrate control</a></h1>
+
+    <h2 style="display: none;">通过修改SDP来限制WebRTC带宽</h2>
+    <div>
+        <span style="width: 144px;display: inline-block;">选择分辨率：</span>
+        <select name="" id="setResolution" style="width: 200px;height: 30px;">
+            <option value="1080">1080</option>
+            <option value="720">720</option>
+            <option value="480">480</option>
+            <option value="360">360</option>
+            <option value="272">272</option>
+            <option value="2160">2160</option>
+        </select>
+    </div>
+
+    <div>
+        <span style="width: 144px;display: inline-block;">设置帧率：</span>
+        <input type="text" id="setFrameRate" style="width: 200px;height: 30px;" value=15>
+    </div>
+
+    <div>
+        <span>选择是否设置带宽：</span>
+        <select name="" id="bitrateEnabled" onchange="bitrateChoose()" style="width: 200px;height: 30px;">
+            <option value="true">启用</option>
+            <option value="false">不启用</option>
+        </select>
+        <div id="bitrateSet">
+            <span style="width: 147px;display: inline-block;text-align: right;color: #f12c13;">ASBitrate：</span>
+            <input type="text" id="ASBitrate" value="4096" style="height: 25px;width: 196px;" placeholder="1024">
+        </div>
+    </div>
+
+    <div style="display: none">
+        <span>设置的profile-level-id：</span>
+        <input type="text" id="setLevelId" style="width: 200px;height: 30px;" value="420028">
+    </div>
+
+    <div>
+        <span>选择的maxBitrate(Kbps)：</span>
+        <input type="text" id="maxBitrate" style="width: 200px;height: 30px;" value="1024">
+    </div>
+
+    <hr>
+    <div>
+        <button id="getMedia" style="display: none">Get media</button>
+        <button id="connect" disabled>连接</button>
+        <button id="hangup" disabled>挂断</button>
+    </div>
+
+    <section id="video">
+        <div id="localVideo">
+            <h2>localVideo</h2>
+            <video playsinline autoplay muted></video>
+            <div></div>
+        </div>
+        <div id="remoteVideo">
+            <h2>remoteVideo</h2>
+            <video playsinline autoplay muted></video>
+            <div></div>
+            <div id="bitrate"></div>
+            <div id="peer"></div>
+        </div>
+    </section>
+
+    <div style="clear: both;">
+        <hr>
+        <p>After the bandwidth setting is enabled, three processing will be done:</p>
+        <p>(1)Modify b = AS | b = TIAS to the set value (add if not)</p>
+        <p>(2)set x-google-start-bitrate、x-google-start-bitrate、x-google-max-bitrate to the same bitrate value</p>
+        <p>(3)remove goog-remb && transport-cc filed</p>
+    </div>
+    <hr>
+    <section id="statistics">
+        <div id="senderStats"></div>
+        <div id="receiverStats"></div>
+    </section>
+</div>
+
+<!--<script src="js/adapter-latest.js"></script>-->
+<script src="js/ga.js"></script>
+<script src="js/index.js"></script>
+<script src="sdp_tool.js"></script>
+</body>
+</html>
