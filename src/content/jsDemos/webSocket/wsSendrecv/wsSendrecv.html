@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/offcanvas.css">
+    <title>webSocket测试</title>
+</head>
+<body>
+    <div style="margin-left: 50px;">
+        <div>
+            <input type="text" value="ws://123.207.167.163:9010/ajaxchattest" class="form-control"  id="wsAddr" style="width:390px;display:inline">
+            <div class="btn-group" role="group" aria-label="...">
+                <button type="button" class="btn btn-default" onclick="addWebSocket();">连接</button>
+                <button type="button" class="btn btn-default" onclick="closeWebSocket();">断开</button>
+                <button type="button" class="btn btn-default" >清空</button>
+                <button type="button" class="btn btn-default" >示例
+                </button>
+            </div>
+            <div style="margin-top:10px;margin-button:10px">
+                <pre>本工具主要是为了测试服务端websocket功能是否完善可用而开发！</pre>
+            </div>
+        </div>
+        <div class="row">
+            <div id="output" style="border:1px solid #ccc;height:365px; width: 810px;overflow: auto;margin-left:15px"></div>
+            <div class="col-lg-6">
+                <div class="input-group">
+                    <input type="text" id="message" class="form-control" style="width:810px" placeholder="待发信息">
+                    <span class="input-group-btn" style="display: inline-block;float: right;position: absolute;">
+                        <button class="btn btn-default" type="button" onclick="sendMessage();">发送</button>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="wsSendrecv.js"></script>
+</body>
+</html>
