@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>indexedDB</title>
+</head>
+<body>
+<h1>indexedDB本地数据存储和导出</h1>
+
+<ul>
+    <li><button onclick="dbExport.getAll()">getAll</button></li>
+    <li><button onclick="dbExport.getAllWidthIDBKeyRange()">getAllWidthIDBKeyRange</button></li>
+    <li><button onclick="dbExport.openCursor()">openCursor</button></li>
+    <li><button onclick="dbExport.openCursorWidthIDBKeyRange()">openCursorWidthIDBKeyRange</button></li>
+    <li><button onclick="dbExport.getAllWidthIDBKeyRange(true)">fileDownload</button></li>
+</ul>
+
+<script src="src/jszip.min.js"></script>
+<script src="src/debug.js"></script>
+<script src="src/indexedDB.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>
