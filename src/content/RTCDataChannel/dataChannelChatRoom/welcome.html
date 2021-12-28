@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DataChannel数据传输</title>
+    <link rel="stylesheet" href="./css/main.css">
+</head>
+<body>
+
+<div class="show">
+    <div class="welcome-view">
+        <input type="text" id="name" value="" placeholder="请输入您的姓名">
+        <input type="button" value="enter">
+    </div>
+</div>
+
+<script>
+    /**
+     * 监听输入用户名事件和enter事件
+     * @param e
+     */
+    document.onkeydown = function(e) {	//对整个页面文档监听
+        var keyNum = window.event ? e.keyCode : e.which;		//获取被按下的键值
+        //判断如果用户按下了回车键（keycody=13）
+        if (keyNum === 13) {
+            let username = document.getElementById('name').value
+            if(username === "" || username === undefined || username == null || (username.length>0 && username.trim().length === 0)){
+                alert("请填写用户名！")
+                return
+            }
+            console.warn("welcome to my chatRoom: ", username)
+            window.location.href = 'http://localhost:63342/DataChannelChatRoom/index.html?username='+ username
+        }
+
+    }
+</script>
+</body>
+</html>

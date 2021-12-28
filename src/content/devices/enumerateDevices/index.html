@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>设备枚举</title>
+    <style>
+        .audio-mask, .device-mask {
+            height: 35px;
+            display: inline-block;
+            text-align: center;
+            border-radius: 5px;
+            margin: 20px;
+            transition: all 200ms;
+            position: relative;
+        }
+        .video-tag, .audio-tag {
+            color: #031b3e;
+            font-family: fantasy;
+        }
+        select{
+            height: 30px;
+        }
+        textarea{
+            width: 100%;
+            height: 800px;
+        }
+        h3 {
+            color: red;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<!--设备选择区域-->
+<div>
+    <h1 style="text-align: center">设备列表枚举</h1>
+    <h3>localStorage.showDefaultCommunicationsDevice 字段控制是否过滤default 和 communications 类型</h3>
+
+    <div class="outputSelector device-mask">
+        <select class="deviceSelect" id="audioInputList">
+            <option value="default">请选择</option>
+        </select>
+        <div class="audio-tag">Audio input source::</div>
+    </div>
+
+    <div class="outputSelector device-mask">
+        <select class="deviceSelect" id="audioList">
+            <option value="default">请选择</option>
+        </select>
+        <div class="audio-tag">Audio output destination:</div>
+    </div>
+
+    <div class="outputSelector device-mask">
+        <select class="deviceSelect" id="videoList">
+            <option value="default">请选择</option>
+        </select>
+        <div class="video-tag">Video source:</div>
+    </div>
+
+    <textArea id="deviceInfoDiv"></textArea>
+</div>
+
+<script src="main.js"></script>
+</body>
+</html>

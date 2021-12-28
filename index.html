@@ -19,12 +19,23 @@
         <h2 id="gum">getUserMedia</h2>
         <ul>
             <li><a href="src/content/getusermedia/resolution/WebRTC-Camera-Resolution/">WebRTC Camera Resolution Scan</a></li>
-            <li><a href="src/content/getusermedia/gum/facingMode/">Mobile facingMode test</a></li>
+            <li><a href="src/content/getusermedia/facingMode/">Mobile facingMode test</a></li>
+            <li><a href="src/content/getusermedia/chromeEdgeGetDisplayMediaTest/">Edge和Chrome getDisplayMedia 测试</a></li>
+            <li><a href="src/content/getusermedia/getUserMedia-constraints-test/">getUserMedia 取流参数测试</a></li>
+            <li><a href="src/content/getusermedia/applyConstraints_test/">applyConstraints test</a></li>
         </ul>
 
         <h2>enumerateDevices</h2>
         <ul>
-            <li><a href="src/content/devices/mediaDevice/">enumerateDevices 获取设备列表</a></li>
+            <li><a href="src/content/devices/enumerateDevices/">enumerateDevices 获取音视频设备列表</a></li>
+            <li><a href="src/content/devices/mediaDevice/">获取音视频设备列表并扫描设备能力</a></li>
+        </ul>
+
+        <h2>Stream capture</h2>
+        <ul>
+            <li><a href="src/content/streamCapture/multiStreamRecorder/">MediaRecorder 多流录制</a></li>
+            <li><a href="src/content/streamCapture/opus-media-recorder/">音频文件转换为Ogg</a></li>
+            <li><a href="src/content/streamCapture/recordStreamFromVideoToVideo/">recordStream from Video to video</a></li>
         </ul>
 
         <h2>RTCPeerConnection</h2>
@@ -33,6 +44,14 @@
             <li><a href="src/content/peerconnection/packetization-mode-test/">packetization-mode=0时RE-IVNITE createOffer创建出错误的SDP</a></li>
             <li><a href="src/content/peerconnection/webrtc-media-bundle/">media bundle</a></li>
             <li><a href="src/content/peerconnection/externalDecode-enable-test/">Chrome 硬件编解码测试</a></li>
+            <li><a href="src/content/peerconnection/frameRateLimit/">max-fs/max-mbps/framerate 帧率控制</a></li>
+            <li><a href="src/content/peerconnection/localVideoSharing/">本地视频通过点对点共享</a></li>
+            <li><a href="src/content/peerconnection/profile-leveI-id_modified/">profile-leveI-id 测试</a></li>
+            <li><a href="src/content/peerconnection/replaceTrackDemo/">PeerConnection replaceTrack 测试</a></li>
+            <li><a href="src/content/peerconnection/switchPresentationSource/">点对点切换演示流</a></li>
+            <li><a href="src/content/peerconnection/WebRTCMultistream/">PeerConnection MultiStream</a></li>
+            <li><a href="src/content/peerconnection/WebRTCSimulcastTest/">PeerConnection simulcast</a></li>
+            <li><a href="src/content/peerconnection/fileUploadPeerConnectionConstraints/">fileUpload peerConnection constraints</a></li>
         </ul>
 
         <h2 id="bandwidth">Bandwidth:</h2>
@@ -41,16 +60,27 @@
             <li><a href="src/content/bandwidth/WebRTC-bandwidth-limit/">通过修改SDP来限制WebRTC的带宽</a></li>
         </ul>
 
-        <h2 id="streamEffects">Stream Effects</a></h2>
+        <h2 id="streamEffects">Stream Effects</h2>
         <ul>
             <li><a href="src/content/streamEffects/rnnoiseDetection/">VAD Noise 噪音检测</a></li>
             <li><a href="src/content/streamEffects/virtual-background/">Virtual Background</a></li>
             <li><a href="src/content/streamEffects/noiseSuppressionTest/">noiseSuppression 降噪参数效果测试</a></li>
             <li><a href="src/content/streamEffects/volumeDetection/">audioContext 实时检测MIC音量</a></li>
+            <li><a href="src/content/streamEffects/WebAudio-Mixing/">WebAudio stream mixing</a></li>
         </ul>
 
-        <h2 id="extensions"><a href="https://open.chrome.360.cn/extension_dev/tabs.html">Browser Extension</a></h2>
+        <h2>RTCDataChannel</h2>
         <ul>
+            <li> <li><a href="src/content/RTCDataChannel/dataChannelChatRoom/">通过RTCDataChannel创建聊天室</a></li>
+        </ul>
+
+        <h2>其他</h2>
+        <ul>
+            <li><a href="src/content/jsDemos/fileUpload/">文件拖拽上传</a></li>
+            <li><a href="src/content/jsDemos/PWA_Demo/">PWA 实践</a></li>
+            <li><a href="src/content/jsDemos/tus.io_resumable_file_upload/">前端文件断点续传（依赖服务器）</a></li>
+            <li><a href="src/content/jsDemos/websocketConnectionTest/">Websocket 连接测试页面</a></li>
+            <li><a href="src/content/jsDemos/webpack_sourcemap_test/">webpack sourcemap 打包测试</a></li>
         </ul>
     </section>
 </div>

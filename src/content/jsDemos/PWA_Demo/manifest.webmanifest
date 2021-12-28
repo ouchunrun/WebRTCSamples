@@ -1,0 +1,20 @@
+{
+  "background_color": "purple",
+  "description": "Shows random fox pictures. Hey, at least it isn't cats.",
+  "display": "standalone",
+  "icons": [
+    {
+      "src": "icon/like-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "icon/like-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "name": "PWA demo",
+  "short_name": "PWA",
+  "start_url": "/PWA_Demo/index.html"
+}

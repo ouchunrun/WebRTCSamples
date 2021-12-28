@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="index.css">
+    <title>切换演示源demo</title>
+</head>
+<body>
+    <section>
+        <label>local videoStream from screen capture</label>
+        <video id="localVideo" controls autoplay></video>
+        <div id="localVideoResolution"></div>
+    </section>
+
+    <section>
+        <label>remote videoStream from local Peer</label>
+        <video id="remoteVideo" controls autoplay></video>
+        <div></div>
+        <div id="bitrate"></div>
+        <div id="peer"></div>
+        <div id="remoteVideoResolution"></div>
+    </section>
+
+    <div style="display: block;text-align: center;">
+        <button id="screenShare">Share Screen</button>
+    </div>
+    <div style="display: block;text-align: center;">
+        <button id="switchPresentWidthNewSdp">切换演示重新生成sdp</button>
+    </div>
+    <div style="display: block;text-align: center;">
+        <button id="switchPresentReplaceTrackOnly">切换演示(只进行replaceTrack)</button>
+    </div>
+
+    <div id="senderStats" style="width: 50%; float: left;"></div>
+    <div id="receiverStats" style="width: 50%; float: left;"></div>
+
+
+
+    <script src="js/adapter-latest.js"></script>
+    <script src="js/index.js"></script>
+</body>
+</html>

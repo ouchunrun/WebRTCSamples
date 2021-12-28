@@ -1,0 +1,203 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>WebRTC Simulcast For Chrome Test</title>
+    <!--<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>-->
+    <script src="adapter-latest.js"></script>
+    <script src="sdp.js"></script>
+    <script src="graph.js"></script>
+    <style>
+        video {
+            width: 320px;
+        }
+    </style>
+</head>
+<body>
+<div id="local">
+    <h2>Local Video</h2>
+</div>
+<div id="remotes">
+    <h2>Remote Videos</h2>
+</div>
+<script>
+    const bitrateSeries = {};
+    const bitrateGraphs = {};
+    const framerateSeries = {};
+    const framerateGraphs = {};
+    let lastSendResult;
+    let lastRecvResult;
+
+    function show(stream, isRemote) {
+        const id = isRemote ? stream.id : 'local';
+
+        const container = document.createElement('div');
+        container.id = id + 'Container';
+        document.getElementById(isRemote ? 'remotes' : 'local').appendChild(container);
+
+        const v = document.createElement('video');
+        v.autoplay = true;
+        v.srcObject = stream;
+        v.onresize = () => v.title = 'video dimensions: ' + v.videoWidth + 'x' + v.videoHeight;
+        container.appendChild(v);
+
+        const bitrateCanvas = document.createElement('canvas');
+        bitrateCanvas.id = id + 'BitrateCanvas';
+        bitrateCanvas.title = 'Bitrate';
+        container.appendChild(bitrateCanvas);
+
+        const bitrateGraph = new TimelineGraphView(id + 'Container', id + 'BitrateCanvas');
+        bitrateGraph.updateEndDate();
+
+        bitrateSeries[id] = new TimelineDataSeries();
+        bitrateGraphs[id] = bitrateGraph;
+
+        const framerateCanvas = document.createElement('canvas');
+        framerateCanvas.id = id + 'FramerateCanvas';
+        framerateCanvas.title = 'Framerate';
+        container.appendChild(framerateCanvas);
+
+        const framerateGraph = new TimelineGraphView(id + 'Container', id + 'FramerateCanvas');
+        framerateGraph.updateEndDate();
+
+        framerateSeries[id] = new TimelineDataSeries();
+        framerateGraphs[id] = framerateGraph;
+    }
+
+    const pc1 = new RTCPeerConnection();
+    const pc2 = new RTCPeerConnection();
+    pc1.onicecandidate = (e) => pc2.addIceCandidate(e.candidate);
+    pc2.onicecandidate = (e) => pc1.addIceCandidate(e.candidate);
+    pc2.ontrack = (e) => show(e.streams[0], true);
+
+    navigator.mediaDevices.getUserMedia({video: {width: 1280, height: 720}})
+        .then((stream) => {
+            pc1.addTrack(stream.getVideoTracks()[0], stream);
+            show(stream, false);
+            return pc1.createOffer();
+        })
+        .then((offer) => {
+            console.log("p1 createOffer sdp: " + offer.sdp);
+            var videoPart = SDPUtils.getMediaSections(offer.sdp)[0];
+            var match = videoPart.match(/a=ssrc:(\d+) cname:(.*)\r\n/);
+            var msid = videoPart.match(/a=ssrc:(\d+) msid:(.*)\r\n/);
+            var lines = offer.sdp.trim().split('\r\n');
+            var removed = lines.splice(lines.length - 4, 4);
+            var videoSSRC1 = parseInt(match[1]);
+            var rtxSSRC1 = SDPUtils.matchPrefix(videoPart, 'a=ssrc-group:FID ')[0].split(' ')[2];
+            var videoSSRC2 = videoSSRC1 + 1;
+            var rtxSSRC2 = videoSSRC1 + 2;
+            var videoSSRC3 = videoSSRC1 + 3;
+            var rtxSSRC3 = videoSSRC1 + 4;
+
+            lines.push(removed[0]);
+            lines.push(removed[1]);
+
+            lines.push('a=ssrc:' + videoSSRC2 + ' cname:' + match[2]);
+            lines.push('a=ssrc:' + videoSSRC2 + ' msid:' + msid[2]);
+            lines.push('a=ssrc:' + rtxSSRC2 + ' cname:' + match[2]);
+            lines.push('a=ssrc:' + rtxSSRC2 + ' msid:' + msid[2]);
+
+            lines.push('a=ssrc:' + videoSSRC3 + ' cname:' + match[2]);
+            lines.push('a=ssrc:' + videoSSRC3 + ' msid:' + msid[2]);
+            lines.push('a=ssrc:' + rtxSSRC3 + ' cname:' + match[2]);
+            lines.push('a=ssrc:' + rtxSSRC3 + ' msid:' + msid[2]);
+
+            lines.push('a=ssrc-group:FID ' + videoSSRC2 + ' ' + rtxSSRC2);
+            lines.push('a=ssrc-group:FID ' + videoSSRC3 + ' ' + rtxSSRC3);
+            lines.push('a=ssrc-group:SIM ' + videoSSRC1 + ' ' + videoSSRC2 + ' ' + videoSSRC3);
+            offer.sdp = lines.join('\r\n') + '\r\n';
+
+            var offer2 = {
+                type: 'offer',
+                sdp: offer.sdp,
+            };
+            offer2.sdp = offer2.sdp.replace('a=ssrc-group:SIM ' + videoSSRC1 + ' ' + videoSSRC2 + ' ' + videoSSRC3 + '\r\n', '');
+
+            offer2.sdp = offer2.sdp.replace('a=ssrc:' + videoSSRC1 + ' msid:' + msid[2], 'a=ssrc:' + videoSSRC1 + ' msid:low low');
+            offer2.sdp = offer2.sdp.replace('a=ssrc:' + rtxSSRC1 + ' msid:' + msid[2], 'a=ssrc:' + rtxSSRC1 + ' msid:low low');
+
+            offer2.sdp = offer2.sdp.replace('a=ssrc:' + videoSSRC2 + ' msid:' + msid[2], 'a=ssrc:' + videoSSRC2 + ' msid:mid mid');
+            offer2.sdp = offer2.sdp.replace('a=ssrc:' + rtxSSRC2 + ' msid:' + msid[2], 'a=ssrc:' + rtxSSRC2 + ' msid:mid mid');
+
+            offer2.sdp = offer2.sdp.replace('a=ssrc:' + videoSSRC3 + ' msid:' + msid[2], 'a=ssrc:' + videoSSRC3 + ' msid:hi hi');
+            offer2.sdp = offer2.sdp.replace('a=ssrc:' + rtxSSRC3 + ' msid:' + msid[2], 'a=ssrc:' + rtxSSRC3 + ' msid:hi hi');
+
+            console.log("pc1.setLocalDescription sdp: " + offer.sdp);
+            console.warn("pc2.setRemoteDescription sdp: " + offer2.sdp);
+
+            return Promise.all([
+                pc1.setLocalDescription(offer),
+                pc2.setRemoteDescription(offer2),
+            ]);
+        })
+        .then(() => pc2.createAnswer())
+        .then(answer => {
+            console.log( "pc2.createAnswer/pc2.setLocalDescription/pc1.setRemoteDescription sdp: " + answer.sdp);
+            return Promise.all([
+                pc2.setLocalDescription(answer),
+                pc1.setRemoteDescription(answer),
+            ]);
+        })
+        .then(function() {
+            window.setInterval(() => {
+                pc1.getSenders()[0].getStats().then((res) => {
+                    res.forEach((report) => {
+                        if (report.type === 'outbound-rtp') {
+                            const now = report.timestamp;
+                            const bytes = report.bytesSent;
+                            const frames = report.framesEncoded;
+                            if (lastSendResult && lastSendResult.get(report.id)) {
+                                const graphName = 'local';
+                                // calculate bitrate
+                                const bitrate = 8000 * (bytes - lastSendResult.get(report.id).bytesSent) /
+                                    (now - lastSendResult.get(report.id).timestamp);
+
+                                bitrateSeries[graphName].addPoint(now, bitrate);
+                                bitrateGraphs[graphName].setDataSeries([bitrateSeries[graphName]]);
+                                bitrateGraphs[graphName].updateEndDate();
+
+                                //  calculate framerate.
+                                const framerate = 1000 * (frames - lastSendResult.get(report.id).framesEncoded) /
+                                    (now - lastSendResult.get(report.id).timestamp);
+                                framerateSeries[graphName].addPoint(now, framerate);
+                                framerateGraphs[graphName].setDataSeries([framerateSeries[graphName]]);
+                                framerateGraphs[graphName].updateEndDate();
+                            }
+                        }
+                    });
+                    lastSendResult = res;
+                });
+                pc2.getStats().then((res) => {
+                    res.forEach((report) => {
+                        if (report.type === 'inbound-rtp') {
+                            const now = report.timestamp;
+                            const bytes = report.bytesReceived;
+                            const frames = report.framesDecoded;
+                            if (lastRecvResult && lastRecvResult.get(report.id)) {
+                                const track = res.get(report.trackId).trackIdentifier;
+                                const graphName = track;
+                                // calculate bitrate
+                                const bitrate = 8000 * (bytes - lastRecvResult.get(report.id).bytesReceived) /
+                                    (now - lastRecvResult.get(report.id).timestamp);
+
+                                bitrateSeries[graphName].addPoint(now, bitrate);
+                                bitrateGraphs[graphName].setDataSeries([bitrateSeries[graphName]]);
+                                bitrateGraphs[graphName].updateEndDate();
+
+                                //  calculate framerate.
+                                const framerate = 1000 * (frames - lastRecvResult.get(report.id).framesDecoded) /
+                                    (now - lastRecvResult.get(report.id).timestamp);
+                                framerateSeries[graphName].addPoint(now, framerate);
+                                framerateGraphs[graphName].setDataSeries([framerateSeries[graphName]]);
+                                framerateGraphs[graphName].updateEndDate();
+                            }
+                        }
+                    });
+                    lastRecvResult = res;
+                });
+            }, 2000);
+        })
+        .catch(e => console.error(e));
+</script>
+</body>
+</html>

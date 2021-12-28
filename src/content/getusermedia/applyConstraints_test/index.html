@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="WebRTC code samples">
+    <base target="_blank">
+
+    <title>applyConstraints Demo</title>
+    <link rel="shortcut icon" href="#"/>
+    <link rel="stylesheet" href="css/main.css"/>
+    <link rel="stylesheet" href="css/index.css"/>
+
+</head>
+
+<body>
+
+<div id="container">
+    <h1><span>ApplyConstraints API test</span></h1>
+    <!--设备选择区域-->
+    <div>
+        <div class="outputSelector device-mask">
+            <span class="video-tag">选择摄像头：</span>
+            <select class="deviceSelect" id="videoList" onchange="shareVideo()" style="height: 35px;">
+                <option value="default">请选择摄像头</option>
+            </select>
+            <textarea name="getConstraints" id="getConstraints" style="width: 92%;height: 280px;"></textarea>
+        </div>
+    </div>
+
+    <video id="localVideo" playsinline autoplay muted></video>
+    <video id="remoteVideo" playsinline autoplay muted></video>
+    <div>
+        <div id="localVideoElem" style="width: 48%; float: left;height: 30px"></div>
+        <div id="remoteVideoElem"  style="width: 48%; float: left;height: 30px"></div>
+    </div>
+
+    <div class="box">
+        <button id="startButton">Start</button>
+        <button id="callButton">Call</button>
+        <button id="applyConstraints" disabled>ApplyConstraints</button>
+        <button id="hangupButton">Hang Up</button>
+    </div>
+
+    <div class="box">
+        <button id="applyConstraints360" onclick="applyConstraints360()">ApplyConstraints 360</button>
+        <button id="applyConstraints720" onclick="applyConstraints720()">ApplyConstraints 720</button>
+        <button id="applyConstraints1080" onclick="applyConstraints1080()">ApplyConstraints 1080</button>
+    </div>
+
+
+    <p>1:通过设置constraints进行不同的分辨率限制， 控制台查看结果</p>
+    <p>2:ApplyConstraints 1080的分辨率固定为 1920 * 1080 </p>
+</div>
+
+<script src="js/adapter.js"></script>
+<script src="js/index.js" async></script>
+<script src="js/applyConstraints.js"></script>
+<script src="js/applyConstraintsTest.js"></script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+body {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 300;
+    margin: 0;
+    padding: 1em;
+    word-break: break-word;
+}
+
+#container{
+    margin: 0 auto 0 auto;
+    max-width: 60em;
+    min-width: 1000px;
+    padding: 1em 1.5em 1.3em 1.5em;
+}
+
+
+div.output {
+    background-color: #eee;
+    display: inline-block;
+    font-family: 'Inconsolata', 'Courier New', monospace;
+    font-size: 0.9em;
+    padding: 10px 10px 10px 25px;
+    position: relative;
+    white-space: pre;
+    width: 30em;
+}
+
+#setHeight, #setWidth, #frameRate{
+    height: 50px;
+}
+
+.local,.remote, .canvas{
+    display: inline-block;
+    margin: 0 5px 0 0;
+    vertical-align: top;
+    width: calc(50% - 22px);
+}
+
+div#input {
+    display: inline-block;
+    margin: 0 20px 0 0;
+    vertical-align: top;
+    width:25em;
+}
+
+audio {
+    max-width: 100%;
+}
+
+video {
+    background: #222;
+    margin: 0 0 20px 0;
+}
+video, #show, canvas{
+    height: 225px;
+}
+
+.showInfo{
+    background-color: #eee;
+    display: inline-block;
+    font-family: 'Inconsolata', 'Courier New', monospace;
+    font-size: 0.9em;
+    padding: 10px 10px 10px 25px;
+    position: relative;
+    white-space: pre;
+    width: 30em;
+}
+.allInfo{
+    display: inline-block;
+    font-family: 'Inconsolata', 'Courier New', monospace;
+    vertical-align: top;
+    width: 30em;
+
+}
+
+#show ,canvas{
+    /*overflow: hidden;*/
+    border: 1px solid #222222;
+    margin-top: 35px;
+}
+
+video:last-of-type {
+    margin-right: 0;
+}
+
+@media screen and (max-width: 400px) {
+    video {
+        margin: 0 5px 20px 0;
+        width: calc(20% - 5px);
+    }
+}
+
+

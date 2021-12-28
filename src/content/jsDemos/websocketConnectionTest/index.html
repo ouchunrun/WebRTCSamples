@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Connection test</title>
+    <link rel="stylesheet" href="./css/main.css">
+</head>
+<body>
+
+<div class="header"></div>
+
+<div>
+    <!--消息显示区域-->
+    <div id="output" class="messageShow"></div>
+
+    <div class="content">
+        <!--操作区域-->
+        <div class="operate">
+            <input class="form-control"  id="protocols" type="text" value="sip">
+            <button type="tex" class="btn btn-default" disabled>protocols</button>
+            <br>
+            <input class="form-control"  id="wsAddr" type="text" value="">
+            <button type="button" class="btn btn-default"  disabled>ws URL</button>
+            <br>
+            <button type="button" class="btn btn-default" onclick="addWebSocket();">连接 ws</button>
+            <button type="button" class="btn btn-default" style="background: #a2a2a2;" onclick="closeWebSocket();">断开 ws</button>
+        </div>
+
+        <!--消息发送-->
+        <div class="input-group messageOut">
+            <div>
+                <input type="text" id="message" class="form-control" placeholder="输入发送要发送的内容">
+                <button class="btn btn-default" type="button" onclick="sendInputMessage();">发送消息</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script type="text/javascript" src="src/main.js"></script>
+</body>
+</html>

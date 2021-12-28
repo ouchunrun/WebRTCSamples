@@ -1,0 +1,126 @@
+<html>
+<head>
+    <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+    <meta content="text/html;charset=utf-8" http-equiv="content-type">
+    <title>opus-media-recorder Example !</title>
+    <link href="css/main.css" rel="stylesheet">
+    <link rel="icon" href="data:image/ico;base64,aWNv">
+    <style>
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>
+        Opus MediaRecorder Example
+    </h1>
+</header>
+
+<!--file upload-->
+<section class="controller card">
+    <header>
+        <h3>File upload</h3>
+    </header>
+    <div>
+        <input type="file" class="localShare" id="uploadFile" style="display: block;" />
+        <audio id="audioUpload" autoplay muted controls></audio>
+    </div>
+</section>
+
+
+<!-- Recording player -->
+<section class="player card">
+    <header>
+        <h3>Recording player</h3>
+    </header>
+    <div>
+        <audio id="player" controls></audio>
+    </div>
+    <div><a id="link">Download Link</a></div>
+    <div class="note">
+        <p>
+            Note: Some browsers (e.g. Safari and old Edge) do not support Ogg/WebM
+            playback on the browser. In this case you should download the
+            recording and play it using a supported media player (e.g. VLC Player)
+        </p>
+    </div>
+</section>
+
+<section class="console card">
+    <header>
+        <h3>Console</h3>
+    </header>
+    <!-- Log will be printed here -->
+    <div id="errorLog" class="log"></div>
+</section>
+
+<!--development-->
+<script type="text/javascript" src="src/event-target-shim.js"></script>
+<script type="text/javascript" src="src/detect-browser.js"></script>
+<script type="text/javascript" src="src/OggOpusMediaRecorder.js"></script>
+<script type="text/javascript" src="src/api.js"></script>
+<!--Or-->
+<!--<script type="text/javascript" src="dist/OggOpusRecorder.js"></script>-->
+
+<script>
+    let player = document.querySelector('#player');
+    let link = document.querySelector('#link');
+    let uploadFile = document.getElementById('uploadFile')
+    /**
+     * Upload local audio file
+     * 使用FileReader读取上传文件，转换为stream
+     */
+    uploadFile.addEventListener('change', async function () {
+        try {
+            let uploadFile = this.files[0];
+            // var fileurl = URL.createObjectURL(uploadFile);
+            //经测试，发现audio也可获取视频的时长
+            // var audioElement = new Audio(fileurl);
+            // var duration;
+            // audioElement.addEventListener("loadedmetadata", function (_event) {
+            //     duration = audioElement.duration;
+            //     console.warn( "duration");
+            //     console.warn(duration/60);//单位：分
+            // });
+
+            OggOpusRecorder(uploadFile, function (blob) {
+                let file = new File([blob], `${fileName}.ogg`, {type: 'audio/ogg;codecs=opus'})
+                let url = URL.createObjectURL(blob);
+                link.href = url;
+                link.download = file.name;
+                player.src = url;
+            })
+        } catch (e) {
+            console.error(e.message);
+        }
+    })
+    /*******************************************************************************
+     * Debug helpers
+     *    This section is only for debugging purpose, library users don't need them.
+     ******************************************************************************/
+    // Monkey-patching console.log for debugging.
+    document.addEventListener('DOMContentLoaded', (e) => {
+        let lineCount = 0;
+        let errorLog = document.getElementById('errorLog')
+        if(errorLog){
+            function overrideConsole(oldFunction, divLog) {
+                return function (text) {
+                    oldFunction(text);
+                    lineCount += 1;
+                    if (lineCount > 100) {
+                        let str = divLog.innerHTML;
+                        divLog.innerHTML = str.substring(str.indexOf('<br>') + '<br>'.length);
+                    }
+                    divLog.innerHTML += text + '<br>';
+                };
+            };
+
+            console.log = overrideConsole(console.log.bind(console), errorLog);
+            console.error = overrideConsole(console.error.bind(console), errorLog);
+            console.debug = overrideConsole(console.debug.bind(console), errorLog);
+            console.info = overrideConsole(console.info.bind(console), errorLog);
+        }
+    }, false);
+</script>
+</body>
+</html>

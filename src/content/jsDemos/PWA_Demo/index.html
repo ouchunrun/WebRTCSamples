@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link rel="icon" href="data:image/ico;base64,aWNv">
+    <title>PWA demo</title>
+    <link href="style.css" rel="stylesheet">
+    <script src="index.js" defer></script>
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="PWA test">
+    <link rel="shortcut icon" sizes="152x152" href="./icon/like-152x152.png">
+    <link rel="shortcut icon" sizes="512x512" href="./icon/like-512x512.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="./icon/like-152x152.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="./icon/like-512x512.png" />
+    <link rel="manifest" href="manifest.webmanifest">
+</head>
+<body>
+<button class="add-button"> + Add to home screen</button>
+
+<hr>
+<!--websocket测试-->
+<div class="main websocket" style="padding-top: 50px;">
+    <h2>websocket在线测试</h2>
+    <div class="link layui-form layui-form-pane">
+        <div class="layui-form-item set">
+            <label class="layui-form-label" style="clear: both;">protocols</label>
+            <div class="layui-input-inline">
+                <input type="text" name="websocketUrl" value="sip" id="protocols" class="layui-input">
+            </div>
+        </div>
+
+        <div class="layui-form-item set">
+            <label class="layui-form-label">ws或wss地址</label>
+            <div class="layui-input-inline">
+                <input type="text" name="websocketUrl" value="" id="wsAddr" class="layui-input">
+            </div>
+            <div class="layui-btn-container">
+                <button class="layui-btn" id="link" onclick="addWebSocket()">连接</button>
+                <button class="layui-btn layui-btn-danger" id="close" onclick="closeWebSocket()">断开</button>
+            </div>
+        </div>
+
+        <div class="layui-form-text" id="send">
+            <label class="layui-form-label">下面输入您要发送的信息</label>
+            <div class="layui-input-block">
+                <textarea name="desc" placeholder="这里输入您要发送的信息" class="layui-textarea"></textarea>
+            </div>
+            <div class="layui-form-item">
+                <button class="layui-btn layui-btn-normal layui-btn-fluid send" onclick="sendInputMessage()">发送信息</button>
+            </div>
+        </div>
+
+        <div class="layui-form-text" id="getMsg">
+            <label class="layui-form-label">信息接收窗口</label>
+            <blockquote class="layui-elem-quote layui-quote-nm" id="showMessage"></blockquote>
+            <div id="output" class="messageShow"></div>
+        </div>
+    </div>
+</div>
+
+<hr>
+<!--IndexedDB 测试-->
+<h2>IndexedDB 在线测试</h2>
+<form id="register-form">
+    <table>
+        <tbody>
+        <tr>
+            <td>
+                <label for="pub-title" class="required">
+                    Title:
+                </label>
+            </td>
+            <td>
+                <input type="text" id="pub-title" name="pub-title">
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="pub-biblioid" class="required">
+                    Bibliographic ID:<br>
+                    <span class="note">(ISBN, ISSN, etc.)</span>
+                </label>
+            </td>
+            <td>
+                <input type="text" id="pub-biblioid" name="pub-biblioid">
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="pub-year">
+                    Year:
+                </label>
+            </td>
+            <td>
+                <input type="number" id="pub-year" name="pub-year">
+            </td>
+        </tr>
+        </tbody>
+        <tbody>
+        <tr>
+            <td>
+                <label for="pub-file">
+                    File image:
+                </label>
+            </td>
+            <td>
+                <input type="file" id="pub-file">
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label for="pub-file-url">
+                    Online-file image URL:<br>
+                    <span class="note">(same origin URL)</span>
+                </label>
+            </td>
+            <td>
+                <input type="text" id="pub-file-url" name="pub-file-url">
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="button-pane">
+        <input type="button" id="add-button" value="Add Publication">
+        <input type="reset" id="register-form-reset">
+    </div>
+</form>
+
+<!--video视频显示-->
+<div class="videoArea">
+    <!--local video-->
+    <video id="local" controls autoplay src="./video/yewen4.mp4" muted></video>
+</div>
+
+<script src="./src/jquery.min.js"></script>
+<script src="./src/db.js"></script>
+<script src="./src/webSocket.js"></script>
+</body>
+</html>

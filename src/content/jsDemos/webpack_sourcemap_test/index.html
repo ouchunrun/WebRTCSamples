@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>webpack source map test</title>
+</head>
+<body>
+    <h1>webpack source map test</h1>
+
+    <script src="./release/index.js"></script>
+</body>
+<script>
+    var orignalSetItem = localStorage.setItem;
+    localStorage.setItem = function(key,newValue){
+        var setItemEvent = new Event("setItemEvent");
+        setItemEvent.key = key;
+        setItemEvent.newValue = newValue;
+        window.dispatchEvent(setItemEvent);
+        orignalSetItem.apply(this,arguments);
+    };
+    window.addEventListener("setItemEvent", function (e) {
+        if(e.key === 'b_release_mode'){
+            if(e.newValue === "true"){
+                console.warn("Currently using compressed code !");
+                window.location.href = 'http://localhost:8080/';
+            }else if(e.newValue === "false"){
+                console.warn("Switch to uncompressed code !");
+                window.location.href = 'http://webpack.ipvideotalk.com/';
+            }
+        }
+    });
+
+</script>
+
+</html>

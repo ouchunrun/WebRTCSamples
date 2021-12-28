@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>移动端切换前后摄像头</title>
+    <script src="vconsole.min.js"></script>
+    <script>
+        // init vConsole
+        var vConsole = new VConsole();
+        console.log('Hello world');
+    </script>
+    <style>
+        button {
+            height: 35px;
+            width: 50%;
+            margin-bottom: 15px;
+            font-size: small;
+            font-family: cursive;
+            color: black;
+            float: left;
+        }
+        select{
+            width: 70%;
+            height: 40px;
+            float: left;
+        }
+        video{
+            width: 90%;
+            margin: 5%;
+            height: 200px;
+            border: 1px solid #905;
+        }
+        .outputSelector div{
+            width: 30%;
+            float: left;
+        }
+    </style>
+</head>
+<body>
+
+<button onclick="getCameraStream('user')">开前置摄像头(exact)</button>
+<button onclick="getCameraStream('environment')">开后置摄像头(exact)</button>
+<button onclick="applyConstraints(640, 360)">改分辨率为360(exact)</button>
+<button onclick="applyConstraints(640, 480)">改分辨率为480(exact)</button>
+
+<button onclick="closeStream()" style="width: 100%;background: brown;color: aliceblue;">关闭摄像头</button>
+
+<!--设备选择区域-->
+<div style="clear: both">
+    <div class="outputSelector device-mask">
+        <div class="video-tag">选择摄像头</div>
+        <select class="deviceSelect" id="videoList" onchange="shareVideo()">
+            <option value="default">请选择</option>
+        </select>
+    </div>
+
+    <div class="outputSelector device-mask">
+        <div class="video-tag">选择扬声器</div>
+        <select class="deviceSelect" id="audioList" onchange="audioVideo()">
+            <option value="default">请选择</option>
+        </select>
+    </div>
+
+    <div class="outputSelector device-mask">
+        <div class="video-tag">选择麦克风</div>
+        <select class="deviceSelect" id="microphones" onchange="getmicrophones()">
+            <option value="default">请选择</option>
+        </select>
+    </div>
+
+    <button onclick="gumForAudio()" style="width: 100%;background: #ffa500;color: aliceblue;">取音频（不限制）</button>
+
+</div>
+
+<button onclick="createPeercon()" style="background: #0086b3;color: aliceblue;">创建PC with config</button>
+<button onclick="createPCWithoutConfig()" style="background: #0086b3;color: aliceblue;">创建PC without config</button>
+
+
+<audio id="audio" src="" autoplay controls></audio>
+
+<video autoplay id="video" src=""></video>
+
+<script src="audio.js"></script>
+<script src="video.js"></script>
+<script>
+
+    // 判断是否支持webRTC
+    function isSupports(){
+        var e = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection
+            , t = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.msGetUserMedia || navigator.mozGetUserMedia || navigator.mediaDevices && navigator.mediaDevices.getUserMedia
+            , n = window.WebSocket
+
+        var result = !!e && !!t && !!n
+        console.warn("is webRTC Supports result： ", result)
+        return result;
+    }
+
+    // 创建peerConnection
+    function createPeercon() {
+        var pc
+        if(isSupports()){
+            console.warn("createPeercon: prepare create RTCPeerConnection")
+            var config = {}
+            config["sdpSemantics"] = "plan-b";
+            var RTCpeerConnectionOptional = { optional: [ { 'pcName': "PC_" + Math.random().toString(36).substr(2) }, { 'googDscp': true }, { 'googIPv6': false } ] };
+            console.warn("config :", config)
+            console.warn("RTCpeerConnectionOptional： ", RTCpeerConnectionOptional)
+            try {
+                pc = new window.RTCPeerConnection( config , RTCpeerConnectionOptional);
+                console.warn("createPeercon：creat success: ", pc)
+            }catch (e) {
+                console.warn(e)
+                console.warn(e.name)
+                console.error(e.toString())
+            }
+        }else {
+            console.warn("createPeercon： WebRTC is not support!")
+        }
+    }
+
+    function createPCWithoutConfig() {
+        var pc
+        if(isSupports()){
+            try {
+                console.warn("createPCWithoutConfig: prepare create RTCPeerConnection")
+                pc = new window.RTCPeerConnection();
+                console.warn("createPCWithoutConfig: creat success: ", pc)
+            }catch (e) {
+                console.warn(e)
+                console.warn(e.name)
+                console.error(e.toString())
+            }
+        }else {
+            console.warn("createPCWithoutConfig： WebRTC is not support!")
+        }
+    }
+
+</script>
+</body>
+</html>

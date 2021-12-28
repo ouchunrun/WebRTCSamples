@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>本地视频音频播放</title>
+    <link href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
+    <!--这个字体有什么用啊-->
+    <link rel="stylesheet" href="css/index.css"/>
+</head>
+
+<body>
+
+    <div id="container">
+        <div id="constraints">
+            <div id="input">
+                <div id="setHeight">
+                    <lable>Height <span>240</span>px:</lable>
+                    <input type="range" min="0" max="4320" value="240">
+                </div>
+
+                <div id="setWidth">
+                    <lable>Width <span>320</span>px:</lable>
+                    <input type="range" min="0" max="7690" value="320">
+                </div>
+
+                <div id="frameRate">
+                    <lable>Frame rate <span>1</span>fps:</lable>
+                    <input type="range" min="0" max="60" value="1">
+                </div>
+            </div>
+
+            <div id="getUserMediaConstraints" class="output"></div>
+        </div>
+        
+        <div>
+            <hr>
+            <canvas id="canvasEl" style="margin: 0 50%;"></canvas>
+            <br>
+            <div class="local">
+                <div>local：</div>
+                <video id="localVideo" autoplay controls loop muted></video>
+            </div>
+
+            <div class="remote">
+                <div>Remote：</div>
+                <video id="remoteVideo" autoplay controls></video>
+            </div>
+        </div>
+
+
+
+        <p2 id="localInfo"></p2>
+        <br/>
+
+        <input style="width: 200px;height: 30px;" id="uploadFile" type="file" value="上传文件"/>
+        <button style="width: 200px; height: 30px;background: brown;color: aliceblue;" onclick="getcanvasStream()">获取cavans流</button>
+        <br>
+        <hr>
+
+        <!--显示主要约束信息-->
+        <div class="showInfo">
+            <div id="txStats"></div>
+        </div>
+        <div class="showInfo">
+            <div id="rxStats"></div>
+        </div>
+
+        <hr style="clear: both">
+        <!--显示全部信息-->
+        <div class="allInfo">
+            <div id="senderStats"></div>
+        </div>
+        <div class="allInfo">
+            <div id="receiverStats"></div>
+        </div>
+    </div>
+    <hr>
+
+    <!--<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>   &lt;!&ndash;提高兼容性&ndash;&gt;-->
+    <script src="js/adapter.js"></script>
+    <script src="js/getScreenId.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/main.js"></script>
+
+    <script>
+        // 圆圈动画
+        // 面向对象开发
+        var animate={
+            screen_w:document.documentElement.clientWidth,//获取显示区域的宽高 定义以后需要的变量
+            screen_h:document.documentElement.clientHeight,
+            content2d:null,
+            x:null,
+            y:null,
+            r:10,
+            Hz:0,
+            arc:[],
+            randomloc:function(){//随机 x y 坐标
+                var x=Math.floor(Math.random()*this.screen_w);
+                var y=Math.floor(Math.random()*this.screen_h);
+                return[x,y];
+            },
+            randomcolor:function(){//随机颜色（16777216=256*256*256）
+                return '#'+parseInt(Math.random()*16777216).toString(16);//16进制颜色
+            },
+            draw:function(){//画出圆圈
+                this.x=this.randomloc()[0];
+                this.y=this.randomloc()[1];
+                this.content2d.beginPath();//开始画图
+                var color=this.randomcolor();
+                this.content2d.strokeStyle=color;
+                this.content2d.arc(this.x,this.y,this.r,0,Math.PI*2);
+                this.content2d.stroke();//闭合线圈
+                this.content2d.closePath();//结束画图
+                this.arc.push(
+                    [this.x,this.y,this.r,color,0]
+                );//arc储存所有的圆圈的坐标半径和颜色
+            },
+            // 初始化
+            init:function(){
+                var canvasElemnt =document.getElementById('canvasEl');//获取canvas元素
+                canvasElemnt.width=this.screen_w;//画布大小为屏幕显示大小
+                canvasElemnt.height=this.screen_h;
+                this.content2d=canvasElemnt.getContext('2d');//2d模式
+            },
+            // 圆圈动画，删除圆圈（相当于动态改变半径值重绘）
+            update:function(){
+                for(var i=0;i<this.arc.length;i++){
+                    //清除当前的圆圈
+                    this.content2d.clearRect(this.arc[i][0]-this.arc[i][2]-1,this.arc[i][1]-this.arc[i][2]-1,this.arc[i][2]*2.2,this.arc[i][2]*2.2);
+                    this.content2d.beginPath();
+                    var color=this.arc[i][3];
+                    this.content2d.strokeStyle=color;
+                    this.arc[i][2]++;//半径增加
+                    if(this.arc[i][2]>20){//如果半径大于20，执行计数器，当计数器大于4时，移除当前圆圈
+                        this.arc[i][2]=10;
+                        this.arc[i][4]++;
+                        if(this.arc[i][4]>4){
+                            this.arc.splice(i,1);
+                            i--;
+                            continue;
+                        }
+                    }
+                    this.content2d.arc(this.arc[i][0],this.arc[i][1],this.arc[i][2],0,Math.PI*2);//重绘
+                    this.content2d.stroke();
+                    this.content2d.closePath();
+
+                }
+            }
+        }
+        animate.init();
+        window.requestA=(function(){// h5计时器 利用屏幕刷新率刷新，性能很好，此为兼容性写法
+            return window.requestAnimationFrame ||
+                webkitRequestAnimationFrame ||
+                mozRequestAnimationFrame ||
+                msquestAnimationFrame||
+                function(callback){
+                    setTimeout(callback,1000/60);
+                }
+
+        })();
+        (function loop(){//自执行函数，动态绘图
+            window.requestA(loop);
+            animate.Hz++;
+            if(animate.Hz>1){
+                animate.Hz=0;
+                animate.draw();
+                animate.update();
+            }
+        })();
+    </script>
+</body>
+</html>

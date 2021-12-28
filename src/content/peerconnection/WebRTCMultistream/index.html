@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="WebRTC code samples">
+    <title>webRTC multiStream</title>
+    <link rel="stylesheet" href="./css/index.css"/>
+    <link rel="stylesheet" href="./css/main.css"/>
+    <style>
+        .video-tag{
+            width: 50%;
+            float: left;
+        }
+        canvas{
+            background-color: #ccc;
+            --width: calc(45%);
+            width: var(--width);
+            height: calc(var(--width) * 0.75);
+            margin: 1em;
+            vertical-align: top;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="container">
+    <h1><a href="#">webRTC multiStream</a>
+        <span>Peer connection</span></h1>
+
+    <p>This demo is used to see if the peerconnection can carry more than two media streams</p>
+
+    <div class="video-tag">
+        <div>localVideo</div>
+        <video id="localVideo" playsinline autoplay muted></video>
+    </div>
+
+    <div class="video-tag">
+        <div>localPresent</div>
+        <video id="localPresent" playsinline autoplay></video>
+    </div>
+
+    <div class="video-tag">
+        <div>remoteVideo</div>
+        <video id="remoteVideo" playsinline autoplay style="margin: 0 20px 20px 0;"></video>
+    </div>
+
+    <div class="video-tag">
+        <div>remotePresent</div>
+        <video id="remotePresent" playsinline autoplay></video>
+    </div>
+
+    <canvas id="myCanvas" style="display: none"></canvas>
+
+    <div class="box">
+        <span style="color: #d84a38;">选择实现peerConnection携带三个媒体行的方式：</span>
+        <select name="" id="multiStream" style="height: 30px;">
+            <option value="gum">get stream</option>
+            <option value="captureStream">use captureStream</option>
+            <option value="addTransceiver">use addTransceiver</option>
+        </select>
+        <hr>
+        <span>选择 unified-plan 还是 plan-b</span>
+        <select name="" id="sdp-plan" style="height: 30px;">
+            <option value="unified-plan">unified-plan</option>
+            <option value="plan-b">plan-b</option>
+        </select>
+        <hr>
+        <button id="startButton" onclick="start()">Start</button>
+        <button id="callButton" onclick="call()">Call</button>
+        <button id="hangupButton" onclick="hangup()">Hang Up</button>
+    </div>
+
+    <hr>
+
+    <p>1、get stream：Create three m rows by getting three actual streams</p>
+    <p>2、use captureStream：通过captureStream接口获取两个video， 添加到PeerConnection</p>
+    <p>3、use addTransceiver：使用addTransceiver接口直接创建Transceiver</p>
+
+</div>
+
+<script src="js/adapter.js"></script>
+<script src="js/main.js" async></script>
+
+<script src="js/ga.js"></script>
+</body>
+</html>

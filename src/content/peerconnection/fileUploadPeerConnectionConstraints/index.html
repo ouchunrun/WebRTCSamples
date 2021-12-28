@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<!--
+ *  Copyright (c) 2015 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree.
+-->
+<html>
+<head>
+
+    <meta charset="utf-8">
+    <meta name="description" content="WebRTC code samples">
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+    <meta itemprop="description" content="Client-side WebRTC code samples">
+    <meta itemprop="image" content="images/webrtc-icon-192x192.png">
+    <meta itemprop="name" content="WebRTC code samples">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta id="theme-color" name="theme-color" content="#ffffff">
+
+    <base target="_blank">
+
+    <title>Constraints and statistics</title>
+
+    <link rel="icon" sizes="192x192" href="images/webrtc-icon-192x192.png">
+    <!--<link href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">-->
+    <link rel="stylesheet" href="css/global.css"/>
+    <link rel="stylesheet" href="css/main.css"/>
+
+</head>
+
+<body>
+
+<div id="container">
+
+    <h1><span>Constraints &amp; statistics</span></h1>
+
+    <section id="blurb">
+        <p>This demo shows ways to use constraints and statistics in WebRTC applications.</p>
+        <p>Set camera constraints, and click <strong>Get media</strong> to (re)open the camera with these included.
+            Click <strong>Connect</strong> to create a (local) peer connection. The RTCPeerConnection objects <code>localPeerConnection</code>
+            and <code>remotePeerConnection</code> can be inspected from the console.</p>
+        <p>Setting a value to zero will remove that constraint. </p>
+        <p>The lefthand video shows the output of <code>getUserMedia()</code>; on the right is the video after being
+            passed through the peer connection. The transmission bitrate is displayed below the righthand video.</p>
+    </section>
+
+    <section id="blurc">
+        <p>Extensions for Chrome / Opera / Vivaldi :</p>
+        <a href="https://udta.github.io/WebRTCDesktopSharingConstraints/extensions/desktopCapturer_chrome.zip"
+           id="chromeExtensions">Get Extensions</a>
+        <p>Extensions for Firefox :</p>
+        <a href="https://udta.github.io/WebRTCDesktopSharingConstraints/extensions/webrtc-screen-capturing-firefox.xpi"
+           id="FirefoxExtensions">Get Extensions</a>
+    </section>
+
+    <div>
+        <input id="uploadFile" type="file" />
+        <button id="connect" disabled>Connect</button>
+        <button id="hangup" disabled>Hang Up</button>
+        <button id="detail" disabled>Detail</button>
+    </div>
+    <div>
+        <label for="frameRateLimit">FrameRate Limit:</label>
+        <select id="frameRateLimit">
+            <option value="GUM">GetUserMedia constraints</option>
+            <option value="RID">SDP rid attribute</option>
+            <option value="VP8">SDP VP8 max-fr</option>
+            <option value="H264">SDP H264 max-mbps</option>     <!-->TODO: check if the browser support H264 or not<!-->
+            <option value="IMGVP8">SDP VP8 imgattr</option>
+            <option value="IMG264">SDP H264 imgattr</option>      <!-->TODO: check if the browser support H264 or not
+            <!-->
+            <option id="CST" value="CST">MediaTrackConstraints</option> <!-->For firefox only<!-->
+        </select>
+    </div>
+
+
+    <section id="constraints">
+        <div id="getUserMedia">
+            <div class="input">
+                <h2>Camera constraints</h2>
+                <div id="minWidth">
+                    <label>Min width <span>640</span>px:</label>
+                    <input type="range" min="0" max="460" value="320">
+                    <select name="selectMinWidth" id="selectMinWidth">
+                        <option value="640" selected>nHD( 640 )</option>
+                        <option value="960">qHD( 960 )</option>
+                        <option value="1280">HD( 1280 )</option>
+                        <option value="1920">FHD( 1920 )</option>
+                        <option value="2560">QHD( 2560 )</option>
+                        <option value="3200">QHD+( 3200 )</option>
+                        <option value="3840">4K UHD( 3840 )</option>
+                    </select>
+                </div>
+                <div id="maxWidth">
+                    <label>Max width <span>3840</span>px:</label>
+                    <input type="range" min="0" max="4096" value="3840">
+                    <select name="selectMaxWidth" id="selectMaxWidth">
+                        <option value="640">nHD( 640 )</option>
+                        <option value="960">qHD( 960 )</option>
+                        <option value="1280">HD( 1280 )</option>
+                        <option value="1920">FHD( 1920 )</option>
+                        <option value="2560">QHD( 2560 )</option>
+                        <option value="3200">QHD+( 3200 )</option>
+                        <option value="3840" selected>4K UHD( 3840 )</option>
+                    </select>
+                </div>
+                <div id="minHeight">
+                    <label>Min height <span>360</span>px:</label>
+                    <input type="range" min="0" max="2160" value="240">
+                    <select name="selectMinHeight" id="selectMinHeight">
+                        <option value="360" selected>nHD( 360 )</option>
+                        <option value="540">qHD( 540 )</option>
+                        <option value="720">HD( 720 )</option>
+                        <option value="1080">FHD( 1080 )</option>
+                        <option value="1440">QHD( 1440 )</option>
+                        <option value="1800">QHD+( 1800 )</option>
+                        <option value="2160">4K UHD( 2160 )</option>
+                    </select>
+                </div>
+                <div id="maxHeight">
+                    <label>Max height <span>2160</span>px:</label>
+                    <input type="range" min="0" max="2160" value="2160">
+                    <select name="selectMaxHeight" id="selectMaxHeight">
+                        <option value="360">nHD( 360 )</option>
+                        <option value="540">qHD( 540 )</option>
+                        <option value="720">HD( 720 )</option>
+                        <option value="1080">FHD( 1080 )</option>
+                        <option value="1440">QHD( 1440 )</option>
+                        <option value="1800">QHD+( 1800 )</option>
+                        <option value="2160" selected>4K UHD( 2160 )</option>
+                    </select>
+                </div>
+                <div id="minFramerate">
+                    <label>min Frame rate <span>1</span>fps:</label>
+                    <input type="range" min="0" max="60" value="1">
+                </div>
+                <div id="maxFramerate">
+                    <label>max Frame rate <span>5</span>fps:</label>
+                    <input type="range" min="0" max="60" value="5">
+                </div>
+            </div>
+            <div id="getUserMediaConstraints" class="output"></div>
+        </div>
+
+    </section>
+
+    <section id="video">
+        <div id="localVideo">
+            <video autoplay loop muted controls></video>
+            <div></div>
+        </div>
+        <div id="remoteVideo">
+            <video autoplay loop muted controls></video>
+            <div></div>
+            <div id="bitrate"></div>
+            <div id="peer"></div>
+        </div>
+    </section>
+    <section id="stats">
+        <div id="txStats"></div>
+        <div id="rxStats"></div>
+    </section>
+
+    <section id="statistics" style="display:none">
+        <div id="senderStats"></div>
+        <div id="receiverStats"></div>
+    </section>
+
+    <a href="https://github.com/udta/WebRTCDesktopSharingConstraints" title="View source for this page on GitHub"
+       id="viewSource">View source on GitHub</a>
+
+</div>
+
+<script src="js/adapter.js"></script>
+<script src="js/common.js"></script>
+<script src="js/getScreenId.js"></script>
+<script src="js/main.js"></script>
+<!--<script src="../../../js/lib/ga.js"></script>-->
+
+</body>
+</html>

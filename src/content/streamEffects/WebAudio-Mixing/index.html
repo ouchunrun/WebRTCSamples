@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="WebRTC code samples">
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+    <meta itemprop="description" content="Client-side WebRTC code samples">
+
+    <base target="_blank">
+
+    <title>web audio mixing demo</title>
+    <link rel="stylesheet" href="main.css" />
+
+</head>
+
+<body>
+    <div style="width: 33.3%;float: left">
+        <h3>Local:</h3><br>
+        <video id="localVideo" autoplay muted controls></video>
+
+        <br>
+        <button id="mute_micStream" style="height: 30px;width: 120px;">mute_micStream</button>
+        <button id="unmute_micStream" style="height: 30px;width: 130px;">unmute_micStream</button>
+    </div>
+
+    <div style="width: 33.3%;float: left;">
+        <h3>Upload:</h3><br>
+        <video id="uploadVideo" autoplay controls loop muted height="480"></video>
+
+        <br>
+        <button id="mute_uploadStream" style="height: 30px;width: 150px;">mute_uploadStream</button>
+        <button id="unmute_uploadStream" style="height: 30px;width: 150px;">unmute_uploadStream</button>
+    </div>
+
+    <div style="width: 33.3%;    float: left;">
+        <h3>Remote:</h3><br>
+        <video id="remoteVideo" autoplay controls></video>
+    </div>
+
+    <div id="buttonDiv">
+        <hr>
+        <button id="startButton" style="margin-left: 40px;">Start</button>
+        <button id="callButton">Call</button>
+        <button id="hangupButton">Hang Up</button>
+        <input id="uploadFile" style="width: 200px;margin-left: 40px;" type="file" value="上传文件"/>
+    </div>
+
+    <!--<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>-->
+    <script src="main.js"></script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<!--
+ *  Copyright (c) 2015 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree.
+-->
+<html>
+<head>
+
+    <meta charset="utf-8">
+    <meta name="description" content="WebRTC code samples">
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+    <meta itemprop="description" content="Client-side WebRTC code samples">
+    <meta itemprop="image" content="../../../images/webrtc-icon-192x192.png">
+    <meta itemprop="name" content="WebRTC code samples">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta id="theme-color" name="theme-color" content="#ffffff">
+
+    <base target="_blank">
+
+    <title>Constraints and statistics</title>
+
+    <link href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="css/main.css"/>
+    <link rel="stylesheet" href="css/index.css"/>
+    <style>
+        textarea{
+            width:100%;
+            height:300px;
+        }
+        .levelSet{
+            height: 170px;
+            width: 96%;
+            border: 1px solid black;
+            padding: 2%;
+        }
+        .levelShow{height: 45px;}
+    </style>
+</head>
+
+<body>
+
+<div id="container">
+
+    <h1><a href="//webrtc.github.io/samples/" title="WebRTC samples homepage">WebRTC samples</a> <span>Constraints &amp; statistics</span>
+    </h1>
+
+    <h2>This demo is mainly used to study the resolution control under edge.</h2>
+
+    <div>
+        <button id="getMedia">Get media</button>
+        <button id="connect" disabled>Connect</button>
+        <button id="hangup" disabled>Hang Up</button>
+    </div>
+    
+
+    <section id="constraints">
+        <div class="levelSet">
+            <lable>设置 local profileLevel：</lable>
+            <select id="localLevel" style="width: 100px;">
+                <option value="0A">1</option>
+                <option value="09">1b</option>
+                <option value="0B">1.1</option>
+                <option value="0C">1.2</option>
+                <option value="0D">1.3</option>
+                <option value="14">2</option>
+                <option value="15">2.1</option>
+                <option value="16">2.2</option>
+                <option value="1E">3</option>
+                <option value="1F">3.1</option>
+                <option value="20">3.2</option>
+                <option value="28">4</option>
+                <option value="29">4.1</option>
+                <option value="2">4.2</option>
+                <option value="32">5</option>
+                <option value="33">5.1</option>
+                <option value="34">5.2</option>
+                <option value="3C">6</option>
+                <option value="3D">6.1</option>
+                <option value="3E">6.2</option>
+            </select>
+            <div class="local levelShow"></div>
+
+            <hr>
+            <lable>设置 Remote profileLevel：</lable>
+            <select id="remoteLevel" style="width: 100px;">
+                <option value="0A">1</option>
+                <option value="09">1b</option>
+                <option value="0B">1.1</option>
+                <option value="0C">1.2</option>
+                <option value="0D">1.3</option>
+                <option value="14">2</option>
+                <option value="15">2.1</option>
+                <option value="16">2.2</option>
+                <option value="1E">3</option>
+                <option value="1F">3.1</option>
+                <option value="20">3.2</option>
+                <option value="28">4</option>
+                <option value="29">4.1</option>
+                <option value="2">4.2</option>
+                <option value="32">5</option>
+                <option value="33">5.1</option>
+                <option value="34">5.2</option>
+                <option value="3C">6</option>
+                <option value="3D">6.1</option>
+                <option value="3E">6.2</option>
+            </select>
+            <div class="remote levelShow"></div>
+        </div>
+
+        <div id="getUserMedia">
+            <textarea name="getUserMediaConstraints" id="getUserMediaConstraints" type="text"></textarea>
+        </div>
+
+    </section>
+
+    <section id="video">
+        <div id="localVideo">
+            <video playsinline autoplay muted></video>
+            <div></div>
+        </div>
+        <div id="remoteVideo">
+            <video playsinline autoplay muted></video>
+            <div></div>
+            <div id="bitrate"></div>
+            <div id="peer"></div>
+        </div>
+    </section>
+    <a href="https://webrtc.github.io/samples/">Webrtc samples</a>
+    <section id="statistics">
+        <div id="senderStats"></div>
+        <div id="receiverStats"></div>
+    </section>
+</div>
+
+<script src="js/adapter-latest.js"></script>
+<script src="js/ga.js"></script>
+<script src="js/index.js"></script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DataChannel数据传输</title>
+    <link rel="stylesheet" href="./css/main.css">
+</head>
+<body>
+
+<div id="onlineUserList">
+    <h2 style="text-align: center;">用户列表</h2>
+    <ul id="userList">
+        <li><span>魔法少女郭德纲😃</span> <input type="button" value="连接"></li>
+        <li><span>暮光之城管</span> <input type="button" value="连接"></li>
+        <li><span>钢铁侠是怎样炼成的</span> <input type="button" value="连接"></li>
+        <li><span>唐伯虎点蚊香</span> <input type="button" value="连接"></li>
+        <li><span>罗密欧与🐷过夜～</span> <input type="button" value="连接"></li>
+    </ul>
+
+<!--    <input type="text" id="userName" value="wsInstance2">-->
+<!--    <button onclick="createWs()">createWs</button>-->
+<!--    <button onclick="createOffer()">createOffer</button>-->
+</div>
+
+<div id="container">
+    <div id="chatMessage">
+        <div class="tip">
+            <h2>Chat Message</h2>
+        </div>
+        <div id="content">
+            <div id="outgoing-message">
+                <div class="left">
+                    <span>魔法少女郭德纲😃 :</span>
+                    <span>你好啊</span>
+                </div>
+                <div class="right">
+                    <span>你好你好：</span>
+                    <span class="right">罗密欧与🐷过夜～ </span>
+
+                </div>
+            </div>
+            <div id="messageArea" >
+                <input placeholder="Send a message" type="text" id="dataChannelSend">
+                <div id="sendMessage" onclick="sendMessage()">send</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="src/adapter.js"></script>
+<script src="src/public.js"></script>
+<script src="src/webrtc.js"></script>
+<script src="src/websocket.js"></script>
+<script src="src/index.js"></script>
+<!--<script src="src/main.js"></script>-->
+</body>
+</html>
