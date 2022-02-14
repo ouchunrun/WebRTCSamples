@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>WebRTC(G2)测试页</title>
+    <title>WebRTC 测试页</title>
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="./css/main.css">
 </head>
@@ -54,7 +54,7 @@
 
         <!--    Part2: webRTC 相关接口    -->
         <div class="block">
-            <p class="block-header">设备权限</p>
+            <p class="block-header all-pass">设备权限</p>
             <div class="part">
                 <div class="line">
                     <span>是否允许使用摄像头:</span>
@@ -66,8 +66,8 @@
                 </div>
             </div>
 
-            <p class="block-header">RTCPeerConnection API</p>
-            <div class="part">
+            <p class="block-header"><span class="arrow-right">>></span>RTCPeerConnection API</p>
+            <div class="part" style="display: none">
                 <div class="line">
                     <span>RTCPeerConnection():</span>
                     <span class="support"></span>
@@ -190,30 +190,30 @@
                 </div>
                 <div class="line">
                     <span>Audio input：</span>
-                    <span>
+                    <div class="line">
                         <ul>
                             <li>默认 - 耳机式麦克风 (3- Grandstream GUV3000) (2bab:0023)</li>
                             <li>通讯 - 耳机式麦克风 (3- Grandstream GUV3000) (2bab:0023)</li>
                         </ul>
-                    </span>
+                    </div>
                 </div>
                 <div class="line">
                     <span>Audio output：</span>
-                    <span>
+                    <div class="line">
                         <ul>
                             <li>默认 - 扬声器 (Realtek High Definition Audio)</li>
                             <li>通讯 - 头戴式耳机 (3- Grandstream GUV3000) (2bab:0023)</li>
                         </ul>
-                    </span>
+                    </div>
                 </div>
                 <div class="line">
                     <span>Video input:</span>
-                    <span>
+                    <div class="line">
                         <ul>
                             <li>GRANDSTREAM GUV3100 (2bab:0011)</li>
                             <li>Aoni HD Camera (1bcf:2283)</li>
                         </ul>
-                    </span>
+                    </div>
                 </div>
             </div>
 
@@ -460,7 +460,7 @@
                 </div>
             </div>
 
-            <p class="block-header">弱网对抗能力</p>
+            <p class="block-header">弱网对抗</p>
             <div class="part">
                 <div class="line">
                     <span>音频:</span>
@@ -633,7 +633,7 @@
                 </div>
             </div>
 
-            <p class="block-header">webcodecs 支持</p>
+            <p class="block-header">WebCodecs</p>
             <div class="part">
                 <div class="line">
                     <span>AudioData():</span>

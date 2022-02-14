@@ -7,7 +7,7 @@ caption,th{text-align:left;font-weight:normal;}
 html,body,fieldset,img,iframe,abbr{border:0;}
 i,cite,em,var,address,dfn{font-style:normal;}
 [hidefocus],summary{outline:0;}
-/*li{list-style:none;}*/
+li{list-style:none;}
 h1,h2,h3,h4,h5,h6,small{font-size:100%;}
 sup,sub{font-size:83%;}
 pre,code,kbd,samp{font-family:inherit;}
@@ -316,6 +316,18 @@ meter#instant {
   width: 16px;
   display: inline-block;
 }
-ul {
-  list-style-type:square;
+.arrow-right{
+  text-align: left;
+  float: left;
+  letter-spacing: -3px;
+}
+
+.all-pass{
+  background: green;
+}
+.all-fail{
+  background: red;
+}
+.partially-pass{
+  background: yellow;
 }
