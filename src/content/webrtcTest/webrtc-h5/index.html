@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>WebRTC(G2)测试页</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="./css/reset.css">
+    <link rel="stylesheet" href="./css/common.css">
+    <link rel="stylesheet" href="./css/nrtc-new.css">
+    <link rel="stylesheet" href="./css/main.css">
+</head>
+
+<body>
+<div class="nrtc-container">
+    <div class="top">
+        <!--    Part1: 测试环境    -->
+        <div class="block">
+            <p class="block-header">WebRtc 测试环境</p>
+            <div id="part-env" class="part">
+                <div class="line">
+                    <span>操作系统：</span>
+                    <span>Windows</span>
+                </div>
+                <div class="line">
+                    <span>浏览器：</span>
+                    <span>Chrome/96.0.4664.110</span>
+                </div>
+                <div class="line">
+                    <span>UA：</span>
+                    <span>Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36</span>
+                </div>
+                <div class="line">
+                    <span>屏幕分辨率：</span>
+                    <span>1920 x 1080</span>
+                </div>
+                <div class="line" id="wechatBrowserBox">
+                    <!--    安卓微信等环境时才显示该配置项    -->
+                    <span>安卓微信内嵌浏览器内核:</span>
+                    <span id="wechatBrowser">Chrome</span>
+                </div>
+            </div>
+
+            <p class="block-header">调试</p>
+            <div class="part">
+                <div class="line">
+                    <button type="button" id="toggleVConsole">打开vconsole</button>
+                </div>
+
+                <div class="line">
+                    <button type="button" id="exportLog">导出测试结果</button>
+                </div>
+            </div>
+        </div>
+
+        <!--    Part2: webRTC 相关接口    -->
+        <div class="block">
+            <p class="block-header">设备权限</p>
+            <div class="part">
+                <div class="line">
+                    <span>是否允许使用摄像头:</span>
+                    <label><input type="radio" value="yes" checked>是</label>
+                    <label><input type="radio"  value="no">否</label>
+                </div>
+                <div class="line">
+                    <span>是否允许使用麦克风:</span>
+                    <label><input type="radio" value="yes" checked>是</label>
+                    <label><input type="radio"  value="no">否</label>
+                </div>
+            </div>
+
+            <p class="block-header">RTCPeerConnection 接口</p>
+            <div class="part">
+                <div class="line">
+                    <span>RTCPeerConnection():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>createOffer():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>createAnswer():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>createDataChannel():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>getReceivers():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>getTransceivers():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>getSenders():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>getStats():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>removeTrack():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>restartIce():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>setLocalDescription():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>setRemoteDescription():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>addTrack():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>close():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+            </div>
+
+            <p class="block-header">RTCPeerConnection 事件</p>
+            <div class="part">
+                <div class="line">
+                    <span>connectionstatechange:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>icecandidate:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>iceconnectionstatechange :</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>icegatheringstatechange :</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>signalingstatechange :</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>negotiationneeded :</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+            </div>
+
+            <p class="block-header">RTCRtpSender</p>
+            <div class="part">
+                <div class="line">
+                    <span>replaceTrack():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>getParameters():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>setParameters() :</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>getStats() :</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>getCapabilities()  :</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+            </div>
+
+            <p class="block-header">MediaDevices.enumerateDevices</p>
+            <div class="part">
+                <div class="line">
+                    <span>enumerateDevices获取设备列表:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>ondevicechange 事件:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>Audio input：</span>
+                    <select id="audioSource">
+                        <option value="default">默认 - 耳机式麦克风 (3- Grandstream GUV3000) (2bab:0023)</option>
+                        <option value="communications">通讯 - 耳机式麦克风 (3- Grandstream GUV3000) (2bab:0023)</option>
+                        <option value="8119791e4646ae3dd5e66cd2cb1e7359573038bd52e8525a5281a0a5a058c5ef">麦克风 (2- Aoni Microphone) (1bcf:2283)</option>
+                        <option value="ed7d82a72ab0319cd228528d63335fea7fb2bdac853bd8f4b47e0ae838ee6474">麦克风 (GRANDSTREAM GUV3100) (2bab:0011)</option>
+                        <option value="f57e3cac958c461577937578cf3bc3d43fbe69f37348e469486eb0cfd28bb76e">耳机式麦克风 (3- Grandstream GUV3000) (2bab:0023)</option>
+                    </select>
+                </div>
+                <div class="line">
+                    <span>Audio output：</span>
+                    <select id="audioOutput">
+                        <option value="default">默认 - 扬声器 (Realtek High Definition Audio)</option>
+                        <option value="communications">通讯 - 头戴式耳机 (3- Grandstream GUV3000) (2bab:0023)</option>
+                        <option value="39d6291c7393e619125e1ddb1e5f8a9c9ee077d0867d2097822e5f88ac1064fd">扬声器 (Realtek High Definition Audio)</option>
+                        <option value="08f4221cfe2352c0437741c65bf91af0acf18a9ed49b372c7356c8a1b94d7915">头戴式耳机 (3- Grandstream GUV3000) (2bab:0023)</option>
+                    </select>
+                </div>
+                <div class="line">
+                    <span>Video input:</span>
+                    <select id="videoSource">
+                        <option value="97b270c7ef56ae12b4519d4684a36797d0e3697c6b5e36cae07b0729e80d061f">GRANDSTREAM GUV3100 (2bab:0011)</option>
+                        <option value="9bfe836f4e8b0b782a05f499203f5270ffbb03ba0d93b9b2bae458b778392fd8">Aoni HD Camera (1bcf:2283)</option>
+                    </select>
+                </div>
+            </div>
+
+            <p class="block-header">MediaDevices.getDisplayMedia</p>
+            <div class="part">
+                <div class="line">
+                    <span>最大分辨率:</span>
+                    <select>
+                        <option value="">1920*1080</option>
+                    </select>
+                </div>
+                <div class="line">
+                    <span>支持的帧率：</span>
+                    <select id='sessionConfigVideoFrameRate'>
+                        <option value='CHAT_VIDEO_FRAME_RATE_5'>5</option>
+                        <option value='CHAT_VIDEO_FRAME_RATE_15'>15</option>
+                        <option value='CHAT_VIDEO_FRAME_RATE_25'>30</option>
+                    </select>
+                </div>
+            </div>
+
+            <p class="block-header">MediaDevices.getUserMedia</p>
+            <div class="part">
+                <div class="line">
+                    <span>支持的限制参数:</span>
+                    <select>
+                        <option value=''>max</option>
+                        <option value=''>exact</option>
+                        <option value=''>ideal</option>
+                    </select>
+                </div>
+                <div class="line">
+                    <span>支持的分辨率和帧率:</span>
+                    <select>
+                        <option value=''>1280 * 720 * 15</option>
+                        <option value=''>1280 * 720 * 30</option>
+                        <option value=''>640 * 360 * 15</option>
+                        <option value="">640 * 360 * 30</option>
+                    </select>
+                </div>
+            </div>
+
+            <p class="block-header">MediaStream</p>
+            <div class="part">
+                <div class="line">
+                    <span>MediaStream.addTrack():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>MediaStream.removeTrack():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>MediaStream.getTracks():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>MediaStream.getAudioTracks():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>MediaStream.getVideoTracks():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+
+                <div class="line">
+                    <span>MediaStream.onaddtrack:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>MediaStream.onremovetrack:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+            </div>
+
+
+            <p class="block-header">MediaStreamTrack</p>
+            <div class="part">
+                <div class="line">
+                    <span>MediaStreamTrack.applyConstraints():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>MediaStreamTrack.getConstraints():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>MediaStreamTrack.getCapabilities():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>MediaStreamTrack.getSettings():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+            </div>
+        </div>
+
+
+        <!--    Part3: 其他相关功能    -->
+        <div class="block">
+            <p class="block-header">音视频编码能力</p>
+            <div class="part">
+                <div class="line">
+                    <span>音频编码能力:</span>
+                    <select>
+                        <option value=''>opus</option>
+                        <option value=''>ISAC</option>
+                        <option value=''>G722</option>
+                        <option value=''>PCMU</option>
+                        <option value=''>PCMA</option>
+                        <option value=''>DTMF</option>
+                        <option value=''>RED</option>
+                        <option value=''>telephone-event</option>
+                    </select>
+                </div>
+                <div class="line">
+                    <span>音频解码能力:</span>
+                    <select>
+                        <option value=''>opus</option>
+                        <option value=''>ISAC</option>
+                        <option value=''>G722</option>
+                        <option value=''>PCMU</option>
+                        <option value=''>PCMA</option>
+                        <option value=''>DTMF</option>
+                        <option value=''>RED</option>
+                        <option value=''>telephone-event</option>
+                    </select>
+                </div>
+                <div class="line">
+                    <span>视频编码能力:</span>
+                    <select>
+                        <option value=''>VP8</option>
+                        <option value=''>VP9</option>
+                        <option value=''>H264</option>
+                        <option value=''>H265</option>
+                        <option value=''>AV1</option>
+                        <option value=''>flexfec-03</option>
+                    </select>
+                </div>
+                <div class="line">
+                    <span>视频解码能力:</span>
+                    <select>
+                        <option value=''>VP8</option>
+                        <option value=''>VP9</option>
+                        <option value=''>H264</option>
+                        <option value=''>H265</option>
+                        <option value=''>AV1</option>
+                        <option value=''>flexfec-03</option>
+                    </select>
+                </div>
+            </div>
+
+            <p class="block-header">弱网对抗能力</p>
+            <div class="part">
+                <div class="line">
+                    <span>音频:</span>
+                    <select>
+                        <option value=''>FEC</option>
+                        <option value=''>RED</option>
+                    </select>
+                </div>
+                <div class="line">
+                    <span>视频:</span>
+                    <select>
+                        <option value=''>FEC</option>
+                        <option value=''>RED</option>
+                        <option value=''>RTCP</option>
+                        <option value=''>RTX</option>
+                        <option value=''>NACK</option>
+                        <option value=''>PLI</option>
+                        <option value="">FIR</option>
+                        <option value="">REMB</option>
+                    </select>
+                </div>
+            </div>
+            <p class="block-header">webSocket 支持</p>
+            <div class="part">
+                <div class="line">
+                    <span>webSocket功能:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>webSocket重连:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>webSocket保活:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+            </div>
+
+            <p class="block-header">WebAssembly特性</p>
+            <div class="part">
+                <div class="line">
+                    <span>bigInt():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>bulkMemory():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>exceptions():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>multiValue():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>mutableGlobals():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>referenceTypes():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>saturatedFloatToInt():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>signExtensions():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>simd():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>memory64():</span>
+                    <label><input type="radio" value="yes">支持</label>
+                    <label><input type="radio"  value="no" checked>不支持</label>
+                </div>
+                <div class="line">
+                    <span>tailCall():</span>
+                    <label><input type="radio" value="yes">支持</label>
+                    <label><input type="radio"  value="no" checked>不支持</label>
+                </div>
+                <div class="line">
+                    <span>threads():</span>
+                    <label><input type="radio" value="yes">支持</label>
+                    <label><input type="radio"  value="no" checked>不支持</label>
+                </div>
+            </div>
+
+            <p class="block-header">captureStream取流支持</p>
+            <div class="part">
+                <div class="line">
+                    <span>Canvas 取流:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>Video 取流:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+            </div>
+
+            <p class="block-header">WebAudio</p>
+            <div class="part">
+                <div class="line">
+                    <span>createMediaStreamDestination():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>createMediaStreamSource():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>createMediaElementSource():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>resume():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>createScriptProcessor():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+            </div>
+
+            <p class="block-header">MediaRecorder</p>
+            <div class="part">
+                <div class="line">
+                    <span>video/webm\;codecs=vp8:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>video/webm\;codecs=h264:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>audio/webm\;codecs=opus:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>audio/webm:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+            </div>
+
+            <p class="block-header">webcodecs 支持</p>
+            <div class="part">
+                <div class="line">
+                    <span>AudioData():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>AudioDecoder():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>AudioEncoder():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>VideoDecoder():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>VideoEncoder():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>ImageDecoder():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>VideoFrame():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>ImageTrack():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+            </div>
+
+            <p class="block-header">本地存储</p>
+            <div class="part">
+                <div class="line">
+                    <span>localStorage:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>sessionStorage:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+            </div>
+
+            <p class="block-header">IndexedDB</p>
+            <div class="part">
+                <div class="line">
+                    <span>open():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>openCursor():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>count():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>getAll():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>bound():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>upperBound():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>lowerBound():</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+            </div>
+
+            <p class="block-header">其他</p>
+            <div class="part">
+                <div class="line">
+                    <span>WebTransport:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+
+                <div class="line">
+                    <span>Web Worker:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+
+                <div class="line">
+                    <span>CryptoJS加解密:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+            </div>
+        </div>
+
+        <!--    Part4: 功能支持预览    -->
+        <div class="block">
+            <p class="block-header"> 总体功能支持情况 </p>
+            <div class="part">
+                <div class="line">
+                    <span>P2P音频通话:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>P2P视频通话:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>开摄像头:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>关摄像头:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>开演示:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>开启桌面共享:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>关闭桌面共享:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>获取音视频设备列表:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>切换前后摄像头（移动端）:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>ICE重连:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>网络延迟:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>网络抖动:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>提名的candidatePair:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>UDP or TCP:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>webSocket断网重连:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>webSocket保活:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>本地虚拟背景设置:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>噪音检测:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>音量检测:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>WebHID:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>debug.js日志导出:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>Trickle-ice:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+            </div>
+
+            <p class="block-header">以下测试项请手动选择</p>
+            <div class="part">
+                <div class="line">
+                    <span>MIC和摄像头系统授权提示方式:</span>
+                    <select>
+                        <option value=''>自动授权</option>
+                        <option value=''>不提示授权</option>
+                        <option value=''>左上角弹框或页面弹框</option>
+                    </select>
+                </div>
+                <div class="line">
+                    <span>每次访问MIC和摄像头都独立授权:</span>
+                    <select>
+                        <option value=''>是</option>
+                        <option value=''>否</option>
+                    </select>
+                </div>
+                <div class="line">
+                    <span>选择整个屏幕、窗口或某个tab页:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>共享整个屏幕时选择多屏幕:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+                <div class="line">
+                    <span>共享桌面时共享音频:</span>
+                    <label><input type="radio" value="yes" checked>支持</label>
+                    <label><input type="radio"  value="no">不支持</label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="application/javascript" src="js/vconsole.min.js"></script>
+<script>
+    let vconsole = null
+    document.getElementById('toggleVConsole').onclick = function (){
+        if (!vconsole){
+            vconsole = new VConsole();
+        }
+    }
+</script>
+</body>
+</html>

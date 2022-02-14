@@ -1,0 +1,50 @@
+div#meters > div {
+  margin: 0 0 1em 0;
+}
+
+div#meters div.label {
+  display: inline-block;
+  font-weight: 400;
+  margin: 0 0.5em 0 0;
+  width: 2.5em;
+}
+
+div#meters div.value {
+  display: inline-block;
+}
+
+meter {
+  width: 80%;
+}
+
+meter#clip {
+  color: #db4437;
+}
+
+meter#slow {
+color: #f4b400;
+}
+
+meter#instant {
+color: #0f9d58;
+}
+
+.nertc-video-container,.nertc-screen-container{
+  border: 1px solid yellow;
+}
+
+.highlight{
+  background: yellow;
+}
+
+.hide{
+  display: none;
+}
+
+.sendStatsFilter,.recvStatsFilter{
+  float: left;
+}
+
+#sendGetStats, #recvGetStats{
+  clear: both;
+}
