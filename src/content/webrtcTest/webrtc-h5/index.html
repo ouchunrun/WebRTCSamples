@@ -49,12 +49,27 @@
                 <div class="line">
                     <button type="button" id="exportLog">导出测试结果</button>
                 </div>
+
+                <div class="line">
+                    <button type="button" id="expand">展开/收起所有测试项</button>
+                </div>
+            </div>
+
+            <p class="block-header">颜色标识</p>
+            <div class="part">
+                <div class="color-identification all-pass">测试项全部通过</div>
+            </div>
+            <div class="part">
+                <div class="color-identification partially-pass">测试项部分通过</div>
+            </div>
+            <div class="part">
+                <div class="color-identification all-fail">测试项全部失败</div>
             </div>
         </div>
 
         <!--    Part2: webRTC 相关接口    -->
         <div class="block">
-            <p class="block-header all-pass">设备权限</p>
+            <p class="block-header">设备权限</p>
             <div class="part">
                 <div class="line">
                     <span>是否允许使用摄像头:</span>
@@ -66,7 +81,7 @@
                 </div>
             </div>
 
-            <p class="block-header"><span class="arrow-right">>></span>RTCPeerConnection API</p>
+            <p class="block-header">RTCPeerConnection API</p>
             <div class="part" style="display: none">
                 <div class="line">
                     <span>RTCPeerConnection():</span>
@@ -868,6 +883,60 @@
         if (!vconsole){
             vconsole = new VConsole();
         }
+    }
+
+    let blockHeaders = document.getElementsByClassName('block-header')
+    document.getElementById('expand').onclick = function (){
+        if(!blockHeaders){
+            blockHeaders = document.getElementsByClassName('block-header')
+        }
+        if(blockHeaders && blockHeaders.length){
+            for (let i = 3; i<blockHeaders.length; i++){
+                let blockHeader = blockHeaders[i]
+                if(blockHeader.nextElementSibling){
+                    if(blockHeader.nextElementSibling.style.display !== 'none'){
+                        blockHeader.nextElementSibling.style.display = 'none'
+                    }else {
+                        blockHeader.nextElementSibling.style.display = ''
+                    }
+                }
+            }
+        }
+    }
+
+
+    if(blockHeaders && blockHeaders.length){
+        for (let i = 0; i<blockHeaders.length; i++){
+            let blockHeader = blockHeaders[i]
+            blockHeader.onclick = function (){
+                if(blockHeader.nextElementSibling){
+                    if(blockHeader.nextElementSibling.style.display !== 'none'){
+                        blockHeader.nextElementSibling.style.display = 'none'
+                    }else {
+                        blockHeader.nextElementSibling.style.display = ''
+                    }
+                }
+            }
+        }
+    }
+
+    function setBlockHeadersDisplay(displayStyle){
+        if(!blockHeaders){
+            blockHeaders = document.getElementsByClassName('block-header')
+        }
+        if(blockHeaders && blockHeaders.length){
+            for (let i = 3; i<blockHeaders.length; i++){
+                let blockHeader = blockHeaders[i]
+                if(blockHeader.nextElementSibling){
+                    blockHeader.nextElementSibling.style.display = displayStyle
+                }
+            }
+        }
+    }
+
+    window.onload = function (){
+        console.log('收起所有展开项')
+        setBlockHeadersDisplay('none')
     }
 </script>
 </body>

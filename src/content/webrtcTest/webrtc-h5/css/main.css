@@ -316,18 +316,26 @@ meter#instant {
   width: 16px;
   display: inline-block;
 }
-.arrow-right{
-  text-align: left;
-  float: left;
-  letter-spacing: -3px;
-}
-
 .all-pass{
-  background: green;
+  width: 100%;
+  height: 20px;
+  background: #52c41a;
+  display: inline-block;
 }
 .all-fail{
-  background: red;
+  background: #d5372c;
 }
 .partially-pass{
-  background: yellow;
+  background: #efbe2c;
+}
+.block-header:hover{
+  color: orangered;
+}
+
+.color-identification {
+  font-weight: bold;
+  height: 40px;
+  line-height: 40px;
+  text-align: center;
+  color: aliceblue;
 }
