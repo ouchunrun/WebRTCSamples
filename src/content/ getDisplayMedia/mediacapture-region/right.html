@@ -96,7 +96,6 @@
         video.style = "border: none;";
         if (await MaybeStartCapturing()) {
             video.pause();
-            debugger
             await track.cropTo(cropIDs[source]);
             video.play();
         }
