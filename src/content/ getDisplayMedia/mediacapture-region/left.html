@@ -1,0 +1,96 @@
+<html>
+<head>
+    <meta
+            http-equiv="origin-trial"
+            content="AsJrpIhYETxVOr1rt0Ad7DFDSo+RMORd8h1sICJgv4XlMKZHVP1Ff6tMt619gmcfAHYOiZHdR5qbg/4DpUmV5AgAAABneyJvcmlnaW4iOiJodHRwczovL3czYy5naXRodWIuaW86NDQzIiwiZmVhdHVyZSI6IlJlZ2lvbkNhcHR1cmUiLCJleHBpcnkiOjE2NTI4MzE5OTksImlzU3ViZG9tYWluIjp0cnVlfQ=="
+    />
+    <link rel="icon" href="data:;base64,=" />
+    <style>
+        .rowHeader {
+            height: 10%;
+            width: 100%;
+        }
+
+        .rowContentA {
+            height: 100%;
+            width: 100%;
+            background-color: #9bc6d3;
+            border: 10px solid #a6d6c3;
+        }
+
+        .rowContentB {
+            height: 100%;
+            width: 100%;
+            background-color: #e8e3cc;
+            border: 10px solid #f5d3d6;
+        }
+
+        .rowContentHolder {
+            display: flex;
+            height: 40%;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+<div class="rowHeader">
+    <h1>Content Area</h1>
+    <button onclick="toggle(div1);">Toggle div1</button>
+    <button onclick="toggle(div2);">Toggle div2</button>
+</div>
+<div class="rowContentHolder">
+    <div id="div1" class="rowContentA">
+        <h1>Content 1</h1>
+        <p id="animation1"></p>
+    </div>
+</div>
+<!-- TODO: Why are these breaklines necessary? Why do the two rows overlap otherwise? -->
+<br /><br />
+<div class="rowContentHolder">
+    <div id="div2" class="rowContentB">
+        <h1>Content 2</h1>
+        <p id="animation2"></p>
+    </div>
+</div>
+<script>
+    if (!navigator.mediaDevices.produceCropId) {
+        // TODO: Display explanation and abort.
+    }
+
+    let animationCounter = 0;
+
+    function animate(animation) {
+        animation.innerHTML = `Poor man's Intellectual-Property-respecting animation frame #${animationCounter}.`;
+    }
+
+    setInterval(() => {
+        ++animationCounter;
+        animate(animation1);
+        animate(animation2);
+    }, 100);
+
+    const broadcastChannel = new BroadcastChannel("region-capture-demo");
+    broadcastChannel.onmessage = onBroadcastChannelMessage;
+
+    function onBroadcastChannelMessage(serializedMessage) {
+        const msg = JSON.parse(serializedMessage.data);
+        if (msg.init) {
+            init();
+        }
+    }
+
+    function postCropID(cropID) {
+        broadcastChannel.postMessage(JSON.stringify({ cropID: cropID }));
+    }
+
+    async function init() {
+        postCropID(await navigator.mediaDevices.produceCropId(document.getElementById("div1")));
+        postCropID(await navigator.mediaDevices.produceCropId(document.getElementById("div2")));
+    }
+
+    function toggle(div) {
+        div.style.visibility = (div.style.visibility != 'hidden') ? 'hidden' : 'visible';
+    }
+</script>
+</body>
+</html>
