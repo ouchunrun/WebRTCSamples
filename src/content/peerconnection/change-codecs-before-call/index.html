@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<!--
+ *  Copyright (c) 2015 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree.
+-->
+<html>
+<head>
+
+    <meta charset="utf-8">
+    <meta name="description" content="WebRTC code samples">
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+    <meta itemprop="description" content="Client-side WebRTC code samples">
+    <meta itemprop="image" content="../../../images/webrtc-icon-192x192.png">
+    <meta itemprop="name" content="WebRTC code samples">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta id="theme-color" name="theme-color" content="#ffffff">
+    <link rel="shortcut icon" href="#">
+
+    <base target="_blank">
+
+    <title>Change Codecs</title>
+
+    <link rel="stylesheet" href="css/main.css"/>
+    <link rel="stylesheet" href="css/index.css"/>
+    <style>
+        textarea{
+            width:100%;
+            height:225px;
+        }
+        .inputArea input{
+            margin: 10px 0;
+            height: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="container">
+    <h1>Set preferred video codec and max bitrate</h1>
+
+    <p>This sample shows how to setup a connection between two peers using
+        <a href="https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection">RTCPeerConnection</a> and
+        choose the preferred video codec to use (when that functionality is available.
+    </p>
+
+    <video id="localVideo" playsinline autoplay muted></video>
+    <video id="remoteVideo" playsinline autoplay></video>
+
+    <div class="box">
+        <button id="startButton">Start</button>
+        <button id="callButton">Call</button>
+        <button id="hangupButton">Hang Up</button>
+    </div>
+
+    <div class="box">
+        <span style="width: 150px;display: inline-block;text-align: right; font-weight: bold;">Codec preferences:</span>
+        <select id="codecPreferences" style="width: 60%;height: 40px;" disabled>
+            <option selected value="">Default</option>
+        </select>
+        <div id="actualCodec"></div>
+    </div>
+    <div class="box">
+        <span style="width: 150px;display: inline-block;text-align: right; color: red;font-weight: bold;">MaxBitRate:</span>
+        <input type="text" id="maxBitRate" placeholder="请设置要设置的带宽..." style="width: 58%;height: 30px">
+    </div>
+
+    <p>View the console to see logging. The <code>MediaStream</code> object <code>localStream</code>, and the <code>RTCPeerConnection</code>
+        objects <code>pc1</code> and <code>pc2</code> are in global scope, so you can inspect them in the console as
+        well.</p>
+
+    <p>For more information about RTCPeerConnection, see
+        <a href="http://www.html5rocks.com/en/tutorials/webrtc/basics/" title="HTML5 Rocks article about WebRTC by Sam Dutton">Getting Started With WebRTC</a>.
+    </p>
+
+
+
+</div>
+
+<script src="src/sdp_tools.js"></script>
+<script src="src/sdp.js"></script>
+<script src="./src/main.js" async></script>
+</body>
+</html>
