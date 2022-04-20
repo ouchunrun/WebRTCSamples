@@ -1,0 +1,188 @@
+<html>
+<head>
+    <meta
+            http-equiv="origin-trial"
+            content="AsJrpIhYETxVOr1rt0Ad7DFDSo+RMORd8h1sICJgv4XlMKZHVP1Ff6tMt619gmcfAHYOiZHdR5qbg/4DpUmV5AgAAABneyJvcmlnaW4iOiJodHRwczovL3czYy5naXRodWIuaW86NDQzIiwiZmVhdHVyZSI6IlJlZ2lvbkNhcHR1cmUiLCJleHBpcnkiOjE2NTI4MzE5OTksImlzU3ViZG9tYWluIjp0cnVlfQ=="
+    />
+    <link rel="icon" href="data:;base64,=" />
+</head>
+
+<body>
+<h1>Video Conferencing App</h1>
+<br /><br /><br />
+<video id="video" autoplay playsinline style="border: none"></video>
+<br /><br /><br />
+<button id="button0" onclick="OnSourceSelected(0);" disabled>Source #1</button>
+<button id="button1" onclick="OnSourceSelected(1);" disabled>Source #2</button>
+<button id="uncropped" onclick="OnUncroppedSelected();" disabled>Uncropped</button>
+<br />
+<p id="errorMessage" style="color: red"></p>
+<br />
+<p>
+    If you can observe a shimmering effect, that's an unrelated issue. Get around it by popping
+    into picture-in-picture mode.
+</p>
+<button id="pipButton" onclick="OnPipClicked();" disabled>PiP</button>
+<button id="startRecordingButton" onclick="startRecording();" disabled>Start Recording</button>
+<button id="stopRecordingButton" onclick="stopRecording();" disabled>Stop Recording</button>
+<br />
+<p id="muteIndicator"></p>
+<script>
+    const video = document.getElementById("video");
+    const pipButton = document.getElementById("pipButton");
+    const startRecordingButton = document.getElementById("startRecordingButton");
+    const stopRecordingButton = document.getElementById("stopRecordingButton");
+    const errorMessage = document.getElementById("errorMessage");
+    const muteIndicator = document.getElementById("muteIndicator");
+    let track;
+    let cropIDs = [];
+    let pip;
+    let recordedChunks = [];
+    let mediaRecorder;
+
+    const broadcastChannel = new BroadcastChannel("region-capture-demo");
+    broadcastChannel.onmessage = onBroadcastChannelMessage;
+
+    async function MaybeStartCapturing() {
+        errorMessage.innerHTML = "";
+
+        if (track && track.readyState == "live") {
+            return true;
+        }
+
+        let stream;
+        try {
+            stream = await navigator.mediaDevices.getDisplayMedia({
+                preferCurrentTab: true,
+            });
+        } catch (e) {
+            return false;
+        }
+
+        [track] = stream.getVideoTracks();
+        if (!track.label.startsWith("current-web-contents-media-stream://")) {
+            track.stop();
+            track = undefined;
+            errorMessage.innerHTML =
+                "This demo only works when capturing the current tab.<br />" +
+                "Cropping another tab is a future extension of the API.<br />" +
+                "Cropping anything but a tab is not currently planned.";
+            return false;
+        }
+
+        track.onmute = () => muteIndicator.innerHTML = "State: muted";
+        track.onunmute = () => muteIndicator.innerHTML = "State: active";
+        muteIndicator.innerHTML = "State: active";
+
+        track.onended = () => {
+            pipButton.disabled = true;
+            stopRecording();
+            startRecordingButton.disabled = true;
+            stopRecordingButton.disabled = true;
+            video.srcObject = undefined;
+            if (document.pictureInPictureElement) {
+                document.exitPictureInPicture();
+            }
+            muteIndicator.innerHTML = "";
+        };
+
+        video.srcObject = stream;
+        pipButton.disabled = false;
+        startRecordingButton.disabled = false;
+        return true;
+    }
+
+    async function OnSourceSelected(source) {
+        video.style = "border: none;";
+        if (await MaybeStartCapturing()) {
+            video.pause();
+            await track.cropTo(cropIDs[source]);
+            video.play();
+        }
+    }
+
+    async function OnUncroppedSelected() {
+        if (await MaybeStartCapturing()) {
+            // TODO: This should not be hard-coded, just capped to the size of the div.
+            video.style = "border: none; width: 500px; height: 500px;";
+            video.pause();
+            track.cropTo("");
+            video.play();
+        }
+    }
+
+    function OnPipClicked() {
+        video.requestPictureInPicture();
+    }
+
+    function startRecording() {
+        // VP9-support assumed. This is not the focus of this demo. :-)
+        mediaRecorder = new MediaRecorder(video.srcObject, { mimeType: "video/webm;codecs=vp9" });
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
+        };
+        mediaRecorder.start();
+
+        startRecordingButton.disabled = true;
+        stopRecordingButton.disabled = false;
+    }
+
+    function stopRecording() {
+        mediaRecorder.stop();
+
+        startRecordingButton.disabled = false;
+        stopRecordingButton.disabled = true;
+
+        setTimeout(() => {
+            const blob = new Blob(recordedChunks, {
+                type: "video/webm",
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            document.body.appendChild(a);
+            a.style = "display: none";
+            a.href = url;
+            a.download = "region_capture_demo_" + timestamp() + ".webm";
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            recordedChunks = [];
+            mediaRecorder = undefined;
+        });
+    }
+
+    function onBroadcastChannelMessage(serializedMessage) {
+        try {
+            const msg = JSON.parse(serializedMessage.data);
+            if (msg.init) {
+                init();
+            } else if (msg.cropID) {
+                cropIDs.push(msg.cropID);
+            }
+        } catch (error) {
+            console.error(`${error}`);
+        }
+    }
+
+    function timestamp() {
+        function padDate(input, length = 2) {
+            return input.toString().padStart(length, "0");
+        }
+        const date = new Date();
+        return (
+            [date.getFullYear(), padDate(date.getMonth() + 1), padDate(date.getDay())].join("-") +
+            "_" +
+            [padDate(date.getHours()), padDate(date.getMinutes())].join("")
+        );
+    }
+
+    function init() {
+        ["button0", "button1", "uncropped"].forEach((buttonId) => {
+            document.getElementById(buttonId).disabled = false;
+        });
+    }
+</script>
+</body>
+</html>
