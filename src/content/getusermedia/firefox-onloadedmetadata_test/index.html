@@ -37,6 +37,8 @@
     let countSpan = document.getElementById('countSpan')
     let localVideo = document.getElementById('localVideo')
     let userIdeal = false
+    let gumSetTimeoutTime = 2*1000
+    let testType = 'firefox'
 
     let getMediaCallBack = function (stream, countIndex){
         if(stream){
@@ -52,11 +54,14 @@
                     console.log('close track:', track)
                     track.stop()
                 })
-                if(userIdeal){
-                    getStreamWithIdeal()
-                }else {
-                    getStreamWithExact()
-                }
+
+                setTimeout(function (){
+                    if(userIdeal){
+                        getStreamWithIdeal()
+                    }else {
+                        getStreamWithExact()
+                    }
+                }, gumSetTimeoutTime)
             }
 
         }else {
@@ -71,8 +76,8 @@
         let constraints =  {
             audio: false,
             video: {
-                width: {exact: "1920"},
-                height: {exact: "1920"},
+                width: {exact: (testType === 'firefox') ? '640' : 1920},
+                height: {exact: (testType === 'firefox') ? '360' : 1920},
                 deviceId: {exact: deviceId || ''}
             }
         }
