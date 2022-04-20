@@ -19,7 +19,7 @@
 
 <h1>video onloadedmetadata 概率不触发测试</h1>
 
-<button onclick="videoOnTest()">使用exact限制取流失败后取流</button>
+<button onclick="getStreamWithExact()">使用exact限制取流失败后取流</button>
 <br>
 <button onclick="getStreamWithIdeal()">使ideal直接取流</button>
 
@@ -55,7 +55,7 @@
                 if(userIdeal){
                     getStreamWithIdeal()
                 }else {
-                    videoOnTest()
+                    getStreamWithExact()
                 }
             }
 
@@ -64,15 +64,15 @@
         }
     }
 
-    function videoOnTest(){
+    function getStreamWithExact(){
         count++
         countSpan.innerText = count
 
         let constraints =  {
             audio: false,
             video: {
-                width: {exact: "640"},
-                height: {exact: "360"},
+                width: {exact: "1920"},
+                height: {exact: "1920"},
                 deviceId: {exact: deviceId || ''}
             }
         }
