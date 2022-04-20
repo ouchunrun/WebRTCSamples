@@ -7,17 +7,134 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>video onloadedmetadata测试</title>
     <link rel="shortcut icon" href="#">
+    <style>
+        button{
+            width: 200px;
+            height: 30px;
+            margin: 15px 0;
+        }
+    </style>
 </head>
 <body>
 
-<button onclick="videoOnTest()">video onloadedmetadata 概率不触发测试</button>
+<h1>video onloadedmetadata 概率不触发测试</h1>
 
-<div><span>取流次数:</span><span id="countSpan"></span></div>
+<button onclick="videoOnTest()">使用exact限制取流失败后取流</button>
+<br>
+<button onclick="getStreamWithIdeal()">使ideal直接取流</button>
+
+<hr>
+<h2  style="color: red; font-size: 16px"><span>取流次数:  </span><span id="countSpan"></span></h2>
+
+<br>
+<video src="" id="localVideo" style="width: 640px" autoplay controls></video>
 
 <script>
     let deviceInfo = null
+    let deviceId
     let count = 0
+    let localStream
     let countSpan = document.getElementById('countSpan')
+    let localVideo = document.getElementById('localVideo')
+    let userIdeal = false
+
+    let getMediaCallBack = function (stream, countIndex){
+        if(stream){
+            localStream = stream
+            let video = document.createElement('video')
+            video.srcObject = stream
+            video.onloadedmetadata = async function(){
+                console.log("第 ", countIndex , ' 次onloadedmetadata 触发')
+                console.info("video onloadedmetadata 加载完成: "+ video.videoWidth + " * " + video.videoHeight)
+
+
+                stream.getTracks().forEach(function (track){
+                    console.log('close track:', track)
+                    track.stop()
+                })
+                if(userIdeal){
+                    getStreamWithIdeal()
+                }else {
+                    videoOnTest()
+                }
+            }
+
+        }else {
+            console.error('取流失败？？？')
+        }
+    }
+
+    function videoOnTest(){
+        count++
+        countSpan.innerText = count
+
+        let constraints =  {
+            audio: false,
+            video: {
+                width: {exact: "640"},
+                height: {exact: "360"},
+                deviceId: {exact: deviceId || ''}
+            }
+        }
+
+        console.log("开始第 ", count , ' 次取流~')
+        navigator.mediaDevices.getUserMedia(constraints).then(function (stream){
+            console.info('get stream success constraints: ' + JSON.stringify(constraints, null, '  '))
+            console.log("第 ", count , ' 次取流成功~')
+            getMediaCallBack(stream, count)
+        }).catch(function (error){
+            console.warn('get stream failed: ' + JSON.stringify(constraints, null, '  '))
+            console.warn('onGetStreamFailed error message: ' + error.message)
+            console.warn('error name: ' + error.name)
+            console.warn('error constraint: ' + error.constraint)
+
+            console.warn('constraints修改为ideal')
+            constraints =  {
+                audio: false,
+                video: {
+                    width: {ideal: "640"},
+                    height: {ideal: "360"},
+                    deviceId: {exact: deviceId || ''}
+                }
+            }
+            navigator.mediaDevices.getUserMedia(constraints).then(function (stream){
+                console.info('get stream success constraints: ' + JSON.stringify(constraints, null, '  '))
+                console.log("第 ", count , ' 次取流成功~~~~')
+                getMediaCallBack(stream, count)
+            }).catch(function (error){
+                console.warn('re-get stream failed: ' + JSON.stringify(constraints, null, '  '))
+                console.warn('onGetStreamFailed error message: ' + error.message)
+                console.warn('error name: ' + error.name)
+                console.warn('error constraint: ' + error.constraint)
+            })
+        })
+    }
+
+    function getStreamWithIdeal(){
+        userIdeal = true
+        count++
+        countSpan.innerText = count
+
+        let constraints =  {
+            audio: false,
+            video: {
+                width: {ideal: "640"},
+                height: {ideal: "360"},
+                deviceId: {exact: deviceId || ''}
+            }
+        }
+        navigator.mediaDevices.getUserMedia(constraints).then(function (stream){
+            console.info('get stream success constraints: ' + JSON.stringify(constraints, null, '  '))
+            console.log("第 ", count , ' 次取流成功~~~~')
+            getMediaCallBack(stream, count)
+        }).catch(function (error){
+            console.warn('re-get stream failed: ' + JSON.stringify(constraints, null, '  '))
+            console.warn('onGetStreamFailed error message: ' + error.message)
+            console.warn('error name: ' + error.name)
+            console.warn('error constraint: ' + error.constraint)
+        })
+    }
+
     function getDeviceList(){
         if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
             console.warn("browser don't support enumerateDevices() .")
@@ -27,6 +144,12 @@
         let deviceInfoCallback = function (data){
             console.warn('device data:', data)
             deviceInfo = data
+
+            if(deviceInfo && deviceInfo.cameras.length){
+                deviceId = deviceInfo.cameras[0].deviceId
+            }else {
+                console.warn('还未获取到设备列表')
+            }
         }
 
         console.log('enumerateDevices 获取设备 !!!!!!!')
@@ -92,79 +215,6 @@
             }
         }).catch(function (err) {
             console.error(err)
-        })
-    }
-
-    function videoOnTest(){
-        count++
-        countSpan.innerText = count
-
-        let getMediaCallBack = function (stream, countIndex){
-            if(stream){
-                let video = document.createElement('video')
-                video.srcObject = stream
-                video.onloadedmetadata = async function(){
-                    console.log("第 ", countIndex , ' 次onloadedmetadata 触发')
-                    console.info("video onloadedmetadata 加载完成: "+ video.videoWidth + " * " + video.videoHeight)
-
-
-                    stream.getTracks().forEach(function (track){
-                        console.log('close track:', track)
-                        track.stop()
-                    })
-                    videoOnTest()
-                }
-
-            }else {
-                console.error('取流失败？？？')
-            }
-        }
-        let deviceId
-        if(deviceInfo && deviceInfo.cameras.length){
-            deviceId = deviceInfo.cameras[0].deviceId
-        }else {
-            console.warn('还未获取到设备列表')
-        }
-
-        let constraints =  {
-            audio: false,
-            video: {
-                width: {exact: "640"},
-                height: {exact: "360"},
-                deviceId: {exact: deviceId || ''}
-            }
-        }
-
-        console.log("开始第 ", count , ' 次取流~')
-        navigator.mediaDevices.getUserMedia(constraints).then(function (stream){
-            console.info('get stream success constraints: ' + JSON.stringify(constraints, null, '  '))
-            console.log("第 ", count , ' 次取流成功~')
-            getMediaCallBack(stream, count)
-        }).catch(function (error){
-            console.warn('get stream failed: ' + JSON.stringify(constraints, null, '  '))
-            console.warn('onGetStreamFailed error message: ' + error.message)
-            console.warn('error name: ' + error.name)
-            console.warn('error constraint: ' + error.constraint)
-
-            console.warn('constraints修改为ideal')
-            constraints =  {
-                audio: false,
-                video: {
-                    width: {ideal: "640"},
-                    height: {ideal: "360"},
-                    deviceId: {exact: deviceId || ''}
-                }
-            }
-            navigator.mediaDevices.getUserMedia(constraints).then(function (stream){
-                console.info('get stream success constraints: ' + JSON.stringify(constraints, null, '  '))
-                console.log("第 ", count , ' 次取流成功~~~~')
-                getMediaCallBack(stream, count)
-            }).catch(function (error){
-                console.warn('re-get stream failed: ' + JSON.stringify(constraints, null, '  '))
-                console.warn('onGetStreamFailed error message: ' + error.message)
-                console.warn('error name: ' + error.name)
-                console.warn('error constraint: ' + error.constraint)
-            })
         })
     }
 
