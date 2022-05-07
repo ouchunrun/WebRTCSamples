@@ -65,10 +65,23 @@ function createPeerConnection() {
         log.info('Candidate localPeerConnection');
         remotePeerConnection.addIceCandidate(e.candidate).then(onAddIceCandidateSuccess, onAddIceCandidateError);
     };
+    localPeerConnection.oniceconnectionstatechange = function () {
+        log.info('local onIceConnectionStateChange, iceConnectionState: ' + localPeerConnection.iceConnectionState)
+    }
+    localPeerConnection.onconnectionstatechange = function () {
+        log.info('local onConnectionStateChange, connectionState: ' + localPeerConnection.iceConnectionState)
+    }
+
     remotePeerConnection.onicecandidate = function(e) {
         log.info('Candidate remotePeerConnection');
         localPeerConnection.addIceCandidate(e.candidate).then(onAddIceCandidateSuccess, onAddIceCandidateError);
     };
+    remotePeerConnection.oniceconnectionstatechange = function () {
+        log.info('remote onIceConnectionStateChange, iceConnectionState: ' + remotePeerConnection.iceConnectionState)
+    }
+    remotePeerConnection.onconnectionstatechange = function () {
+        log.info('remote onConnectionStateChange, connectionState: ' + remotePeerConnection.iceConnectionState)
+    }
 
     localPeerConnection.ontrack = function(e) {
         if (localVideo.srcObject !== e.streams[0]) {
