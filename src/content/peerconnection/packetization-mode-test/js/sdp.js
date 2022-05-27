@@ -45,7 +45,7 @@ function trimCodec (parsedSdp){
 	if (parsedSdp.media && parsedSdp.media.length) {
 		for (let i = 0; i < parsedSdp.media.length; i++) {
 			let media = parsedSdp.media[i]
-			let codec = ['VP8', 'VP9', 'AV1X']
+			let codec = ['VP8', 'VP9', 'AV1']
 			if (media.type === 'audio') {
 				codec = ['G722', 'opus', 'PCMU', 'PCMA', 'telephone-event'] // only keep ['G722', 'opus', 'PCMU', 'PCMA', 'telephone-event']
 				SDPTools.removeCodecByName(parsedSdp, i, codec, true)
