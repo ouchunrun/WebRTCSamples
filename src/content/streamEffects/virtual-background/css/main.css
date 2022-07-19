@@ -26,6 +26,15 @@ video{
     background: #56647d;
 }
 /************************************************背景图片***********************************************/
+.videoOff{
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    height: 35px;
+    border: none;
+    background: #a3a3a3;
+    color: aliceblue;
+}
 .backgroundButton {
     width: 58px;
     border: 2px solid transparent;

@@ -98,6 +98,20 @@ async function gum(){
 }
 
 /**
+ * 关闭摄像头
+ */
+function videoOff(){
+	if(localStream){
+		console.log('close video stream')
+		localStream.getTracks().forEach(function (track){
+			track.stop()
+		})
+	}
+	originVideo.srcObject = null
+	virtualBackgroundVideo.srcObject = null
+}
+
+/**
  * 虚拟背景预览设置
  * @param data
  */
@@ -111,6 +125,8 @@ async function backgroundEffectPreview(data){
 	}
 	if(data.type === 'image'){
 		option.virtualSource = './images/background-' + data.selectedThumbnail + '.jpg'
+	}else if(data.type === 'blur'){
+		option.blurValue = data.blurValue || 25
 	}
 
 	let previewData = {
