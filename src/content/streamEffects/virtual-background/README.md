@@ -48,5 +48,8 @@
     - Cause: video没有play
 
 - 7.wasm streaming compile failed: TypeError: Failed to execute 'compile' on 'WebAssembly': Incorrect response MIME type. Expected 'application/wasm'.
-  - 通过域名访问时存在报错，使用webstorm直接打开html则不会
+  - 通过域名访问时存在报错，使用webstorm直接打开html则不会。
+  - 原因：.wasm 文件请求后，服务器响应头中的 `Content-Type` 为 `application/octet-stream`
+  - 处理：修改nginx conf/mime.types 文件，添加一行 application/wasm     wasm;  
+  - [参考：nginx服务器如何调用和识别wasm文件？](https://blog.csdn.net/qq_27295403/article/details/90760182)
 
