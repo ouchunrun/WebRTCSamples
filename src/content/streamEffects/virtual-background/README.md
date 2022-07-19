@@ -7,6 +7,14 @@
 <script src="lib/tflite/tflite-simd.js"></script>
 <script src="lib/tflite/pipelines.js"></script>
 ```
+### 使用配置如下
+
+| 类型               | 配置               |
+|:-----------------|:-----------------|
+| Model            | Meet             |
+| backend          | WebAssembly SIMD |
+| Input resolution | 160x96           |
+| Pipeline         | Canvas 2D + CPU  |
 
 ## 参考
 
