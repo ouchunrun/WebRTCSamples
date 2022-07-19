@@ -34,24 +34,20 @@ const TIMEOUT_TICK = 3;
  * The URL is then passed to a WebWorker. Reason for this is to enable
  * use of setInterval that is not throttled when tab is inactive.
  */
-const code = `
-    var timer;
-
-    onmessage = function(request) {
-        switch (request.data.id) {
-        case ${SET_TIMEOUT}: {
-            timer = setTimeout(() => {
-                postMessage({ id: ${TIMEOUT_TICK} });
+let workerTimer;
+self.onmessage = function(request) {
+    switch (request.data.id) {
+        case SET_TIMEOUT: {
+            workerTimer = setTimeout(() => {
+                postMessage({ id: TIMEOUT_TICK });
             }, request.data.timeMs);
             break;
         }
-        case ${CLEAR_TIMEOUT}: {
-            if (timer) {
-                clearTimeout(timer);
+        case CLEAR_TIMEOUT: {
+            if (workerTimer) {
+                clearTimeout(workerTimer);
             }
             break;
         }
-        }
-    };
-`;
-const timerWorkerScript = URL.createObjectURL(new Blob([ code ], { type: 'application/javascript' }));
+    }
+};

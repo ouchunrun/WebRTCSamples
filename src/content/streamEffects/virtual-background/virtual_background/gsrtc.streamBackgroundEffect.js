@@ -4,7 +4,11 @@
  * <tt>StreamBackgroundEffect</tt> does the processing of the original
  * video stream.
  */
-function StreamBackgroundEffect(virtualBackground){
+function StreamBackgroundEffect(data = {}){
+    this.SET_TIMEOUT = 1
+    this.CLEAR_TIMEOUT = 2
+    this.TIMEOUT_TICK = 3
+
     this.backgroundEffectEnabled = false
     this.segmentationDimensions = {
         model96: { height: 96, width: 160 },
@@ -12,7 +16,7 @@ function StreamBackgroundEffect(virtualBackground){
     }
     this._options = {
         ...(this.segmentationDimensions.model96),
-        virtualBackground
+        virtualBackground: data.virtualBackground
     }
     if (this._options.virtualBackground && this._options.virtualBackground.backgroundType === 'image') {
         this._virtualImage = document.createElement('img')
@@ -29,11 +33,19 @@ function StreamBackgroundEffect(virtualBackground){
     this._outputCanvasElement.getContext('2d')
     this._inputVideoElement = document.createElement('video')
 
-    this.loadTFLite()
+    this.loadTFLite(data.tflite, data.model)
 }
 
-StreamBackgroundEffect.prototype.loadTFLite = async function(){
-    this._tflite = await this.loadTFLiteModel()
+StreamBackgroundEffect.prototype.loadTFLite = async function(tflite, model){
+    if(!tflite || !model){
+        log.warn('tflite or modle not found')
+        return
+    }
+
+    this._tflite = tflite
+    const modelBufferOffset = this._tflite._getModelBufferMemoryOffset();
+    this._tflite.HEAPU8.set(new Uint8Array(model), modelBufferOffset);
+    this._tflite._loadModel(model.byteLength);
 }
 
 /**
@@ -45,26 +57,16 @@ StreamBackgroundEffect.prototype.loadTFLiteModel = async function(){
         throw new Error('JitsiStreamBackgroundEffect not supported!');
     }
     const models = {
+        // model96: './segm_lite_v681.tflite',   // wave 使用
         model96: './virtual_background/segm_lite_v681.tflite',
     };
-
-    const segmentationDimensions = {
-        model96: { height: 96, width: 160 },
-        model144: { height: 144, width: 256 }
-    }
     let tflite = await createTFLiteModule()
-
-    const modelBufferOffset = tflite._getModelBufferMemoryOffset();
     const modelResponse = await fetch(models.model96);
-
     if (!modelResponse.ok) {
         throw new Error('Failed to download tflite model!');
     }
-
     const model = await modelResponse.arrayBuffer();
-    tflite.HEAPU8.set(new Uint8Array(model), modelBufferOffset);
-    tflite._loadModel(model.byteLength);
-    return tflite
+    return { tflite: tflite, model: model }
 }
 
 StreamBackgroundEffect.prototype.setVirtualBackground = function(options) {
@@ -95,7 +97,7 @@ StreamBackgroundEffect.prototype.setVirtualBackground = function(options) {
  * @returns {void}
  */
 StreamBackgroundEffect.prototype._onMaskFrameTimer = function (response){
-    if (response.data.id === TIMEOUT_TICK) {
+    if (response.data.id === this.TIMEOUT_TICK) {
         this._renderMask();
     }
 }
@@ -182,7 +184,7 @@ StreamBackgroundEffect.prototype._renderMask = function () {
     this.runPostProcessing();
 
     this._maskFrameTimerWorker.postMessage({
-        id: SET_TIMEOUT,
+        id: this.SET_TIMEOUT,
         timeMs: 1000 / 30
     });
 }
@@ -238,7 +240,11 @@ StreamBackgroundEffect.prototype.isEnabled = function (jitsiLocalTrack) {
  * @returns {MediaStream} - The stream with the applied effect.
  */
 StreamBackgroundEffect.prototype.startEffect = function (stream) {
-    this._maskFrameTimerWorker = new Worker(timerWorkerScript, { name: 'Blur effect worker' });
+    if(!this._maskFrameTimerWorker){
+        // this._maskFrameTimerWorker = new Worker('./timerWorker.js');   // Wave 上使用
+        this._maskFrameTimerWorker = new Worker('./virtual_background/timerWorker.js');
+    }
+
     this._maskFrameTimerWorker.onmessage = this._onMaskFrameTimer;
     const firstVideoTrack = stream.getVideoTracks()[0];
     const { height, frameRate, width } = firstVideoTrack.getSettings ? firstVideoTrack.getSettings() : firstVideoTrack.getConstraints();
@@ -257,10 +263,12 @@ StreamBackgroundEffect.prototype.startEffect = function (stream) {
     this._inputVideoElement.autoplay = true;
     this._inputVideoElement.srcObject = stream;
     this._inputVideoElement.onloadeddata = () => {
-        this._maskFrameTimerWorker.postMessage({
-            id: SET_TIMEOUT,
-            timeMs: 1000 / 30
-        });
+        if(this._maskFrameTimerWorker){
+            this._maskFrameTimerWorker.postMessage({
+                id: this.SET_TIMEOUT,
+                timeMs: 1000 / 30
+            });
+        }
     };
 
     return this._outputCanvasElement.captureStream(parseInt(frameRate, 10));
@@ -272,9 +280,13 @@ StreamBackgroundEffect.prototype.startEffect = function (stream) {
  * @returns {void}
  */
 StreamBackgroundEffect.prototype.stopEffect = function (){
-    this._maskFrameTimerWorker.postMessage({
-        id: CLEAR_TIMEOUT
-    });
+    log.info('stop effect')
+    if(this._maskFrameTimerWorker){
+        this._maskFrameTimerWorker.postMessage({
+            id: this.CLEAR_TIMEOUT
+        });
 
-    this._maskFrameTimerWorker.terminate();
+        this._maskFrameTimerWorker.terminate();
+        this._maskFrameTimerWorker = null
+    }
 }

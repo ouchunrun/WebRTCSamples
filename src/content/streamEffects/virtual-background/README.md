@@ -1,13 +1,14 @@
 
-## 使用说明
+## Inspired From
 
-### 引用文件
-```
-<script src="lib/tflite/tflite.js"></script>
-<script src="lib/tflite/tflite-simd.js"></script>
-<script src="lib/tflite/pipelines.js"></script>
-```
-### 使用配置如下
+- [Volcomix virtual-background](https://github.com/Volcomix/virtual-background)
+  - [online Demo](https://volcomix.github.io/virtual-background/) 
+- [jitsi-meet virtual-background](https://github.com/jitsi/jitsi-meet/tree/master/react/features/stream-effects/virtual-background)
+  - [online Meet](https://meet.jit.si/?rCounter=1)
+
+> 注意：volcomix 虚拟背景实现存在"页面不处于活跃状态时，视频会卡住" 问题；所以最后选择了jitsi-meet的实现方式（jitsi-meet也是参考volcomix的处理）。
+
+## 固定使用配置如下
 
 | 类型               | 配置               |
 |:-----------------|:-----------------|
@@ -16,11 +17,17 @@
 | Input resolution | 160x96           |
 | Pipeline         | Canvas 2D + CPU  |
 
-## 参考
+## 问题记录
 
-- 在线演示 demo： https://volcomix.github.io/virtual-background/
-- github: https://volcomix.github.io/virtual-background
-- TensorFlow实现：图像分割中，抠图和替换背景是怎样完成的：https://blog.csdn.net/yuanyuneixin1/article/details/105902428
+**1.页面不处于活跃状态时，视频会卡住**
+
+- 原因: `requestAnimationFrame`不会继续调用；非活跃状态时使用定时器，画面卡顿明显。（requestAnimationFrame实现，页面非活跃状态时使用1000 / 60定时器处理）
+- 处理：查看`jitsi meet`实现编写demo，发现页面不活跃时视频显示正常，所以Wave上使用的SDK是根据jitsi meet修改的
+
+**2.多次开关摄像头后画面卡顿明显问题**
+
+- 原因：关闭时未清除之前的处理
+- 处理：关闭摄像头或关闭虚拟背景时添加停止effect处理
 
 ## FAQ
 
@@ -39,3 +46,7 @@
 
 - 6.INVALID_VALUE: tex(Sub)Image2D: video visible size is empty
     - Cause: video没有play
+
+- 7.wasm streaming compile failed: TypeError: Failed to execute 'compile' on 'WebAssembly': Incorrect response MIME type. Expected 'application/wasm'.
+  - 通过域名访问时存在报错，使用webstorm直接打开html则不会
+

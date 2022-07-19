@@ -1,73 +1,20 @@
+/* Log Debug Start */
+let log = {}
+log.debug = window.debug('sipWebRTC:DEBUG')
+log.log = window.debug('sipWebRTC:LOG')
+log.info = window.debug('sipWebRTC:INFO')
+log.warn = window.debug('sipWebRTC:WARN')
+log.error = window.debug('sipWebRTC:ERROR')
+/* Log Debug End */
+
 /**
  * 获取video input设备列表
  */
 let videoInputList = []
 let videoinputList = document.getElementById('videoList')
-document.onreadystatechange = function () {
-	if (document.readyState === "complete") {
-		navigator.mediaDevices.enumerateDevices().then(function (deviceInfos){
-			let videoinputLists = []
-			for (let i = 0; i < deviceInfos.length; i++){
-				let deviceInfo = deviceInfos[i]
-				if (deviceInfo.kind === 'videoinput') {
-					videoinputLists.push({
-						label: deviceInfo.label,
-						deviceId: deviceInfo.deviceId,
-						groupId: deviceInfo.groupId,
-					})
-				}
-			}
-
-			if (videoinputLists.length) {
-				for (let j = 0; j < videoinputLists.length; j++) {
-					if (!videoinputLists[j].label) {
-						videoinputLists[j].label = 'camera' + j
-					}
-					videoInputList.push('<option class="cameraOption" value="' + videoinputLists[j].deviceId + '">' + videoinputLists[j].label + '</option>')
-					console.log('camera: ' + videoinputLists[j].label)
-				}
-			}
-			videoinputList.innerHTML = videoInputList.join('')
-
-		}).catch(function (error){
-			console.error(error)
-		});
-	}
-}
-
-function getSelectVaule(targetId){
-	let value
-	let videoInputList = document.getElementById(targetId)
-	let selectedIndex = videoInputList.options.selectedIndex
-	let selectedOption = videoInputList.options[selectedIndex]
-	if(selectedOption && selectedOption.value){
-		console.log('selected ' + targetId + ' value: ', selectedOption.value)
-		value = selectedOption.value
-	}
-
-	return value
-}
-
-let backgroundEffect
-let backgroundPreview
-window.onload = async function (){
-	console.log('window onload, get local Stream')
-	backgroundEffect = await new StreamBackgroundEffect()
-	backgroundPreview = await new StreamBackgroundEffect()
-	gum()
-}
-
-let previewVideo = document.getElementById('previewVideo')
+let originVideo = document.getElementById('originVideo')
 let localStream
-let effectVideo = document.getElementById('effectVideo')
-let effectStream
-let virtualBackgroundOption = {
-	backgroundEffectEnabled: false,
-	backgroundType: undefined,
-	blurValue: undefined,
-	virtualSource: undefined,
-}
-
+let virtualBackgroundVideo = document.getElementById('effectVideo')
 let res = {
 	360: {width: 640, height: 360},
 	720: {width: 1280, height: 720},
@@ -81,27 +28,38 @@ let constraints = {
 	}
 }
 
-async function gum(){
-	localStream = await navigator.mediaDevices.getUserMedia(constraints)
-	console.log('get stream success: \r\n', JSON.stringify(constraints, null, '    '))
-
-	if(virtualBackgroundOption && virtualBackgroundOption.backgroundEffectEnabled){
-		virtualBackgroundPreview({stream: localStream})
-	}else {
-		previewVideo.srcObject = localStream
+/**
+ * 获取选中的下拉列表值
+ * @param targetId
+ * @returns {*}
+ */
+function getSelectValue(targetId){
+	let value
+	let videoInputList = document.getElementById(targetId)
+	let selectedIndex = videoInputList.options.selectedIndex
+	let selectedOption = videoInputList.options[selectedIndex]
+	if(selectedOption && selectedOption.value){
+		console.log('selected ' + targetId + ' value: ', selectedOption.value)
+		value = selectedOption.value
 	}
+
+	return value
 }
 
+/**
+ * 切换下拉列表选项
+ * @param data
+ */
 function changeConfig(data){
 	switch (data.type){
 		case 'resolution':
-			let selectRes = getSelectVaule('resSelect')
+			let selectRes = getSelectValue('resSelect')
 			constraints.video.width = res[selectRes].width
 			constraints.video.height = res[selectRes].height
 			gum()
 			break
 		case 'device':
-			let deviceId = getSelectVaule('videoList')
+			let deviceId = getSelectValue('videoList')
 			constraints.video.deviceId = {
 				exact: deviceId
 			}
@@ -112,37 +70,60 @@ function changeConfig(data){
 	}
 }
 
-function setBackgroundEffect(data){
+window.onload = async function (){
+	console.log('window onload, get local Stream')
+	window.gsRTC = new GsRTC({})
+	gsRTC.deviceInit()
+	gum()
+}
+
+async function gum(){
+	if(localStream){
+		console.log('close before stream first')
+		localStream.getTracks().forEach(function (track){
+			track.stop()
+		})
+	}
+	localStream = await navigator.mediaDevices.getUserMedia(constraints)
+	console.log('get stream success: \r\n', JSON.stringify(constraints, null, '    '))
+
+	originVideo.srcObject = localStream
+	if(gsRTC.backgroundPreview.backgroundEffectEnabled){
+		console.log('切换分辨率或摄像头时，重新设置预览')
+		backgroundEffectPreview({
+			type: gsRTC.backgroundPreview.virtualBackgroundOption.backgroundType,
+			selectedThumbnail: gsRTC.backgroundPreview.virtualBackgroundOption.selectedThumbnail
+		})
+	}
+}
+
+/**
+ * 虚拟背景预览设置
+ * @param data
+ */
+async function backgroundEffectPreview(data){
+	console.log('backgroundEffectPreview')
 	let option = {
-		backgroundType: data.type,
 		backgroundEffectEnabled: data.type !== 'none',
-		blurValue: data.type === 'blur' ? 25 : '',
-		virtualSource: null
+		backgroundType: data.type,
+		virtualSource: null,
+		selectedThumbnail: data.selectedThumbnail  // demo测试添加字段
 	}
 	if(data.type === 'image'){
 		option.virtualSource = './images/background-' + data.selectedThumbnail + '.jpg'
 	}
 
-	virtualBackgroundOption = option
-	console.warn('setBackgroundEffect: \r\n', JSON.stringify(virtualBackgroundOption, null, '    '))
-	virtualBackgroundPreview({stream: localStream})
-}
-
-async function virtualBackgroundPreview(data){
-	if(!data.stream ){
-		console.warn('virtual background preview: invalid parameters')
-		return
+	let previewData = {
+		virtualBackgroundOption: option,
+		stream: localStream,
+		callback: function (event){
+			console.warn('preview event:', event)
+		}
 	}
-
-	backgroundPreview.setVirtualBackground(virtualBackgroundOption)
-	let stream = await backgroundPreview.startEffect(data.stream)
-	console.info('preview stream id: ' + stream.id)
-	previewVideo.srcObject = stream
-}
-
-async function applyVirtualBackground(){
-	backgroundEffect.setVirtualBackground(virtualBackgroundOption)
-	effectStream = await backgroundEffect.startEffect(localStream)
-	effectVideo.srcObject = effectStream
-	console.warn('applyVirtualBackground option: \r\n', JSON.stringify(virtualBackgroundOption, null, '    '))
+	let previewStream = await gsRTC.virtualBackgroundPreview(previewData)
+	console.log('get preview stream:', previewStream)
+	if(previewStream){
+		virtualBackgroundVideo.srcObject = previewStream
+		gsRTC.backgroundPreview.virtualBackgroundOption = previewData.virtualBackgroundOption
+	}
 }
