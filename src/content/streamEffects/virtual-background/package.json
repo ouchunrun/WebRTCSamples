@@ -1,0 +1,17 @@
+{
+  "name": "rnnoise",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start-log": "electron . --enable-logging --vmodule=*/webrtc/*=1",
+    "start-v": "electron . --enable-logging --v=1",
+    "start": "electron ."
+  },
+  "keywords": [],
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^13.1.4"
+  }
+}
