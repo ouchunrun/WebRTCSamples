@@ -1,3 +1,7 @@
+# 参考
+
+- https://github.com/kbumsik/opus-media-recorder
+
 # opus-media-recorder
 
 ## ogg 转换格式说明
