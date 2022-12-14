@@ -11,7 +11,7 @@ button {
 }
 div#buttons {
     border-bottom: 1px solid #eee;
-    margin: 0 0 20px 0;
+    margin: 30px 0;
     clear: both;
 }
 div#states {
@@ -41,8 +41,113 @@ video {
         height: 231px;
     }
 }
-#localVideo, #remoteVideo{
-    width: 50%;
-    float: left;
-    margin-bottom: 30px;
+/*#localVideo, #remoteVideo{*/
+/*    width: 50%;*/
+/*    float: left;*/
+/*    margin-bottom: 30px;*/
+/*}*/
+
+audio, video {
+    -moz-transition: all 1s ease;
+    -ms-transition: all 1s ease;
+
+    -o-transition: all 1s ease;
+    -webkit-transition: all 1s ease;
+    transition: all 1s ease;
+    vertical-align: top;
 }
+
+input {
+    border: 1px solid #d9d9d9;
+    border-radius: 1px;
+    font-size: 2em;
+    margin: .2em;
+    width: 30%;
+}
+
+.setup {
+    border-bottom-left-radius: 0;
+    border-top-left-radius: 0;
+    font-size: 102%;
+    height: 47px;
+    margin-left: -9px;
+    margin-top: 8px;
+    position: absolute;
+}
+
+p { padding: 1em; }
+
+li {
+    border-bottom: 1px solid rgb(189, 189, 189);
+    border-left: 1px solid rgb(189, 189, 189);
+    padding: .5em;
+}
+
+.videos-container {
+    border: 2px solid black;
+    padding: .1em;
+    border-radius: 0.2em;
+    background: white;
+    overflow: hidden;
+}
+.videos-container h2 {
+    border: 0;
+    border-top: 1px solid black;
+    margin: 0;
+    text-align: center;
+    display:block;
+}
+video {
+    width:100%;
+    background: black;
+}
+
+.videos-container p {
+    margin: 0;
+    padding: 0;
+    text-align: left;
+}
+
+table {
+    width: 100%;
+}
+
+td, th, tr {
+    padding: 1px 3px;
+}
+
+tr, td, th {
+    vertical-align: top;
+    /*padding: .7em 1.4em;*/
+    border-top: 1px dotted #BBA9A9;
+    border-right: 1px dotted #BBA9A9;
+}
+
+table, tbody, tr, td {
+    width: 100%!important;
+}
+td {
+    width: 40%!important;
+}
+
+td:first-child, th {
+    font-weight: bold;
+    color: #EC008C;
+}
+
+td:first-child, th:first-child {
+    width: 150px!important;
+}
+
+table {
+    border-bottom: 1px dotted #BBA9A9;
+    border-left: 1px dotted #BBA9A9;
+}
+
+label {
+    width: 100px!important;
+    display: inline-block;
+    text-align: right;
+    padding-right: 15px;
+}
+

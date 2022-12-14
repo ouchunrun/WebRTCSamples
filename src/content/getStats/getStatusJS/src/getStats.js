@@ -435,6 +435,10 @@ var getStats = function(mediaStreamTrack, callback, interval) {
                 getStatsResult.audio.packetsLost = 0;
             }
         }
+
+        if(!!result.googJitterBufferMs){
+            getStatsResult.audio.jitter = result.googJitterBufferMs;
+        }
     };
 
     getStatsParser.checkVideoTracks = function(result) {
@@ -557,6 +561,10 @@ var getStats = function(mediaStreamTrack, callback, interval) {
             if (getStatsResult.video.packetsLost < 0) {
                 getStatsResult.video.packetsLost = 0;
             }
+        }
+
+        if(!!result.googJitterBufferMs){
+            getStatsResult.video.jitter = result.googJitterBufferMs;
         }
     };
 

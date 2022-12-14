@@ -79,9 +79,11 @@
 
     <table>
         <thead>
-        <th></th>
-        <th>First Peer</th>
-        <th>Second Peer</th>
+        <tr>
+            <th></th>
+            <th>First Peer</th>
+            <th>Second Peer</th>
+        </tr>
         </thead>
 
         <tbody>
@@ -214,6 +216,28 @@
                 <label>Video:</label> <span id="peer2-video-packetsLost"></span>
             </td>
         </tr>
+        <tr class="firefox-not-allowed chrome-allowed">
+            <td>jitter(chrou)</td>
+            <td>
+                <label>Audio:</label> <span id="peer1-audio-jitter"></span><br>
+                <label>Video:</label> <span id="peer1-video-jitter"></span>
+            </td>
+            <td>
+                <label>Audio:</label> <span id="peer2-audio-jitter"></span><br>
+                <label>Video:</label> <span id="peer2-video-jitter"></span>
+            </td>
+        </tr>
+        <tr class="firefox-not-allowed chrome-allowed">
+            <td>MOS(chrou)</td>
+            <td>
+                <label>Audio:</label> <span id="peer1-audio-MOS"></span><br>
+                <label>Video:</label> <span id="peer1-video-MOS"></span>
+            </td>
+            <td>
+                <label>Audio:</label> <span id="peer2-audio-MOS"></span><br>
+                <label>Video:</label> <span id="peer2-video-MOS"></span>
+            </td>
+        </tr>
         </tbody>
     </table>
 
@@ -309,7 +333,6 @@
                 }
 
                 getStats(offerer, function (result) {
-                    console.log('getStats result:', result)
                     previewGetStatsResult(offerer, result);
                 }, 1000);
             };
@@ -458,11 +481,48 @@
             document.getElementById('peer' + peer.idx + '-audio-packetsLost').innerHTML = result.audio.packetsLost;
             document.getElementById('peer' + peer.idx + '-video-packetsLost').innerHTML = result.video.packetsLost;
 
+            document.getElementById('peer' + peer.idx + '-audio-jitter').innerHTML = result.audio.jitter;
+            document.getElementById('peer' + peer.idx + '-video-jitter').innerHTML = result.video.jitter;
+
+            calculateMOS(result, peer.idx)
+
             if (result.ended === true) {
                 result.nomore();
             }
 
             window.getStatsResult = result;
+        }
+
+        function calculateMOS(result, peerIdx){
+            if(result.audio){
+                let R
+                let EffectiveLatency = ( result.audio.latency + result.audio.jitter * 2 + 10 )
+                if (EffectiveLatency < 160) {
+                    R = 93.2 - (EffectiveLatency / 40)
+                }else {
+                    R = 93.2 - (EffectiveLatency - 120) / 10
+                }
+
+                R = R - (result.audio.packetsLost * 2.5)
+                let MOS = 1 + (0.035) * R + (.000007) * R * (R-60) * (100-R)
+                result.audio.MOS = MOS
+                document.getElementById('peer' + peerIdx + '-audio-MOS').innerHTML = result.audio.MOS;
+            }
+
+            if(result.video){
+                let R
+                let EffectiveLatency = ( result.video.latency + result.video.jitter * 2 + 10 )
+                if (EffectiveLatency < 160) {
+                    R = 93.2 - (EffectiveLatency / 40)
+                }else {
+                    R = 93.2 - (EffectiveLatency - 120) / 10
+                }
+
+                R = R - (result.video.packetsLost * 2.5)
+                let MOS = 1 + (0.035) * R + (.000007) * R * (R-60) * (100-R)
+                result.video.MOS = MOS
+                document.getElementById('peer' + peerIdx + '-video-MOS').innerHTML = result.video.MOS;
+            }
         }
 
         if (typeof window.InstallTrigger !== 'undefined') {

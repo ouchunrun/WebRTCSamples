@@ -99,6 +99,7 @@ function call() {
     const servers = null;
 
     pc1 = new RTCPeerConnection(servers);
+    pc1.idx = 1;
     console.log('Created local peer connection object pc1');
     pc1.onsignalingstatechange = stateCallback1;
 
@@ -111,6 +112,7 @@ function call() {
     pc1.onicecandidate = e => onIceCandidate(pc1, e);
 
     pc2 = new RTCPeerConnection(servers);
+    pc2.idx = 2;
     console.log('Created remote peer connection object pc2');
     pc2.onsignalingstatechange = stateCallback2;
 
@@ -364,17 +366,54 @@ function processStats(report){
     }
 
     stats = deepCopy(statsNeed)
-    // console.log('statsNeed:', statsNeed)
-    console.log('stats:', stats)
-
     rtpInfo = getLossRate(statsNeed)
-    console.warn('rtpInfo:', rtpInfo)
+
+    console.log('stats:',  JSON.stringify(stats, null, '    '))
+    // console.warn('getLossRate rtpInfo:', JSON.stringify(rtpInfo, null, '    '))
+    previewGetStatsResult(pc1, rtpInfo)
 }
 
-function setNetStats(stats){
-    let lossRates = getLossRate(stats)
-    console.log('lossRates：', lossRates)
-    rtpInfo = lossRates
+function previewGetStatsResult(peer, result){
+    Object.keys(result).forEach(function (item){
+        let info = result[item]
+        let type = info.mediaType
+
+        document.getElementById('peer' + peer.idx + `-${type}-fractionLost`).innerHTML = info.fractionLost;
+        document.getElementById('peer' + peer.idx + `-${type}-lossRate`).innerHTML = info.lossRate
+        document.getElementById('peer' + peer.idx + `-${type}-jitter`).innerHTML = info.jitter;
+        document.getElementById('peer' + peer.idx + `-${type}-latency`).innerHTML = info.averageLatency + 'ms';
+        document.getElementById('peer' + peer.idx + `-${type}-MOS`).innerHTML = calculateMOS(info.averageLatency, info.jitter, info.packetsLossRate);
+    })
+}
+
+/**
+ * PacketLoss:  丢包率
+ *              这是从未从我们这里到达目标服务器（或中间跃点）然后再次返回的数据包的百分比。如果我们发送了 100 个数据包并且只收到了 97 个（3 个没有成功），那么我们有 3% 的数据包丢失。
+ * AverageLatency:  平均延迟
+ *              平均延迟（在 PingPlotter 中）是数据包从您的计算机到达目标服务器然后再次返回所需的平均（平均）时间。
+ *              平均延迟是所有延迟的总和除以我们正在测量的样本数。如果我们发出 100 个样本并收到 97 个样本，则计算所有延迟的总和并除以 97 得到平均值。
+ *              5 个具有以下延迟的样本：136、184、115、148、125（按此顺序）。平均延迟为 142 （将它们相加，除以 5）
+ * Jitter:  抖动
+ *          “抖动”是通过获取样本之间的差异来计算的。
+ *          136 至 184，差异 = 48
+ *          184 至 115，差异 = 69
+ *          115 到 148，diff = 33
+ *           148 到 125，diff = 23
+ *          （注意 5 个样本只有 4 个差异）。总差为 173 - 因此抖动为 173 / 4，即 43.25。
+ */
+function calculateMOS(latency, jitter, packetsLost){
+    // console.log(latency, jitter, packetsLost)
+    let R
+    let EffectiveLatency = ( latency + jitter * 2 + 10 )
+    if (EffectiveLatency < 160) {
+        R = 93.2 - (EffectiveLatency / 40)
+    }else {
+        R = 93.2 - (EffectiveLatency - 120) / 10
+    }
+
+    R = R - (packetsLost * 2.5)
+    let MOS = 1 + (0.035) * R + (.000007) * R * (R-60) * (100-R)
+    return MOS
 }
 
 /***
@@ -419,10 +458,14 @@ function getLossRate(stats){
 
     for (let key in stats) {
         let lossRate = {
-            lossRate: '0.00%',
             bandWidthVal: 0,
             bandWidthUnit: 'bps',
             codecName: '',
+            fractionLost: '',
+            lossRate: '0.00%',
+            packetsLossRate: '',
+            averageLatency: '',
+            mediaType: '',
             ssrc: key
         };
         let statsNow = stats[key]
@@ -468,6 +511,7 @@ function getLossRate(stats){
                 packetsLossRate = 1
             }
             lossRate.lossRate = (packetsLossRate * 100).toFixed(2) + '%'
+            lossRate.packetsLossRate = packetsLossRate
         } else {
             lossRate.lossRate = 'negative'
         }
@@ -493,6 +537,15 @@ function getLossRate(stats){
         }
         if(statsNow.hasOwnProperty('packetsSent')){
             lossRate.packetsSent = statsNow.packetsSent
+        }
+        if(statsNow.hasOwnProperty('totalPacketSendDelay')){
+            lossRate.averageLatency = (statsNow.totalPacketSendDelay / statsNow.bytesSent) * 1000  // 转换为毫秒
+        }
+        if(statsNow.hasOwnProperty('mediaType')){
+            lossRate.mediaType = statsNow.mediaType
+        }
+        if(statsNow.hasOwnProperty('fractionLost')){
+            lossRate.fractionLost = statsNow.fractionLost
         }
 
         if (statsNow.frameWidth && statsNow.frameWidth !== '0' && statsNow.frameHeight && statsNow.frameHeight !== '0') {

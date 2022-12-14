@@ -34,20 +34,97 @@
 <div id="container">
 
     <h1><span>Peer connection: states</span></h1>
+    <table>
+        <thead>
+            <tr>
+                <th></th>
+                <th>local peer</th>
+                <th>remote peer</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>videos</td>
+                <td>
+                    <video id="video1" playsinline autoplay muted controls></video>
+                </td>
+                <td>
+                    <video id="video2" playsinline autoplay controls muted></video>
+                </td>
+            </tr>
+        <tr>
+            <td>video dimension</td>
+            <td>
+                <div id="localVideo">
+                    <div></div>
+                </div>
+            </td>
+            <td>
+                <div id="remoteVideo">
+                    <div></div>
+                    <div id="bitrate"></div>
+                    <div id="peer"></div>
+                </div>
+            </td>
+        </tr>
+            <tr class="firefox-not-allowed chrome-allowed">
+                <td>fractionLost</td>
+                <td>
+                    <label>Audio:</label> <span id="peer1-audio-fractionLost"></span><br>
+                    <label>Video:</label> <span id="peer1-video-fractionLost"></span>
+                </td>
+                <td>
+                    <label>Audio:</label> <span id="peer2-audio-fractionLost"></span><br>
+                    <label>Video:</label> <span id="peer2-video-fractionLost"></span>
+                </td>
+            </tr>
 
-    <div>
-        <div id="localVideo">
-            <video id="video1" playsinline autoplay muted controls></video>
-            <div></div>
-        </div>
-
-        <div id="remoteVideo">
-            <video id="video2" playsinline autoplay controls muted></video>
-            <div></div>
-            <div id="bitrate"></div>
-            <div id="peer"></div>
-        </div>
-    </div>
+            <tr class="firefox-not-allowed chrome-allowed">
+                <td>lossRate</td>
+                <td>
+                    <label>Audio:</label> <span id="peer1-audio-lossRate"></span><br>
+                    <label>Video:</label> <span id="peer1-video-lossRate"></span>
+                </td>
+                <td>
+                    <label>Audio:</label> <span id="peer2-audio-packetsLost"></span><br>
+                    <label>Video:</label> <span id="peer2-video-packetsLost"></span>
+                </td>
+            </tr>
+            <tr class="firefox-not-allowed chrome-allowed">
+                <td>jitter</td>
+                <td>
+                    <label>Audio:</label> <span id="peer1-audio-jitter"></span><br>
+                    <label>Video:</label> <span id="peer1-video-jitter"></span>
+                </td>
+                <td>
+                    <label>Audio:</label> <span id="peer2-audio-jitter"></span><br>
+                    <label>Video:</label> <span id="peer2-video-jitter"></span>
+                </td>
+            </tr>
+            <tr class="firefox-not-allowed chrome-allowed">
+                <td>latency</td>
+                <td>
+                    <label>Audio:</label> <span id="peer1-audio-latency"></span><br>
+                    <label>Video:</label> <span id="peer1-video-latency"></span>
+                </td>
+                <td>
+                    <label>Audio:</label> <span id="peer2-audio-latency"></span><br>
+                    <label>Video:</label> <span id="peer2-video-latency"></span>
+                </td>
+            </tr>
+            <tr class="firefox-not-allowed chrome-allowed">
+                <td>MOS</td>
+                <td>
+                    <label>Audio:</label> <span id="peer1-audio-MOS"></span><br>
+                    <label>Video:</label> <span id="peer1-video-MOS"></span>
+                </td>
+                <td>
+                    <label>Audio:</label> <span id="peer2-audio-MOS"></span><br>
+                    <label>Video:</label> <span id="peer2-video-MOS"></span>
+                </td>
+            </tr>
+        </tbody>
+    </table>
 
     <div id="buttons">
         <button id="startButton">Start</button>
