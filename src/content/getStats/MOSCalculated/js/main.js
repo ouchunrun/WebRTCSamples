@@ -253,6 +253,10 @@ function onAddIceCandidateError(error) {
 
 /***************************************************Display statistics************************************************/
 function setRTPInterval(){
+    if(rtpTimer){
+        return
+    }
+
     rtpTimer = setInterval(() => {
         if (pc1 && pc2) {
             showLocalStats()
