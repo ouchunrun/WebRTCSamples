@@ -43,22 +43,7 @@ let rtpInfo = {
     videoIn: undefined,
     videoOut: undefined,
 }
-let MEDIA_SSRCS = {
-    LOCAL_AUDIO_SSRC: null,
-    REMOTE_AUDIO_SSRC: null,
-    LOCAL_VIDEO_SSRC: null,
-    REMOTE_VIDEO_SSRC: null,
-    LOCAL_PRESENT_SSRC: null,
-    REMOTE_PRESENT_SSRC: null
-}
-let MEDIA_CODECS = {
-    LOCAL_AUDIO_CODEC: null,
-    REMOTE_AUDIO_CODEC: null,
-    LOCAL_VIDEO_CODEC: null,
-    REMOTE_VIDEO_CODEC: null,
-    LOCAL_PRESENT_CODEC: null,
-    REMOTE_PRESENT_CODEC: null
-}
+let rttTimesArr = []
 
 const offerOptions = {
     offerToReceiveAudio: 1,
@@ -375,6 +360,9 @@ function processStats(report){
     console.log('stats:',  JSON.stringify(stats, null, '    '))
     // console.warn('getLossRate rtpInfo:', JSON.stringify(rtpInfo, null, '    '))
     previewGetStatsResult(pc1, rtpInfo)
+
+    // MOS 计算方式2：
+    getMOSInfo(pc1, stats)
 }
 
 function previewGetStatsResult(peer, result){
@@ -385,9 +373,55 @@ function previewGetStatsResult(peer, result){
         document.getElementById('peer' + peer.idx + `-${type}-fractionLost`).innerHTML = info.fractionLost;
         document.getElementById('peer' + peer.idx + `-${type}-lossRate`).innerHTML = info.lossRate
         document.getElementById('peer' + peer.idx + `-${type}-jitter`).innerHTML = info.jitter;
-        document.getElementById('peer' + peer.idx + `-${type}-latency`).innerHTML = info.averageLatency + 'ms';
-        document.getElementById('peer' + peer.idx + `-${type}-MOS`).innerHTML = calculateMOS(info.averageLatency, info.jitter, info.packetsLossRate);
+
+        // MOS 计算方式1：
+        let averageLatency = (info.totalPacketSendDelay / (info.packetsSent - info.packetsLost)) * 1000
+        document.getElementById('peer' + peer.idx + `-${type}-latency`).innerHTML = averageLatency + 'ms';
+        // document.getElementById('peer' + peer.idx + `-${type}-MOS`).innerHTML = calculateMOS(averageLatency, info.jitter, info.packetsLossRate);
     })
+}
+
+/**
+ * 计算前后两次RTT的差值
+ * @param stat
+ * @returns {number}
+ */
+function getCurrentRttTime(stat){
+    let currentRtt
+    let roundTripTime = stat.roundTripTime
+    if (typeof roundTripTime !== 'undefined' && String(roundTripTime) !== 'null') {
+        roundTripTime = parseFloat(roundTripTime)
+    } else {
+        roundTripTime = 0
+    }
+    rttTimesArr.push(roundTripTime)
+    const length = rttTimesArr.length
+    if (length > 0) {
+        if (length >= 2) {
+            const differenceRtt = rttTimesArr[length - 1] - rttTimesArr[length - 2]
+            currentRtt = Math.abs(differenceRtt)
+        }
+    }
+    if (length > 5) {
+        rttTimesArr.shift()
+    }
+    return currentRtt
+}
+
+/**
+ * 计算MOS相关参数
+ * @param peer
+ * @param stats
+ */
+function getMOSInfo(peer, stats){
+    for (let key in stats){
+        let stat = stats[key]
+        let type = stat.mediaType
+        let packetsLost = stat.packetsLost / stat.packetsSent
+        let latency = (stat.totalPacketSendDelay / (stat.packetsSent - stat.packetsLost)) * 1000  // 转换为毫秒
+        let jitter = getCurrentRttTime(stat)
+        document.getElementById('peer' + peer.idx + `-${type}-MOS`).innerHTML = calculateMOS(latency, jitter, packetsLost);
+    }
 }
 
 /**
@@ -406,7 +440,6 @@ function previewGetStatsResult(peer, result){
  *          （注意 5 个样本只有 4 个差异）。总差为 173 - 因此抖动为 173 / 4，即 43.25。
  */
 function calculateMOS(latency, jitter, packetsLost){
-    // console.log(latency, jitter, packetsLost)
     let R
     let EffectiveLatency = ( latency + jitter * 2 + 10 )
     if (EffectiveLatency < 160) {
@@ -417,6 +450,8 @@ function calculateMOS(latency, jitter, packetsLost){
 
     R = R - (packetsLost * 2.5)
     let MOS = 1 + (0.035) * R + (.000007) * R * (R-60) * (100-R)
+
+    console.log('latency:' , latency, '; jitter:', jitter, '; packetsLost:', packetsLost, '; R 为 ', R)
     return MOS
 }
 
@@ -468,7 +503,7 @@ function getLossRate(stats){
             fractionLost: '',
             lossRate: '0.00%',
             packetsLossRate: '',
-            averageLatency: '',
+            totalPacketSendDelay: '',
             mediaType: '',
             ssrc: key
         };
@@ -543,7 +578,7 @@ function getLossRate(stats){
             lossRate.packetsSent = statsNow.packetsSent
         }
         if(statsNow.hasOwnProperty('totalPacketSendDelay')){
-            lossRate.averageLatency = (statsNow.totalPacketSendDelay / statsNow.bytesSent) * 1000  // 转换为毫秒
+            lossRate.totalPacketSendDelay = statsNow.totalPacketSendDelay
         }
         if(statsNow.hasOwnProperty('mediaType')){
             lossRate.mediaType = statsNow.mediaType
