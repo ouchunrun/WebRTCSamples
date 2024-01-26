@@ -1,8 +1,11 @@
-<!DOCTYPE html>
+<!doctype html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>HTML5 GetUserMedia Demo</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
     <style>
         body {
             text-align: center;
@@ -27,7 +30,7 @@
     </style>
 </head>
 <body>
-<video autoplay="autoplay"></video>
+<video controls autoplay="autoplay" style="height: 200px"></video>
 <canvas id="canvas1" height="320px" class="hide"></canvas>
 <img class="hide" src="" alt="" id="img" />
 <div></div>
@@ -39,7 +42,8 @@
 <!--<script src="http://www.jq22.com/demo/jQueryQrcode201709202327/llqrcode.js" type="text/javascript" charset="utf-8"></script>-->
 <script src="js/analyticCode.js" type="text/javascript" charset="utf-8"></script>
 <script src="js/llqrcode.js" type="text/javascript" charset="utf-8"></script>
-<script type="text/javascript">
+<script src="js/vconsole.min.js" type="text/javascript" ></script>
+<script>
     var video = document.querySelector('video');
     var audio, audioType;
 
@@ -114,7 +118,7 @@
     }, 500);*/
 
     function successFunc(stream) {
-        alert('Succeed to get media!');
+        // alert('Succeed to get media!');
         if (video.mozSrcObject !== undefined) {
             //Firefox中，video.mozSrcObject最初为null，而不是未定义的，我们可以靠这个来检测Firefox的支持
             video.mozSrcObject = stream;
@@ -178,5 +182,9 @@
     document.getElementById('scan').onclick = function() {
         getMedia();
     };
+
+    var vConsole = new VConsole();
+    console.log('Hello world');
 </script>
 </body>
+</html>
