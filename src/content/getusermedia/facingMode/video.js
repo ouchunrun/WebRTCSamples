@@ -189,7 +189,9 @@ let VConsoleWaitTimeLastClickTime = new Date().getTime()
 let VConsoleCount = 0
 window.addEventListener('click', function (evt) {
     let currentTime = new Date().getTime()
-    VConsoleCount = (currentTime - VConsoleWaitTimeLastClickTime) < VConsoleWaitTime ? VConsoleCount + 1 : 1
+    let diffTime = currentTime - VConsoleWaitTimeLastClickTime
+    console.warn('diffTime is :', diffTime)
+    VConsoleCount = diffTime < VConsoleWaitTime ? VConsoleCount + 1 : 1
     VConsoleWaitTimeLastClickTime = new Date().getTime()
     VConsoleTimer = setTimeout(function () {
         clearTimeout(VConsoleTimer)
