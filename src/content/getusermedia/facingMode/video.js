@@ -172,13 +172,13 @@ function initVConsole(){
                 checkTimer = null
 
                 if(VConsoleButton){
-                    VConsoleButton.style.display = 'none'
+                    // VConsoleButton.style.display = 'none'
                 }
             }
         }, 1000)
     }else {
         console.log('hide vConsole button.', VConsoleButton)
-        VConsoleButton.style.display = 'none'
+        // VConsoleButton.style.display = 'none'
     }
 }
 
