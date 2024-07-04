@@ -156,3 +156,62 @@ function closeStream() {
     }
 }
 
+
+function initVConsole(){
+    console.log('init vConsole')
+    let vConsole = new VConsole()
+    let VConsoleButton = document.getElementById('__vconsole')
+    let checkCount = 0
+    if(!VConsoleButton){
+        let checkTimer = setInterval(function () {
+            VConsoleButton = document.getElementById('__vconsole')
+            checkCount++
+            if(VConsoleButton || checkCount > 10){
+                console.log('clear checkTimer and hide vConsole button.', VConsoleButton)
+                clearInterval(checkTimer)
+                checkTimer = null
+
+                if(VConsoleButton){
+                    VConsoleButton.style.display = 'none'
+                }
+            }
+        }, 1000)
+    }else {
+        console.log('hide vConsole button.', VConsoleButton)
+        VConsoleButton.style.display = 'none'
+    }
+}
+
+
+let VConsoleTimer = null
+let VConsoleWaitTime = 200
+let VConsoleWaitTimeLastClickTime = new Date().getTime()
+let VConsoleCount = 0
+window.addEventListener('click', function (evt) {
+    let currentTime = new Date().getTime()
+    VConsoleCount = (currentTime - VConsoleWaitTimeLastClickTime) < VConsoleWaitTime ? VConsoleCount + 1 : 1
+    VConsoleWaitTimeLastClickTime = new Date().getTime()
+    VConsoleTimer = setTimeout(function () {
+        clearTimeout(VConsoleTimer)
+        console.log('click count:', VConsoleCount)
+        if(VConsoleCount >= 3){
+            console.log('click more than 4 times')
+            // init vConsole
+            // let vConsole = new VConsole()
+            let VConsoleButton = document.getElementById('__vconsole')
+            console.log('VConsoleButton 找到了？？:', VConsoleButton)
+            if(VConsoleButton){
+                console.warn('显示vConsole button')
+                VConsoleButton.style.display = 'block'
+            }else {
+                console.warn('vConsole button not found!')
+            }
+
+        }
+    }, VConsoleWaitTime + 10)
+});
+
+
+window.addEventListener('load', function () {
+    initVConsole()
+})
